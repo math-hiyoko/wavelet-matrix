@@ -1,14 +1,12 @@
-mod python;
-mod wavelet_matrix;
-mod traits;
 mod dynamic_wavelet_matrix;
+mod python;
+mod traits;
+mod wavelet_matrix;
 
-use pyo3::prelude::*;
 use crate::python::{
-    wavelet_matrix::PyWaveletMatrix,
-    dynamic_wavelet_matrix::PyDynamicWaveletMatrix,
+    dynamic_wavelet_matrix::PyDynamicWaveletMatrix, wavelet_matrix::PyWaveletMatrix,
 };
-
+use pyo3::prelude::*;
 
 #[pymodule(name = "wavelet_matrix")]
 fn py_wavelet_matrix(m: &Bound<'_, PyModule>) -> PyResult<()> {

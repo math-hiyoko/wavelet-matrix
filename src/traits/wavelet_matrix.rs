@@ -1,16 +1,16 @@
-use std::{
-    cmp::PartialEq,
-    collections::{BinaryHeap, HashMap},
-    iter::zip,
-    ops::{BitAnd, BitOr, BitOrAssign, Shl, Shr, ShlAssign},
-};
+use super::bit_vector::BitVectorTrait;
 use num_bigint::{BigUint, ToBigUint};
 use num_traits::{One, Zero};
 use pyo3::{
     PyResult,
-    exceptions::{PyIndexError,PyRuntimeError, PyValueError},
+    exceptions::{PyIndexError, PyRuntimeError, PyValueError},
 };
-use super::bit_vector::BitVectorTrait;
+use std::{
+    cmp::PartialEq,
+    collections::{BinaryHeap, HashMap},
+    iter::zip,
+    ops::{BitAnd, BitOr, BitOrAssign, Shl, ShlAssign, Shr},
+};
 
 /// A Wavelet Matrix data structure for efficient rank, select, and quantile queries.
 ///
@@ -229,7 +229,8 @@ where
                 result.push(HashMap::from([
                     (
                         "value".to_string(),
-                        value.to_biguint()
+                        value
+                            .to_biguint()
                             .ok_or(PyRuntimeError::new_err("to_biguint failed"))?,
                     ),
                     (
@@ -278,10 +279,9 @@ where
 
     /// Get the sum of elements in the range [start, end).
     fn range_sum(&self, start: usize, end: usize) -> PyResult<BigUint> {
-        let result = self
-            .range_list(start, end, None, None)?
-            .iter()
-            .try_fold(BigUint::zero(), |acc, item| -> PyResult<BigUint> {
+        let result = self.range_list(start, end, None, None)?.iter().try_fold(
+            BigUint::zero(),
+            |acc, item| -> PyResult<BigUint> {
                 let value = item
                     .get("value")
                     .ok_or(PyRuntimeError::new_err("invalid value type"))?;
@@ -290,7 +290,8 @@ where
                     .ok_or(PyRuntimeError::new_err("invalid count type"))?;
 
                 Ok(acc + value * count)
-            })?;
+            },
+        )?;
 
         Ok(result)
     }
@@ -387,17 +388,20 @@ where
                     Ok(HashMap::from([
                         (
                             "value".to_string(),
-                            value.to_biguint()
+                            value
+                                .to_biguint()
                                 .ok_or(PyRuntimeError::new_err("to_biguint failed"))?,
                         ),
                         (
                             "count1".to_string(),
-                            (end1 - start1).to_biguint()
+                            (end1 - start1)
+                                .to_biguint()
                                 .ok_or(PyRuntimeError::new_err("to_biguint failed"))?,
                         ),
                         (
                             "count2".to_string(),
-                            (end2 - start2).to_biguint()
+                            (end2 - start2)
+                                .to_biguint()
                                 .ok_or(PyRuntimeError::new_err("to_biguint failed"))?,
                         ),
                     ]))
@@ -482,10 +486,9 @@ where
 
         let result = stack
             .iter()
-            .filter(|StackItem { value, .. }|
-                lower.is_none_or(|lower| lower <= value)
-                  && upper.is_none_or(|upper| value < upper)
-            )
+            .filter(|StackItem { value, .. }| {
+                lower.is_none_or(|lower| lower <= value) && upper.is_none_or(|upper| value < upper)
+            })
             .map(|StackItem { start, end, .. }| end - start)
             .sum();
         Ok(result)
@@ -566,19 +569,20 @@ where
         let result = stack
             .into_iter()
             .filter(|StackItem { value, .. }| {
-                lower.is_none_or(|lower| lower <= value)
-                    && upper.is_none_or(|upper| value < upper)
+                lower.is_none_or(|lower| lower <= value) && upper.is_none_or(|upper| value < upper)
             })
             .map(|StackItem { start, end, value }| {
                 Ok(HashMap::from([
                     (
                         "value".to_string(),
-                        value.to_biguint()
+                        value
+                            .to_biguint()
                             .ok_or(PyRuntimeError::new_err("to_biguint failed"))?,
                     ),
                     (
                         "count".to_string(),
-                        (end - start).to_biguint()
+                        (end - start)
+                            .to_biguint()
                             .ok_or(PyRuntimeError::new_err("to_biguint failed"))?,
                     ),
                 ]))
@@ -657,12 +661,14 @@ where
                 Ok(HashMap::from([
                     (
                         "value".to_string(),
-                        value.to_biguint()
+                        value
+                            .to_biguint()
                             .ok_or(PyRuntimeError::new_err("to_biguint failed"))?,
                     ),
                     (
                         "count".to_string(),
-                        (end - start).to_biguint()
+                        (end - start)
+                            .to_biguint()
                             .ok_or(PyRuntimeError::new_err("to_biguint failed"))?,
                     ),
                 ]))
@@ -742,12 +748,14 @@ where
                 Ok(HashMap::from([
                     (
                         "value".to_string(),
-                        value.to_biguint()
+                        value
+                            .to_biguint()
                             .ok_or(PyRuntimeError::new_err("to_biguint failed"))?,
                     ),
                     (
                         "count".to_string(),
-                        (end - start).to_biguint()
+                        (end - start)
+                            .to_biguint()
                             .ok_or(PyRuntimeError::new_err("to_biguint failed"))?,
                     ),
                 ]))
@@ -957,14 +965,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::marker::PhantomData;
     use pyo3::Python;
+    use std::marker::PhantomData;
 
     use super::*;
-    use crate::traits::{
-        bit_width::BitWidth,
-        bit_vector::SampleBitVector,
-    };
+    use crate::traits::{bit_vector::SampleBitVector, bit_width::BitWidth};
 
     struct SampleWaveletMatrix<NumberType> {
         layers: Vec<SampleBitVector>,
@@ -1014,8 +1019,7 @@ mod tests {
         }
     }
 
-    impl<NumberType> WaveletMatrixTrait<NumberType, SampleBitVector>
-        for SampleWaveletMatrix<NumberType>
+    impl<NumberType> WaveletMatrixTrait<NumberType, SampleBitVector> for SampleWaveletMatrix<NumberType>
     where
         NumberType: BitAnd<NumberType, Output = NumberType>
             + BitOr<NumberType, Output = NumberType>
@@ -1068,36 +1072,126 @@ mod tests {
         let wv_u8 = SampleWaveletMatrix::<u8>::new(&Vec::new());
         assert_eq!(wv_u8.len(), 0);
         assert_eq!(wv_u8.height(), 0);
-        assert_eq!(wv_u8.access(0).unwrap_err().to_string(), "IndexError: index out of bounds");
+        assert_eq!(
+            wv_u8.access(0).unwrap_err().to_string(),
+            "IndexError: index out of bounds"
+        );
         assert_eq!(wv_u8.rank(&0u8, 0).unwrap(), 0);
         assert_eq!(wv_u8.select(&0u8, 1).unwrap(), None);
-        assert_eq!(wv_u8.quantile(0, 0, 1).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_u8.topk(0, 0, Some(1)).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_u8.range_sum(0, 0).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_u8.range_intersection(0, 0, 0, 0).unwrap_err().to_string(), "ValueError: start1 must be less than end1");
-        assert_eq!(wv_u8.range_freq(0, 0, None, None).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_u8.range_list(0, 0, None, None).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_u8.range_maxk(0, 0, Some(1)).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_u8.range_mink(0, 0, Some(1)).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_u8.prev_value(0, 0, None, None).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_u8.next_value(0, 0, None, None).unwrap_err().to_string(), "ValueError: start must be less than end");
+        assert_eq!(
+            wv_u8.quantile(0, 0, 1).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_u8.topk(0, 0, Some(1)).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_u8.range_sum(0, 0).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_u8
+                .range_intersection(0, 0, 0, 0)
+                .unwrap_err()
+                .to_string(),
+            "ValueError: start1 must be less than end1"
+        );
+        assert_eq!(
+            wv_u8.range_freq(0, 0, None, None).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_u8.range_list(0, 0, None, None).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_u8.range_maxk(0, 0, Some(1)).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_u8.range_mink(0, 0, Some(1)).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_u8.prev_value(0, 0, None, None).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_u8.next_value(0, 0, None, None).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
 
         let wv_biguint = SampleWaveletMatrix::<BigUint>::new(&Vec::new());
         assert_eq!(wv_biguint.len(), 0);
         assert_eq!(wv_biguint.height(), 0);
-        assert_eq!(wv_biguint.access(0).unwrap_err().to_string(), "IndexError: index out of bounds");
+        assert_eq!(
+            wv_biguint.access(0).unwrap_err().to_string(),
+            "IndexError: index out of bounds"
+        );
         assert_eq!(wv_biguint.rank(&0u32.into(), 0).unwrap(), 0);
         assert_eq!(wv_biguint.select(&0u32.into(), 1).unwrap(), None);
-        assert_eq!(wv_biguint.quantile(0, 0, 1).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_biguint.topk(0, 0, Some(1)).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_biguint.range_sum(0, 0).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_biguint.range_intersection(0, 0, 0, 0).unwrap_err().to_string(), "ValueError: start1 must be less than end1");
-        assert_eq!(wv_biguint.range_freq(0, 0, None, None).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_biguint.range_list(0, 0, None, None).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_biguint.range_maxk(0, 0, Some(1)).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_biguint.range_mink(0, 0, Some(1)).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_biguint.prev_value(0, 0, None, None).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_biguint.next_value(0, 0, None, None).unwrap_err().to_string(), "ValueError: start must be less than end");
+        assert_eq!(
+            wv_biguint.quantile(0, 0, 1).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_biguint.topk(0, 0, Some(1)).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_biguint.range_sum(0, 0).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_biguint
+                .range_intersection(0, 0, 0, 0)
+                .unwrap_err()
+                .to_string(),
+            "ValueError: start1 must be less than end1"
+        );
+        assert_eq!(
+            wv_biguint
+                .range_freq(0, 0, None, None)
+                .unwrap_err()
+                .to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_biguint
+                .range_list(0, 0, None, None)
+                .unwrap_err()
+                .to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_biguint
+                .range_maxk(0, 0, Some(1))
+                .unwrap_err()
+                .to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_biguint
+                .range_mink(0, 0, Some(1))
+                .unwrap_err()
+                .to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_biguint
+                .prev_value(0, 0, None, None)
+                .unwrap_err()
+                .to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_biguint
+                .next_value(0, 0, None, None)
+                .unwrap_err()
+                .to_string(),
+            "ValueError: start must be less than end"
+        );
     }
 
     #[test]
@@ -1155,7 +1249,10 @@ mod tests {
         assert_eq!(wv_u8.select(&u8::MAX, 1).unwrap(), Some(0));
         assert_eq!(wv_u8.quantile(0, 64, 1).unwrap(), u8::MAX);
         assert_eq!(wv_u8.topk(0, 64, None).unwrap().len(), 1);
-        assert_eq!(wv_u8.range_sum(0, 64).unwrap(), (u8::MAX as u32 * 64).into());
+        assert_eq!(
+            wv_u8.range_sum(0, 64).unwrap(),
+            (u8::MAX as u32 * 64).into()
+        );
         assert_eq!(wv_u8.range_freq(0, 64, None, None).unwrap(), 64usize);
         assert_eq!(wv_u8.range_list(0, 64, None, None).unwrap().len(), 1);
         assert_eq!(wv_u8.range_maxk(0, 64, None).unwrap().len(), 1);
@@ -1260,11 +1357,23 @@ mod tests {
         let result_biguint = wv_biguint.range_intersection(0, 6, 6, 11).unwrap();
         assert_eq!(result_biguint.len(), 2);
         assert_eq!(result_biguint[0].get("value"), Some(&BigUint::from(1u32)));
-        assert_eq!(result_biguint[0].get("count1"), Some(&BigUint::from(1usize)));
-        assert_eq!(result_biguint[0].get("count2"), Some(&BigUint::from(1usize)));
+        assert_eq!(
+            result_biguint[0].get("count1"),
+            Some(&BigUint::from(1usize))
+        );
+        assert_eq!(
+            result_biguint[0].get("count2"),
+            Some(&BigUint::from(1usize))
+        );
         assert_eq!(result_biguint[1].get("value"), Some(&BigUint::from(5u32)));
-        assert_eq!(result_biguint[1].get("count1"), Some(&BigUint::from(3usize)));
-        assert_eq!(result_biguint[1].get("count2"), Some(&BigUint::from(2usize)));
+        assert_eq!(
+            result_biguint[1].get("count1"),
+            Some(&BigUint::from(3usize))
+        );
+        assert_eq!(
+            result_biguint[1].get("count2"),
+            Some(&BigUint::from(2usize))
+        );
     }
 
     #[test]
@@ -1272,11 +1381,16 @@ mod tests {
         Python::initialize();
 
         let wv_u8 = create_dummy_u8();
-        assert_eq!(wv_u8.range_freq(1, 9, Some(&4u8), Some(&6u8)).unwrap(), 4usize);
+        assert_eq!(
+            wv_u8.range_freq(1, 9, Some(&4u8), Some(&6u8)).unwrap(),
+            4usize
+        );
 
         let wv_biguint = create_dummy_biguint();
         assert_eq!(
-            wv_biguint.range_freq(1, 9, Some(&4u32.into()), Some(&6u32.into())).unwrap(),
+            wv_biguint
+                .range_freq(1, 9, Some(&4u32.into()), Some(&6u32.into()))
+                .unwrap(),
             4usize,
         );
     }
@@ -1358,7 +1472,9 @@ mod tests {
 
         let wv_biguint = create_dummy_biguint();
         assert_eq!(
-            wv_biguint.prev_value(1, 9, Some(&4u32.into()), Some(&7u32.into())).unwrap(),
+            wv_biguint
+                .prev_value(1, 9, Some(&4u32.into()), Some(&7u32.into()))
+                .unwrap(),
             Some(6u32.into()),
         );
     }
@@ -1375,7 +1491,9 @@ mod tests {
 
         let wv_biguint = create_dummy_biguint();
         assert_eq!(
-            wv_biguint.next_value(1, 9, Some(&3u32.into()), Some(&5u32.into())).unwrap(),
+            wv_biguint
+                .next_value(1, 9, Some(&3u32.into()), Some(&5u32.into()))
+                .unwrap(),
             Some(4u32.into()),
         );
     }

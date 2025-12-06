@@ -1,17 +1,12 @@
-use std::{
-    cmp::max,
-    mem::replace,
-};
 use num_traits::{One, Zero};
 use pyo3::{
-    exceptions::{PyIndexError, PyRuntimeError, PyValueError},
     PyResult,
+    exceptions::{PyIndexError, PyRuntimeError, PyValueError},
 };
+use std::{cmp::max, mem::replace};
 
 use crate::traits::{
-    bit_select::BitSelect,
-    bit_vector::BitVectorTrait,
-    dynamic_bit_vector::DynamicBitVectorTrait,
+    bit_select::BitSelect, bit_vector::BitVectorTrait, dynamic_bit_vector::DynamicBitVectorTrait,
 };
 
 type BlockType = u64;
@@ -21,7 +16,7 @@ const BITS_SIZE_LIMIT: usize = BlockType::BITS as usize / 2;
 enum Node {
     Internal {
         left: Box<Node>,
-        right:Box<Node>,
+        right: Box<Node>,
         left_total: usize,
         left_ones: usize,
         balance: i8,
@@ -57,11 +52,16 @@ impl Node {
     ///   B   E    ->   A   D
     ///  / \               / \
     /// A   C             C   E
-    /// 
+    ///
     /// returns difference in height after rotation
     #[inline]
     fn rotate_right(&mut self) -> i8 {
-        let d_node = replace(self, Node::Leaf { bits: BlockType::zero() });
+        let d_node = replace(
+            self,
+            Node::Leaf {
+                bits: BlockType::zero(),
+            },
+        );
 
         let (b_node, e_node, b_total, b_ones, d_balance) = match d_node {
             Node::Internal {
@@ -112,7 +112,10 @@ impl Node {
         let old_height = max(max(a_height, c_height) + 1, e_height) + 1;
         let new_height = max(a_height, max(c_height, e_height) + 1) + 1;
         let height_diff = new_height as i8 - old_height as i8;
-        debug_assert!(-1 <= height_diff && height_diff <= 1, "rotate_right: invalid height difference");
+        debug_assert!(
+            -1 <= height_diff && height_diff <= 1,
+            "rotate_right: invalid height difference"
+        );
         height_diff
     }
 
@@ -121,11 +124,16 @@ impl Node {
     /// a   d     ->    b   e
     ///    / \         / \
     ///   c   e       a   c
-    /// 
+    ///
     /// returns difference in height after rotation
     #[inline]
     fn rotate_left(&mut self) -> i8 {
-        let b_node = replace(self, Node::Leaf { bits: BlockType::zero() });
+        let b_node = replace(
+            self,
+            Node::Leaf {
+                bits: BlockType::zero(),
+            },
+        );
 
         let (a_node, d_node, a_total, a_ones, b_balance) = match b_node {
             Node::Internal {
@@ -174,7 +182,10 @@ impl Node {
         let old_height = max(a_height, max(c_height, e_height) + 1) + 1;
         let new_height = max(max(a_height, c_height) + 1, e_height) + 1;
         let height_diff = new_height as i8 - old_height as i8;
-        debug_assert!(-1 <= height_diff && height_diff <= 1, "rotate_right: invalid height difference");
+        debug_assert!(
+            -1 <= height_diff && height_diff <= 1,
+            "rotate_right: invalid height difference"
+        );
         height_diff
     }
 
@@ -183,21 +194,34 @@ impl Node {
     #[inline]
     fn rebalance(&mut self) -> i8 {
         match self {
-            Node::Internal { 
+            Node::Internal {
                 left,
                 right,
                 balance,
                 ..
             } => {
-                debug_assert!(-2 <= *balance && *balance <= 2, "rebalance called on balanced node");
+                debug_assert!(
+                    -2 <= *balance && *balance <= 2,
+                    "rebalance called on balanced node"
+                );
                 if *balance == -2 {
-                    if let Node::Internal { balance: left_balance, .. } = **left && left_balance ==1 {
+                    if let Node::Internal {
+                        balance: left_balance,
+                        ..
+                    } = **left
+                        && left_balance == 1
+                    {
                         left.rotate_left()
                     } else {
                         self.rotate_right()
                     }
                 } else if *balance == 2 {
-                    if let Node::Internal { balance: right_balance, .. } = **right && right_balance == -1 {
+                    if let Node::Internal {
+                        balance: right_balance,
+                        ..
+                    } = **right
+                        && right_balance == -1
+                    {
                         return right.rotate_right();
                     } else {
                         return self.rotate_left();
@@ -205,10 +229,8 @@ impl Node {
                 } else {
                     0i8
                 }
-            },
-            Node::Leaf { .. } => {
-                0i8
-            },
+            }
+            Node::Leaf { .. } => 0i8,
         }
     }
 
@@ -226,10 +248,10 @@ impl Node {
                     left_ones: left_bits.count_ones() as usize,
                     balance: 0i8,
                 };
-            },
+            }
             Node::Internal { .. } => {
                 panic!("split_leaf called on Internal node");
-            },
+            }
         }
     }
 
@@ -244,7 +266,11 @@ impl Node {
                 } else {
                     BlockType::zero()
                 };
-                let new_bit = if bit { BlockType::one() } else { BlockType::zero() };
+                let new_bit = if bit {
+                    BlockType::one()
+                } else {
+                    BlockType::zero()
+                };
                 *bits = left_bits | (new_bit << index) | right_bits;
                 if len + 1 >= 2 * BITS_SIZE_LIMIT {
                     self.split_leaf(len + 1);
@@ -252,7 +278,7 @@ impl Node {
                 } else {
                     0i8
                 }
-            },
+            }
             Node::Internal {
                 left,
                 right,
@@ -271,7 +297,8 @@ impl Node {
                     *left_ones += if bit { 1 } else { 0 };
                     *balance -= left_height_diff;
                 } else {
-                    let right_height_diff = right.insert(index - *left_total, bit, len - *left_total);
+                    let right_height_diff =
+                        right.insert(index - *left_total, bit, len - *left_total);
                     let old_balance = *balance;
                     if right_height_diff > 0 && old_balance > 0 {
                         height_diff += right_height_diff;
@@ -279,7 +306,10 @@ impl Node {
                     *balance += right_height_diff;
                 }
                 height_diff += self.rebalance();
-                debug_assert!(-1 <= height_diff && height_diff <= 1, "insert: invalid height difference after rebalancing");
+                debug_assert!(
+                    -1 <= height_diff && height_diff <= 1,
+                    "insert: invalid height difference after rebalancing"
+                );
                 debug_assert!(
                     {
                         let balance = match self {
@@ -291,15 +321,31 @@ impl Node {
                     "unbalanced tree after insertion",
                 );
                 height_diff
-            },
+            }
         }
     }
 
     #[inline]
-    fn insert_batch(&mut self, mut index: usize, bits: BlockType, mut len: usize, block_len: usize) -> () {
+    fn insert_batch(
+        &mut self,
+        mut index: usize,
+        bits: BlockType,
+        mut len: usize,
+        block_len: usize,
+    ) -> () {
         let mut node = self;
-        while let Node::Internal { left, right, left_total, left_ones, .. } = node {
-            debug_assert!(*left_total < len, "insert_batch: left_total should be less than len");
+        while let Node::Internal {
+            left,
+            right,
+            left_total,
+            left_ones,
+            ..
+        } = node
+        {
+            debug_assert!(
+                *left_total < len,
+                "insert_batch: left_total should be less than len"
+            );
             if index < *left_total {
                 len = *left_total;
                 *left_total += block_len;
@@ -311,7 +357,10 @@ impl Node {
                 node = right;
             }
         }
-        debug_assert!(block_len + len <= BITS_SIZE_LIMIT * 2, "insert_batch: block_len too large for leaf");
+        debug_assert!(
+            block_len + len <= BITS_SIZE_LIMIT * 2,
+            "insert_batch: block_len too large for leaf"
+        );
 
         let node_bits = match node {
             Node::Leaf { bits } => bits,
@@ -325,7 +374,10 @@ impl Node {
     #[inline]
     fn leftmost_leaf_size(&self, mut len: usize) -> usize {
         let mut node = self;
-        while let Node::Internal { left, left_total, .. } = node {
+        while let Node::Internal {
+            left, left_total, ..
+        } = node
+        {
             node = left;
             len = *left_total;
         }
@@ -336,7 +388,10 @@ impl Node {
     #[inline]
     fn rightmost_leaf_size(&self, mut len: usize) -> usize {
         let mut node = self;
-        while let Node::Internal { right, left_total, .. } = node {
+        while let Node::Internal {
+            right, left_total, ..
+        } = node
+        {
             node = right;
             len -= *left_total;
         }
@@ -354,7 +409,7 @@ impl Node {
                 let right_bits = (*bits >> (index + 1)) << index;
                 *bits = left_bits | right_bits;
                 (bit, 0i8)
-            },
+            }
             Node::Internal {
                 left,
                 right,
@@ -382,24 +437,26 @@ impl Node {
                                 Node::Leaf { bits } => bits,
                                 _ => unreachable!("left child is not Leaf during merge"),
                             };
-                            right.insert_batch(
-                                0,
-                                left_bits,
-                                len - *left_total,
-                                *left_total,
+                            right.insert_batch(0, left_bits, len - *left_total, *left_total);
+                            *self = replace(
+                                right,
+                                Node::Leaf {
+                                    bits: BlockType::zero(),
+                                },
                             );
-                            *self = replace(right, Node::Leaf { bits: BlockType::zero() });
                             height_diff = -1i8;
                         } else {
                             // borrow from right
                             let (right_leftmost_bit, _) = right.remove(0, len - *left_total);
-                            height_diff += left.insert(*left_total, right_leftmost_bit, *left_total);
+                            height_diff +=
+                                left.insert(*left_total, right_leftmost_bit, *left_total);
                             *left_total += 1;
                             *left_ones += if right_leftmost_bit { 1 } else { 0 }
                         }
                     }
                 } else {
-                    let (bit, right_height_diff) = right.remove(index - *left_total, len - *left_total);
+                    let (bit, right_height_diff) =
+                        right.remove(index - *left_total, len - *left_total);
                     removed_bit = bit;
                     let old_balance = *balance;
                     if right_height_diff < 0 && old_balance > 0 {
@@ -420,7 +477,12 @@ impl Node {
                                 *left_total,
                                 len - *left_total,
                             );
-                            *self = replace(left, Node::Leaf { bits: BlockType::zero() });
+                            *self = replace(
+                                left,
+                                Node::Leaf {
+                                    bits: BlockType::zero(),
+                                },
+                            );
                             height_diff = -1i8;
                         } else {
                             // borrow from left
@@ -432,7 +494,10 @@ impl Node {
                     }
                 }
                 height_diff += self.rebalance();
-                debug_assert!(-1 <= height_diff && height_diff <= 1, "remove: invalid height difference after rebalancing");
+                debug_assert!(
+                    -1 <= height_diff && height_diff <= 1,
+                    "remove: invalid height difference after rebalancing"
+                );
                 debug_assert!(
                     {
                         let balance = match self {
@@ -444,7 +509,7 @@ impl Node {
                     "unbalanced tree after removal",
                 );
                 (removed_bit, height_diff)
-            },
+            }
         }
     }
 }
@@ -474,32 +539,29 @@ impl DynamicBitVector {
 
         let mut nodes = bits
             .chunks(BITS_SIZE_LIMIT)
-            .map(|chunk| {
-                NodeBuildItem {
-                    node: Box::new(
-                        Node::new_leaf(
-                            chunk
-                                .iter()
-                                .enumerate()
-                                .fold(BlockType::zero(), |acc, (i, &bit)| {
-                                    if bit {
-                                        acc | (BlockType::one() << i)
-                                    } else {
-                                        acc
-                                    }
-                                }),
-                        )
-                    ),
-                    total: chunk.len(),
-                    ones: chunk.iter().filter(|&&b| b).count(),
-                    height: 0u8,
-                }
+            .map(|chunk| NodeBuildItem {
+                node: Box::new(Node::new_leaf(chunk.iter().enumerate().fold(
+                    BlockType::zero(),
+                    |acc, (i, &bit)| {
+                        if bit {
+                            acc | (BlockType::one() << i)
+                        } else {
+                            acc
+                        }
+                    },
+                ))),
+                total: chunk.len(),
+                ones: chunk.iter().filter(|&&b| b).count(),
+                height: 0u8,
             })
             .collect::<Vec<NodeBuildItem>>();
 
         fn merge_nodes(left: &NodeBuildItem, right: &NodeBuildItem) -> NodeBuildItem {
             let balance = right.height as i8 - left.height as i8;
-            debug_assert!(-1 <= balance && balance <= 1, "unbalanced tree detected during build");
+            debug_assert!(
+                -1 <= balance && balance <= 1,
+                "unbalanced tree detected during build"
+            );
             let internal = Box::new(Node::new_internal(
                 left.node.clone(),
                 right.node.clone(),
@@ -516,7 +578,8 @@ impl DynamicBitVector {
         }
 
         while nodes.len() > 1 {
-            let mut next_nodes = (0..nodes.len() - 1).step_by(2)
+            let mut next_nodes = (0..nodes.len() - 1)
+                .step_by(2)
                 .map(|i| merge_nodes(&nodes[i], &nodes[i + 1]))
                 .collect::<Vec<NodeBuildItem>>();
             if nodes.len() % 2 == 1 {
@@ -543,7 +606,13 @@ impl BitVectorTrait for DynamicBitVector {
         }
 
         let mut node = &*self.root;
-        while let Node::Internal { left, right, left_total, .. } = node {
+        while let Node::Internal {
+            left,
+            right,
+            left_total,
+            ..
+        } = node
+        {
             if index < *left_total {
                 node = left;
             } else {
@@ -574,7 +643,14 @@ impl BitVectorTrait for DynamicBitVector {
 
         let mut node = &*self.root;
         let mut rank = 0usize;
-        while let Node::Internal { left, right, left_total, left_ones, .. } = node {
+        while let Node::Internal {
+            left,
+            right,
+            left_total,
+            left_ones,
+            ..
+        } = node
+        {
             if end <= *left_total {
                 node = left;
             } else {
@@ -603,7 +679,14 @@ impl BitVectorTrait for DynamicBitVector {
 
         let mut node = &*self.root;
         let mut index = 0usize;
-        while let Node::Internal { left, right, left_total, left_ones, .. } = node {
+        while let Node::Internal {
+            left,
+            right,
+            left_total,
+            left_ones,
+            ..
+        } = node
+        {
             let left_count = if bit {
                 *left_ones
             } else {
@@ -622,9 +705,9 @@ impl BitVectorTrait for DynamicBitVector {
             Node::Leaf { bits } => bits,
             _ => unreachable!("select: reached non-leaf node"),
         };
-        let offset = bits
-            .bit_select(bit, kth)
-            .ok_or(PyRuntimeError::new_err("select: k-th bit not found in leaf"))?;
+        let offset = bits.bit_select(bit, kth).ok_or(PyRuntimeError::new_err(
+            "select: k-th bit not found in leaf",
+        ))?;
         Ok(Some(index + offset))
     }
 }
@@ -656,8 +739,8 @@ impl DynamicBitVectorTrait for DynamicBitVector {
 
 #[cfg(test)]
 mod tests {
-    use pyo3::Python;
     use super::*;
+    use pyo3::Python;
 
     fn create_dummy() -> DynamicBitVector {
         let bits = vec![true, false, true, true, false, true, false, false].repeat(999);
@@ -669,7 +752,10 @@ mod tests {
         Python::initialize();
 
         let mut bv = DynamicBitVector::new(&vec![]);
-        assert_eq!(bv.access(0).unwrap_err().to_string(), "IndexError: index out of bounds");
+        assert_eq!(
+            bv.access(0).unwrap_err().to_string(),
+            "IndexError: index out of bounds"
+        );
         assert_eq!(bv.rank(true, 0).unwrap(), 0);
         assert_eq!(bv.rank(false, 0).unwrap(), 0);
         assert_eq!(bv.select(true, 1).unwrap(), None);
@@ -677,7 +763,10 @@ mod tests {
         assert_eq!(bv.insert(0, true).unwrap(), ());
         assert_eq!(bv.access(0).unwrap(), true);
         assert_eq!(bv.remove(0).unwrap(), true);
-        assert_eq!(bv.access(0).unwrap_err().to_string(), "IndexError: index out of bounds");
+        assert_eq!(
+            bv.access(0).unwrap_err().to_string(),
+            "IndexError: index out of bounds"
+        );
     }
 
     #[test]

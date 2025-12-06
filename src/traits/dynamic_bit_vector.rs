@@ -44,7 +44,9 @@ impl BitVectorTrait for SampleDynamicBitVector {
         if kth.is_zero() {
             return Err(PyValueError::new_err("kth must be greater than 0"));
         }
-        let index = self.0.iter()
+        let index = self
+            .0
+            .iter()
             .enumerate()
             .filter(|&(_, &b)| b == bit)
             .nth(kth - 1)
@@ -87,7 +89,10 @@ mod tests {
         Python::initialize();
 
         let mut bv = SampleDynamicBitVector::new(&vec![]);
-        assert_eq!(bv.access(0).unwrap_err().to_string(), "IndexError: index out of bounds");
+        assert_eq!(
+            bv.access(0).unwrap_err().to_string(),
+            "IndexError: index out of bounds"
+        );
         assert_eq!(bv.rank(true, 0).unwrap(), 0);
         assert_eq!(bv.rank(false, 0).unwrap(), 0);
         assert_eq!(bv.select(true, 1).unwrap(), None);
@@ -95,7 +100,10 @@ mod tests {
         assert_eq!(bv.insert(0, true).unwrap(), ());
         assert_eq!(bv.access(0).unwrap(), true);
         assert_eq!(bv.remove(0).unwrap(), true);
-        assert_eq!(bv.access(0).unwrap_err().to_string(), "IndexError: index out of bounds");
+        assert_eq!(
+            bv.access(0).unwrap_err().to_string(),
+            "IndexError: index out of bounds"
+        );
     }
 
     #[test]
@@ -112,7 +120,10 @@ mod tests {
         assert_eq!(bv.access(5005).unwrap(), true);
         assert_eq!(bv.access(6006).unwrap(), false);
         assert_eq!(bv.access(7007).unwrap(), false);
-        assert_eq!(bv.access(7992).unwrap_err().to_string(), "IndexError: index out of bounds");
+        assert_eq!(
+            bv.access(7992).unwrap_err().to_string(),
+            "IndexError: index out of bounds"
+        );
     }
 
     #[test]
@@ -130,7 +141,10 @@ mod tests {
         assert_eq!(bv.rank(true, 6006).unwrap(), 3004);
         assert_eq!(bv.rank(true, 7007).unwrap(), 3504);
         assert_eq!(bv.rank(true, 7992).unwrap(), 3996);
-        assert_eq!(bv.rank(true, 7993).unwrap_err().to_string(), "IndexError: index out of bounds");
+        assert_eq!(
+            bv.rank(true, 7993).unwrap_err().to_string(),
+            "IndexError: index out of bounds"
+        );
 
         assert_eq!(bv.rank(false, 0).unwrap(), 0);
         assert_eq!(bv.rank(false, 1001).unwrap(), 500);
@@ -141,7 +155,10 @@ mod tests {
         assert_eq!(bv.rank(false, 6006).unwrap(), 3002);
         assert_eq!(bv.rank(false, 7007).unwrap(), 3503);
         assert_eq!(bv.rank(false, 7992).unwrap(), 3996);
-        assert_eq!(bv.rank(false, 7993).unwrap_err().to_string(), "IndexError: index out of bounds");
+        assert_eq!(
+            bv.rank(false, 7993).unwrap_err().to_string(),
+            "IndexError: index out of bounds"
+        );
     }
 
     #[test]
@@ -150,7 +167,10 @@ mod tests {
 
         let bv = create_dummy();
 
-        assert_eq!(bv.select(true, 0).unwrap_err().to_string(), "ValueError: kth must be greater than 0");
+        assert_eq!(
+            bv.select(true, 0).unwrap_err().to_string(),
+            "ValueError: kth must be greater than 0"
+        );
         assert_eq!(bv.select(true, 1).unwrap(), Some(0));
         assert_eq!(bv.select(true, 1000).unwrap(), Some(1997));
         assert_eq!(bv.select(true, 2000).unwrap(), Some(3997));
@@ -158,7 +178,10 @@ mod tests {
         assert_eq!(bv.select(true, 3996).unwrap(), Some(7989));
         assert_eq!(bv.select(true, 3997).unwrap(), None);
 
-        assert_eq!(bv.select(false, 0).unwrap_err().to_string(), "ValueError: kth must be greater than 0");
+        assert_eq!(
+            bv.select(false, 0).unwrap_err().to_string(),
+            "ValueError: kth must be greater than 0"
+        );
         assert_eq!(bv.select(false, 1).unwrap(), Some(1));
         assert_eq!(bv.select(false, 1000).unwrap(), Some(1999));
         assert_eq!(bv.select(false, 2000).unwrap(), Some(3999));

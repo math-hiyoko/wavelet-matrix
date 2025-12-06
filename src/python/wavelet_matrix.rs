@@ -1,15 +1,14 @@
 use std::u8;
 
+use crate::{
+    traits::wavelet_matrix::WaveletMatrixTrait, wavelet_matrix::wavelet_matrix::WaveletMatrix,
+};
 use num_bigint::BigUint;
 use num_traits::ToPrimitive;
 use pyo3::{
     exceptions::{PyRuntimeError, PyValueError},
     prelude::*,
     types::{PyInt, PyList, PySequence},
-};
-use crate::{
-    traits::wavelet_matrix::WaveletMatrixTrait,
-    wavelet_matrix::wavelet_matrix::WaveletMatrix,
 };
 
 enum WaveletMatrixEnum {
@@ -40,9 +39,11 @@ impl PyWaveletMatrix {
             .cast_into::<PySequence>()
             .map_err(|_| PyValueError::new_err("Input must be a list or tuple"))?
             .try_iter()?
-            .map(
-                |item| item?.extract::<BigUint>().map_err(|_| PyValueError::new_err("Input elements must be non-negative integers")),
-            )
+            .map(|item| {
+                item?.extract::<BigUint>().map_err(|_| {
+                    PyValueError::new_err("Input elements must be non-negative integers")
+                })
+            })
             .collect::<PyResult<_>>()?;
         let bit_width = values.iter().map(|v| v.bits()).max().unwrap_or(0) as usize;
         let wv: WaveletMatrixEnum = match bit_width {
@@ -53,7 +54,7 @@ impl PyWaveletMatrix {
                     .collect::<Option<Vec<_>>>()
                     .ok_or(PyRuntimeError::new_err("Value out of range for u8"))?;
                 WaveletMatrixEnum::U8(WaveletMatrix::<u8>::new(&values))
-            },
+            }
             9..=16 => {
                 let values = values
                     .iter()
@@ -61,7 +62,7 @@ impl PyWaveletMatrix {
                     .collect::<Option<Vec<_>>>()
                     .ok_or(PyRuntimeError::new_err("Value out of range for u16"))?;
                 WaveletMatrixEnum::U16(WaveletMatrix::<u16>::new(&values))
-            },
+            }
             17..=32 => {
                 let values = values
                     .iter()
@@ -69,7 +70,7 @@ impl PyWaveletMatrix {
                     .collect::<Option<Vec<_>>>()
                     .ok_or(PyRuntimeError::new_err("Value out of range for u32"))?;
                 WaveletMatrixEnum::U32(WaveletMatrix::<u32>::new(&values))
-            },
+            }
             33..=64 => {
                 let values = values
                     .iter()
@@ -77,7 +78,7 @@ impl PyWaveletMatrix {
                     .collect::<Option<Vec<_>>>()
                     .ok_or(PyRuntimeError::new_err("Value out of range for u64"))?;
                 WaveletMatrixEnum::U64(WaveletMatrix::<u64>::new(&values))
-            },
+            }
             65..=128 => {
                 let values = values
                     .iter()
@@ -85,10 +86,8 @@ impl PyWaveletMatrix {
                     .collect::<Option<Vec<_>>>()
                     .ok_or(PyRuntimeError::new_err("Value out of range for u128"))?;
                 WaveletMatrixEnum::U128(WaveletMatrix::<u128>::new(&values))
-            },
-            _ => {
-                WaveletMatrixEnum::BigUint(WaveletMatrix::<BigUint>::new(&values))
-            },
+            }
+            _ => WaveletMatrixEnum::BigUint(WaveletMatrix::<BigUint>::new(&values)),
         };
         Ok(PyWaveletMatrix { inner: wv })
     }
@@ -109,11 +108,21 @@ impl PyWaveletMatrix {
     pub(crate) fn __getitem__(&self, py: Python<'_>, index: usize) -> PyResult<Py<PyInt>> {
         match &self.inner {
             WaveletMatrixEnum::U8(wm) => wm.access(index).map(|value| PyInt::new(py, value).into()),
-            WaveletMatrixEnum::U16(wm) => wm.access(index).map(|value| PyInt::new(py, value).into()),
-            WaveletMatrixEnum::U32(wm) => wm.access(index).map(|value| PyInt::new(py, value).into()),
-            WaveletMatrixEnum::U64(wm) => wm.access(index).map(|value| PyInt::new(py, value).into()),
-            WaveletMatrixEnum::U128(wm) => wm.access(index).map(|value| PyInt::new(py, value).into()),
-            WaveletMatrixEnum::BigUint(wm) => wm.access(index).map(|value| value.into_pyobject(py).unwrap().unbind()),
+            WaveletMatrixEnum::U16(wm) => {
+                wm.access(index).map(|value| PyInt::new(py, value).into())
+            }
+            WaveletMatrixEnum::U32(wm) => {
+                wm.access(index).map(|value| PyInt::new(py, value).into())
+            }
+            WaveletMatrixEnum::U64(wm) => {
+                wm.access(index).map(|value| PyInt::new(py, value).into())
+            }
+            WaveletMatrixEnum::U128(wm) => {
+                wm.access(index).map(|value| PyInt::new(py, value).into())
+            }
+            WaveletMatrixEnum::BigUint(wm) => wm
+                .access(index)
+                .map(|value| value.into_pyobject(py).unwrap().unbind()),
         }
     }
 
@@ -121,11 +130,21 @@ impl PyWaveletMatrix {
     pub(crate) fn access(&self, py: Python<'_>, index: usize) -> PyResult<Py<PyInt>> {
         match &self.inner {
             WaveletMatrixEnum::U8(wm) => wm.access(index).map(|value| PyInt::new(py, value).into()),
-            WaveletMatrixEnum::U16(wm) => wm.access(index).map(|value| PyInt::new(py, value).into()),
-            WaveletMatrixEnum::U32(wm) => wm.access(index).map(|value| PyInt::new(py, value).into()),
-            WaveletMatrixEnum::U64(wm) => wm.access(index).map(|value| PyInt::new(py, value).into()),
-            WaveletMatrixEnum::U128(wm) => wm.access(index).map(|value| PyInt::new(py, value).into()),
-            WaveletMatrixEnum::BigUint(wm) => wm.access(index).map(|value| value.into_pyobject(py).unwrap().unbind()),
+            WaveletMatrixEnum::U16(wm) => {
+                wm.access(index).map(|value| PyInt::new(py, value).into())
+            }
+            WaveletMatrixEnum::U32(wm) => {
+                wm.access(index).map(|value| PyInt::new(py, value).into())
+            }
+            WaveletMatrixEnum::U64(wm) => {
+                wm.access(index).map(|value| PyInt::new(py, value).into())
+            }
+            WaveletMatrixEnum::U128(wm) => {
+                wm.access(index).map(|value| PyInt::new(py, value).into())
+            }
+            WaveletMatrixEnum::BigUint(wm) => wm
+                .access(index)
+                .map(|value| value.into_pyobject(py).unwrap().unbind()),
         }
     }
 
@@ -162,12 +181,24 @@ impl PyWaveletMatrix {
         kth: usize,
     ) -> PyResult<Py<PyInt>> {
         match &self.inner {
-            WaveletMatrixEnum::U8(wm) => wm.quantile(start, end, kth).map(|value| PyInt::new(py, value).into()),
-            WaveletMatrixEnum::U16(wm) => wm.quantile(start, end, kth).map(|value| PyInt::new(py, value).into()),
-            WaveletMatrixEnum::U32(wm) => wm.quantile(start, end, kth).map(|value| PyInt::new(py, value).into()),
-            WaveletMatrixEnum::U64(wm) => wm.quantile(start, end, kth).map(|value| PyInt::new(py, value).into()),
-            WaveletMatrixEnum::U128(wm) => wm.quantile(start, end, kth).map(|value| PyInt::new(py, value).into()),
-            WaveletMatrixEnum::BigUint(wm) => wm.quantile(start, end, kth).map(|value| value.into_pyobject(py).unwrap().unbind()),
+            WaveletMatrixEnum::U8(wm) => wm
+                .quantile(start, end, kth)
+                .map(|value| PyInt::new(py, value).into()),
+            WaveletMatrixEnum::U16(wm) => wm
+                .quantile(start, end, kth)
+                .map(|value| PyInt::new(py, value).into()),
+            WaveletMatrixEnum::U32(wm) => wm
+                .quantile(start, end, kth)
+                .map(|value| PyInt::new(py, value).into()),
+            WaveletMatrixEnum::U64(wm) => wm
+                .quantile(start, end, kth)
+                .map(|value| PyInt::new(py, value).into()),
+            WaveletMatrixEnum::U128(wm) => wm
+                .quantile(start, end, kth)
+                .map(|value| PyInt::new(py, value).into()),
+            WaveletMatrixEnum::BigUint(wm) => wm
+                .quantile(start, end, kth)
+                .map(|value| value.into_pyobject(py).unwrap().unbind()),
         }
     }
 
@@ -188,12 +219,11 @@ impl PyWaveletMatrix {
             WaveletMatrixEnum::U128(wm) => wm.topk(start, end, k),
             WaveletMatrixEnum::BigUint(wm) => wm.topk(start, end, k),
         };
-        result
-            .and_then(|value| {
-                let pyobject = value.into_pyobject(py)?;
-                let pylist = pyobject.cast_into::<PyList>()?;
-                Ok(pylist.unbind())
-            })
+        result.and_then(|value| {
+            let pyobject = value.into_pyobject(py)?;
+            let pylist = pyobject.cast_into::<PyList>()?;
+            Ok(pylist.unbind())
+        })
     }
 
     /// Computes the sum of values in the range [start, end).
@@ -211,11 +241,10 @@ impl PyWaveletMatrix {
             WaveletMatrixEnum::U128(wm) => wm.range_sum(start, end),
             WaveletMatrixEnum::BigUint(wm) => wm.range_sum(start, end),
         };
-        result
-            .and_then(|value| {
-                let pyobject = value.into_pyobject(py)?;
-                Ok(pyobject.unbind())
-            })
+        result.and_then(|value| {
+            let pyobject = value.into_pyobject(py)?;
+            Ok(pyobject.unbind())
+        })
     }
 
     /// Finds the intersection of values in the two ranges [start1, end1) and [start2, end2).
@@ -235,12 +264,11 @@ impl PyWaveletMatrix {
             WaveletMatrixEnum::U128(wm) => wm.range_intersection(start1, end1, start2, end2),
             WaveletMatrixEnum::BigUint(wm) => wm.range_intersection(start1, end1, start2, end2),
         };
-        result
-            .and_then(|value| {
-                let pyobject = value.into_pyobject(py)?;
-                let pylist = pyobject.cast_into::<PyList>()?;
-                Ok(pylist.unbind())
-            })
+        result.and_then(|value| {
+            let pyobject = value.into_pyobject(py)?;
+            let pylist = pyobject.cast_into::<PyList>()?;
+            Ok(pylist.unbind())
+        })
     }
 
     /// Counts the number of elements within the optional range [lower, upper) in the range [start, end).
@@ -255,67 +283,85 @@ impl PyWaveletMatrix {
     ) -> PyResult<usize> {
         match &self.inner {
             WaveletMatrixEnum::U8(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u8>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u8>().ok());
+                let lower = lower.map(|value| value.extract::<u8>().ok());
+                let upper = upper.map(|value| value.extract::<u8>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(0)
                 } else {
-                    wm.range_freq(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
+                    wm.range_freq(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
                 }
-            },
+            }
             WaveletMatrixEnum::U16(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u16>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u16>().ok());
+                let lower = lower.map(|value| value.extract::<u16>().ok());
+                let upper = upper.map(|value| value.extract::<u16>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(0)
                 } else {
-                    wm.range_freq(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
+                    wm.range_freq(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
                 }
-            },
+            }
             WaveletMatrixEnum::U32(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u32>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u32>().ok());
+                let lower = lower.map(|value| value.extract::<u32>().ok());
+                let upper = upper.map(|value| value.extract::<u32>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(0)
                 } else {
-                    wm.range_freq(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
+                    wm.range_freq(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
                 }
-            },
+            }
             WaveletMatrixEnum::U64(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u64>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u64>().ok());
+                let lower = lower.map(|value| value.extract::<u64>().ok());
+                let upper = upper.map(|value| value.extract::<u64>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(0)
                 } else {
-                    wm.range_freq(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
+                    wm.range_freq(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
                 }
-            },
+            }
             WaveletMatrixEnum::U128(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u128>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u128>().ok());
+                let lower = lower.map(|value| value.extract::<u128>().ok());
+                let upper = upper.map(|value| value.extract::<u128>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(0)
                 } else {
-                    wm.range_freq(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
+                    wm.range_freq(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
                 }
-            },
+            }
             WaveletMatrixEnum::BigUint(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<BigUint>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<BigUint>().ok());
-                wm.range_freq(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
-            },
+                let lower = lower.map(|value| value.extract::<BigUint>().ok());
+                let upper = upper.map(|value| value.extract::<BigUint>().ok());
+                wm.range_freq(
+                    start,
+                    end,
+                    lower.flatten().as_ref(),
+                    upper.flatten().as_ref(),
+                )
+            }
         }
     }
 
@@ -331,74 +377,86 @@ impl PyWaveletMatrix {
     ) -> PyResult<Py<PyList>> {
         let result = match &self.inner {
             WaveletMatrixEnum::U8(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u8>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u8>().ok());
+                let lower = lower.map(|value| value.extract::<u8>().ok());
+                let upper = upper.map(|value| value.extract::<u8>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(vec![])
                 } else {
-                    wm.range_list(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
+                    wm.range_list(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
                 }
-            },
+            }
             WaveletMatrixEnum::U16(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u16>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u16>().ok());
+                let lower = lower.map(|value| value.extract::<u16>().ok());
+                let upper = upper.map(|value| value.extract::<u16>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(vec![])
                 } else {
-                    wm.range_list(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
+                    wm.range_list(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
                 }
-            },
+            }
             WaveletMatrixEnum::U32(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u32>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u32>().ok());
+                let lower = lower.map(|value| value.extract::<u32>().ok());
+                let upper = upper.map(|value| value.extract::<u32>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(vec![])
                 } else {
-                    wm.range_list(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
+                    wm.range_list(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
                 }
-            },
+            }
             WaveletMatrixEnum::U64(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u64>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u64>().ok());
+                let lower = lower.map(|value| value.extract::<u64>().ok());
+                let upper = upper.map(|value| value.extract::<u64>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(vec![])
                 } else {
-                    wm.range_list(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
+                    wm.range_list(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
                 }
-            },
+            }
             WaveletMatrixEnum::U128(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u128>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u128>().ok());
+                let lower = lower.map(|value| value.extract::<u128>().ok());
+                let upper = upper.map(|value| value.extract::<u128>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(vec![])
                 } else {
-                    wm.range_list(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
+                    wm.range_list(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
                 }
-            },
+            }
             WaveletMatrixEnum::BigUint(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<BigUint>().ok()).flatten();
-                let upper = upper
-                    .map(|value| value.extract::<BigUint>().ok()).flatten();
+                let lower = lower.map(|value| value.extract::<BigUint>().ok()).flatten();
+                let upper = upper.map(|value| value.extract::<BigUint>().ok()).flatten();
                 wm.range_list(start, end, lower.as_ref(), upper.as_ref())
             }
         };
-        result
-            .and_then(|value| {
-                let pyobject = value.into_pyobject(py)?;
-                let pylist = pyobject.cast_into::<PyList>()?;
-                Ok(pylist.unbind())
-            })
+        result.and_then(|value| {
+            let pyobject = value.into_pyobject(py)?;
+            let pylist = pyobject.cast_into::<PyList>()?;
+            Ok(pylist.unbind())
+        })
     }
 
     /// Finds the k largest values in the range [start, end).
@@ -418,12 +476,11 @@ impl PyWaveletMatrix {
             WaveletMatrixEnum::U128(wm) => wm.range_maxk(start, end, k),
             WaveletMatrixEnum::BigUint(wm) => wm.range_maxk(start, end, k),
         };
-        result
-            .and_then(|value| {
-                let pyobject = value.into_pyobject(py)?;
-                let pylist = pyobject.cast_into::<PyList>()?;
-                Ok(pylist.unbind())
-            })
+        result.and_then(|value| {
+            let pyobject = value.into_pyobject(py)?;
+            let pylist = pyobject.cast_into::<PyList>()?;
+            Ok(pylist.unbind())
+        })
     }
 
     /// Finds the k smallest values in the range [start, end).
@@ -443,12 +500,11 @@ impl PyWaveletMatrix {
             WaveletMatrixEnum::U128(wm) => wm.range_mink(start, end, k),
             WaveletMatrixEnum::BigUint(wm) => wm.range_mink(start, end, k),
         };
-        result
-            .and_then(|value| {
-                let pyobject = value.into_pyobject(py)?;
-                let pylist = pyobject.cast_into::<PyList>()?;
-                Ok(pylist.unbind())
-            })
+        result.and_then(|value| {
+            let pyobject = value.into_pyobject(py)?;
+            let pylist = pyobject.cast_into::<PyList>()?;
+            Ok(pylist.unbind())
+        })
     }
 
     /// Finds the previous value before upper bound in the range [start, end).
@@ -463,73 +519,86 @@ impl PyWaveletMatrix {
     ) -> PyResult<Option<Py<PyInt>>> {
         match &self.inner {
             WaveletMatrixEnum::U8(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u8>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u8>().ok());
+                let lower = lower.map(|value| value.extract::<u8>().ok());
+                let upper = upper.map(|value| value.extract::<u8>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(None)
                 } else {
-                    wm.prev_value(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
-                        .map(|value|value.map(|value|PyInt::new(py, value).into()))
+                    wm.prev_value(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
+                    .map(|value| value.map(|value| PyInt::new(py, value).into()))
                 }
-            },
+            }
             WaveletMatrixEnum::U16(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u16>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u16>().ok());
+                let lower = lower.map(|value| value.extract::<u16>().ok());
+                let upper = upper.map(|value| value.extract::<u16>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(None)
                 } else {
-                    wm.prev_value(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
-                        .map(|value|value.map(|value|PyInt::new(py, value).into()))
+                    wm.prev_value(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
+                    .map(|value| value.map(|value| PyInt::new(py, value).into()))
                 }
-            },
+            }
             WaveletMatrixEnum::U32(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u32>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u32>().ok());
+                let lower = lower.map(|value| value.extract::<u32>().ok());
+                let upper = upper.map(|value| value.extract::<u32>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(None)
                 } else {
-                    wm.prev_value(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
-                        .map(|value|value.map(|value|PyInt::new(py, value).into()))
+                    wm.prev_value(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
+                    .map(|value| value.map(|value| PyInt::new(py, value).into()))
                 }
-            },
+            }
             WaveletMatrixEnum::U64(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u64>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u64>().ok());
+                let lower = lower.map(|value| value.extract::<u64>().ok());
+                let upper = upper.map(|value| value.extract::<u64>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(None)
                 } else {
-                    wm.prev_value(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
-                        .map(|value|value.map(|value|PyInt::new(py, value).into()))
+                    wm.prev_value(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
+                    .map(|value| value.map(|value| PyInt::new(py, value).into()))
                 }
-            },
+            }
             WaveletMatrixEnum::U128(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u128>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u128>().ok());
+                let lower = lower.map(|value| value.extract::<u128>().ok());
+                let upper = upper.map(|value| value.extract::<u128>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(None)
                 } else {
-                    wm.prev_value(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
-                        .map(|value|value.map(|value|PyInt::new(py, value).into()))
+                    wm.prev_value(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
+                    .map(|value| value.map(|value| PyInt::new(py, value).into()))
                 }
-            },
+            }
             WaveletMatrixEnum::BigUint(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<BigUint>().ok()).flatten();
-                let upper = upper
-                    .map(|value| value.extract::<BigUint>().ok()).flatten();
+                let lower = lower.map(|value| value.extract::<BigUint>().ok()).flatten();
+                let upper = upper.map(|value| value.extract::<BigUint>().ok()).flatten();
                 wm.prev_value(start, end, lower.as_ref(), upper.as_ref())
-                    .map(|value|value.map(|value| value.into_pyobject(py).unwrap().unbind()))
-            },
+                    .map(|value| value.map(|value| value.into_pyobject(py).unwrap().unbind()))
+            }
         }
     }
 
@@ -545,73 +614,86 @@ impl PyWaveletMatrix {
     ) -> PyResult<Option<Py<PyInt>>> {
         match &self.inner {
             WaveletMatrixEnum::U8(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u8>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u8>().ok());
+                let lower = lower.map(|value| value.extract::<u8>().ok());
+                let upper = upper.map(|value| value.extract::<u8>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(None)
                 } else {
-                    wm.next_value(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
-                        .map(|value|value.map(|value|PyInt::new(py, value).into()))
+                    wm.next_value(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
+                    .map(|value| value.map(|value| PyInt::new(py, value).into()))
                 }
-            },
+            }
             WaveletMatrixEnum::U16(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u16>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u16>().ok());
+                let lower = lower.map(|value| value.extract::<u16>().ok());
+                let upper = upper.map(|value| value.extract::<u16>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(None)
                 } else {
-                    wm.next_value(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
-                        .map(|value|value.map(|value|PyInt::new(py, value).into()))
+                    wm.next_value(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
+                    .map(|value| value.map(|value| PyInt::new(py, value).into()))
                 }
-            },
+            }
             WaveletMatrixEnum::U32(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u32>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u32>().ok());
+                let lower = lower.map(|value| value.extract::<u32>().ok());
+                let upper = upper.map(|value| value.extract::<u32>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(None)
                 } else {
-                    wm.next_value(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
-                        .map(|value|value.map(|value|PyInt::new(py, value).into()))
+                    wm.next_value(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
+                    .map(|value| value.map(|value| PyInt::new(py, value).into()))
                 }
-            },
+            }
             WaveletMatrixEnum::U64(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u64>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u64>().ok());
+                let lower = lower.map(|value| value.extract::<u64>().ok());
+                let upper = upper.map(|value| value.extract::<u64>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(None)
                 } else {
-                    wm.next_value(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
-                        .map(|value|value.map(|value|PyInt::new(py, value).into()))
+                    wm.next_value(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
+                    .map(|value| value.map(|value| PyInt::new(py, value).into()))
                 }
-            },
+            }
             WaveletMatrixEnum::U128(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u128>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u128>().ok());
+                let lower = lower.map(|value| value.extract::<u128>().ok());
+                let upper = upper.map(|value| value.extract::<u128>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(None)
                 } else {
-                    wm.next_value(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
-                        .map(|value|value.map(|value|PyInt::new(py, value).into()))
+                    wm.next_value(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
+                    .map(|value| value.map(|value| PyInt::new(py, value).into()))
                 }
-            },
+            }
             WaveletMatrixEnum::BigUint(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<BigUint>().ok()).flatten();
-                let upper = upper
-                    .map(|value| value.extract::<BigUint>().ok()).flatten();
+                let lower = lower.map(|value| value.extract::<BigUint>().ok()).flatten();
+                let upper = upper.map(|value| value.extract::<BigUint>().ok()).flatten();
                 wm.next_value(start, end, lower.as_ref(), upper.as_ref())
-                    .map(|value|value.map(|value| value.into_pyobject(py).unwrap().unbind()))
-            },
+                    .map(|value| value.map(|value| value.into_pyobject(py).unwrap().unbind()))
+            }
         }
     }
 }

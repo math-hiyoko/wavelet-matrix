@@ -1,19 +1,21 @@
-
-use std::{
-    cmp::PartialEq,
-    iter::zip,
-    ops::{BitAnd, BitOr, BitOrAssign, Shl, Shr, ShlAssign},
+use super::{
+    bit_width::BitWidth, dynamic_bit_vector::DynamicBitVectorTrait,
+    wavelet_matrix::WaveletMatrixTrait,
 };
 use num_bigint::ToBigUint;
 use num_traits::{One, Zero};
-use pyo3::{PyResult, exceptions::{PyIndexError, PyValueError}};
-use super::{
-    bit_width::BitWidth,
-    dynamic_bit_vector::DynamicBitVectorTrait,
-    wavelet_matrix::WaveletMatrixTrait,
+use pyo3::{
+    PyResult,
+    exceptions::{PyIndexError, PyValueError},
+};
+use std::{
+    cmp::PartialEq,
+    iter::zip,
+    ops::{BitAnd, BitOr, BitOrAssign, Shl, ShlAssign, Shr},
 };
 
-pub(crate) trait DynamicWaveletMatrixTrait<NumberType, BitVectorType>: WaveletMatrixTrait<NumberType, BitVectorType>
+pub(crate) trait DynamicWaveletMatrixTrait<NumberType, BitVectorType>:
+    WaveletMatrixTrait<NumberType, BitVectorType>
 where
     NumberType: BitAnd<NumberType, Output = NumberType>
         + BitOr<NumberType, Output = NumberType>
@@ -100,17 +102,13 @@ where
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use std::marker::PhantomData;
+    use super::*;
+    use crate::traits::{bit_width::BitWidth, dynamic_bit_vector::SampleDynamicBitVector};
     use num_bigint::BigUint;
     use pyo3::Python;
-    use super::*;
-    use crate::traits::{
-        bit_width::BitWidth,
-        dynamic_bit_vector::SampleDynamicBitVector,
-    };
+    use std::marker::PhantomData;
 
     struct SampleDynamicWaveletMatrix<NumberType> {
         layers: Vec<SampleDynamicBitVector>,
@@ -129,7 +127,9 @@ mod tests {
             let mut values = data.clone();
             let max_width = values.iter().max().map_or(0usize, |max| max.bit_width());
             if max_bit.is_some_and(|max_bit| max_bit < max_width) {
-                return Err(PyValueError::new_err("max_bit is less than the maximum bit width of the data"));
+                return Err(PyValueError::new_err(
+                    "max_bit is less than the maximum bit width of the data",
+                ));
             }
             let height = max_bit.unwrap_or(max_width);
             let len = values.len();
@@ -220,9 +220,7 @@ mod tests {
             &mut self.len
         }
 
-        fn get_layers_and_zeros(
-            &mut self,
-        ) -> (&mut [SampleDynamicBitVector], &mut [usize]) {
+        fn get_layers_and_zeros(&mut self) -> (&mut [SampleDynamicBitVector], &mut [usize]) {
             (&mut self.layers, &mut self.zeros)
         }
     }
@@ -247,36 +245,126 @@ mod tests {
         let wv_u8 = SampleDynamicWaveletMatrix::<u8>::new(&Vec::new(), None).unwrap();
         assert_eq!(wv_u8.len(), 0);
         assert_eq!(wv_u8.height(), 0);
-        assert_eq!(wv_u8.access(0).unwrap_err().to_string(), "IndexError: index out of bounds");
+        assert_eq!(
+            wv_u8.access(0).unwrap_err().to_string(),
+            "IndexError: index out of bounds"
+        );
         assert_eq!(wv_u8.rank(&0u8, 0).unwrap(), 0);
         assert_eq!(wv_u8.select(&0u8, 1).unwrap(), None);
-        assert_eq!(wv_u8.quantile(0, 0, 1).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_u8.topk(0, 0, Some(1)).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_u8.range_sum(0, 0).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_u8.range_intersection(0, 0, 0, 0).unwrap_err().to_string(), "ValueError: start1 must be less than end1");
-        assert_eq!(wv_u8.range_freq(0, 0, None, None).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_u8.range_list(0, 0, None, None).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_u8.range_maxk(0, 0, Some(1)).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_u8.range_mink(0, 0, Some(1)).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_u8.prev_value(0, 0, None, None).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_u8.next_value(0, 0, None, None).unwrap_err().to_string(), "ValueError: start must be less than end");
+        assert_eq!(
+            wv_u8.quantile(0, 0, 1).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_u8.topk(0, 0, Some(1)).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_u8.range_sum(0, 0).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_u8
+                .range_intersection(0, 0, 0, 0)
+                .unwrap_err()
+                .to_string(),
+            "ValueError: start1 must be less than end1"
+        );
+        assert_eq!(
+            wv_u8.range_freq(0, 0, None, None).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_u8.range_list(0, 0, None, None).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_u8.range_maxk(0, 0, Some(1)).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_u8.range_mink(0, 0, Some(1)).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_u8.prev_value(0, 0, None, None).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_u8.next_value(0, 0, None, None).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
 
         let wv_biguint = SampleDynamicWaveletMatrix::<BigUint>::new(&Vec::new(), None).unwrap();
         assert_eq!(wv_biguint.len(), 0);
         assert_eq!(wv_biguint.height(), 0);
-        assert_eq!(wv_biguint.access(0).unwrap_err().to_string(), "IndexError: index out of bounds");
+        assert_eq!(
+            wv_biguint.access(0).unwrap_err().to_string(),
+            "IndexError: index out of bounds"
+        );
         assert_eq!(wv_biguint.rank(&0u32.into(), 0).unwrap(), 0);
         assert_eq!(wv_biguint.select(&0u32.into(), 1).unwrap(), None);
-        assert_eq!(wv_biguint.quantile(0, 0, 1).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_biguint.topk(0, 0, Some(1)).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_biguint.range_sum(0, 0).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_biguint.range_intersection(0, 0, 0, 0).unwrap_err().to_string(), "ValueError: start1 must be less than end1");
-        assert_eq!(wv_biguint.range_freq(0, 0, None, None).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_biguint.range_list(0, 0, None, None).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_biguint.range_maxk(0, 0, Some(1)).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_biguint.range_mink(0, 0, Some(1)).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_biguint.prev_value(0, 0, None, None).unwrap_err().to_string(), "ValueError: start must be less than end");
-        assert_eq!(wv_biguint.next_value(0, 0, None, None).unwrap_err().to_string(), "ValueError: start must be less than end");
+        assert_eq!(
+            wv_biguint.quantile(0, 0, 1).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_biguint.topk(0, 0, Some(1)).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_biguint.range_sum(0, 0).unwrap_err().to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_biguint
+                .range_intersection(0, 0, 0, 0)
+                .unwrap_err()
+                .to_string(),
+            "ValueError: start1 must be less than end1"
+        );
+        assert_eq!(
+            wv_biguint
+                .range_freq(0, 0, None, None)
+                .unwrap_err()
+                .to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_biguint
+                .range_list(0, 0, None, None)
+                .unwrap_err()
+                .to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_biguint
+                .range_maxk(0, 0, Some(1))
+                .unwrap_err()
+                .to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_biguint
+                .range_mink(0, 0, Some(1))
+                .unwrap_err()
+                .to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_biguint
+                .prev_value(0, 0, None, None)
+                .unwrap_err()
+                .to_string(),
+            "ValueError: start must be less than end"
+        );
+        assert_eq!(
+            wv_biguint
+                .next_value(0, 0, None, None)
+                .unwrap_err()
+                .to_string(),
+            "ValueError: start must be less than end"
+        );
     }
 
     #[test]
@@ -299,7 +387,8 @@ mod tests {
         assert_eq!(wv_u8.prev_value(0, 64, None, None).unwrap(), Some(0u8));
         assert_eq!(wv_u8.next_value(0, 64, None, None).unwrap(), Some(0u8));
 
-        let wv_biguint = SampleDynamicWaveletMatrix::<BigUint>::new(&vec![0u32.into(); 64], None).unwrap();
+        let wv_biguint =
+            SampleDynamicWaveletMatrix::<BigUint>::new(&vec![0u32.into(); 64], None).unwrap();
         assert_eq!(wv_biguint.len(), 64);
         assert_eq!(wv_biguint.height(), 0);
         assert_eq!(wv_biguint.access(1).unwrap(), 0u32.into());
@@ -334,7 +423,10 @@ mod tests {
         assert_eq!(wv_u8.select(&u8::MAX, 1).unwrap(), Some(0));
         assert_eq!(wv_u8.quantile(0, 64, 1).unwrap(), u8::MAX);
         assert_eq!(wv_u8.topk(0, 64, None).unwrap().len(), 1);
-        assert_eq!(wv_u8.range_sum(0, 64).unwrap(), (u8::MAX as u32 * 64).into());
+        assert_eq!(
+            wv_u8.range_sum(0, 64).unwrap(),
+            (u8::MAX as u32 * 64).into()
+        );
         assert_eq!(wv_u8.range_freq(0, 64, None, None).unwrap(), 64usize);
         assert_eq!(wv_u8.range_list(0, 64, None, None).unwrap().len(), 1);
         assert_eq!(wv_u8.range_maxk(0, 64, None).unwrap().len(), 1);
@@ -439,11 +531,23 @@ mod tests {
         let result_biguint = wv_biguint.range_intersection(0, 6, 6, 11).unwrap();
         assert_eq!(result_biguint.len(), 2);
         assert_eq!(result_biguint[0].get("value"), Some(&BigUint::from(1u32)));
-        assert_eq!(result_biguint[0].get("count1"), Some(&BigUint::from(1usize)));
-        assert_eq!(result_biguint[0].get("count2"), Some(&BigUint::from(1usize)));
+        assert_eq!(
+            result_biguint[0].get("count1"),
+            Some(&BigUint::from(1usize))
+        );
+        assert_eq!(
+            result_biguint[0].get("count2"),
+            Some(&BigUint::from(1usize))
+        );
         assert_eq!(result_biguint[1].get("value"), Some(&BigUint::from(5u32)));
-        assert_eq!(result_biguint[1].get("count1"), Some(&BigUint::from(3usize)));
-        assert_eq!(result_biguint[1].get("count2"), Some(&BigUint::from(2usize)));
+        assert_eq!(
+            result_biguint[1].get("count1"),
+            Some(&BigUint::from(3usize))
+        );
+        assert_eq!(
+            result_biguint[1].get("count2"),
+            Some(&BigUint::from(2usize))
+        );
     }
 
     #[test]
@@ -451,11 +555,16 @@ mod tests {
         Python::initialize();
 
         let wv_u8 = create_dummy_u8();
-        assert_eq!(wv_u8.range_freq(1, 9, Some(&4u8), Some(&6u8)).unwrap(), 4usize);
+        assert_eq!(
+            wv_u8.range_freq(1, 9, Some(&4u8), Some(&6u8)).unwrap(),
+            4usize
+        );
 
         let wv_biguint = create_dummy_biguint();
         assert_eq!(
-            wv_biguint.range_freq(1, 9, Some(&4u32.into()), Some(&6u32.into())).unwrap(),
+            wv_biguint
+                .range_freq(1, 9, Some(&4u32.into()), Some(&6u32.into()))
+                .unwrap(),
             4usize,
         );
     }
@@ -537,7 +646,9 @@ mod tests {
 
         let wv_biguint = create_dummy_biguint();
         assert_eq!(
-            wv_biguint.prev_value(1, 9, Some(&4u32.into()), Some(&7u32.into())).unwrap(),
+            wv_biguint
+                .prev_value(1, 9, Some(&4u32.into()), Some(&7u32.into()))
+                .unwrap(),
             Some(6u32.into()),
         );
     }
@@ -554,7 +665,9 @@ mod tests {
 
         let wv_biguint = create_dummy_biguint();
         assert_eq!(
-            wv_biguint.next_value(1, 9, Some(&3u32.into()), Some(&5u32.into())).unwrap(),
+            wv_biguint
+                .next_value(1, 9, Some(&3u32.into()), Some(&5u32.into()))
+                .unwrap(),
             Some(4u32.into()),
         );
     }
@@ -565,13 +678,19 @@ mod tests {
 
         let mut wv_u8 = create_dummy_u8();
         wv_u8.insert(4, &5u8).unwrap();
-        assert_eq!(wv_u8.insert(4, &8u8).unwrap_err().to_string(), "ValueError: value exceeds the maximum value");
+        assert_eq!(
+            wv_u8.insert(4, &8u8).unwrap_err().to_string(),
+            "ValueError: value exceeds the maximum value"
+        );
         assert_eq!(wv_u8.access(4).unwrap(), 5u8);
         assert_eq!(wv_u8.len(), 13);
 
         let mut wv_biguint = create_dummy_biguint();
         wv_biguint.insert(4, &5u32.into()).unwrap();
-        assert_eq!(wv_biguint.insert(4, &8u32.into()).unwrap_err().to_string(), "ValueError: value exceeds the maximum value");
+        assert_eq!(
+            wv_biguint.insert(4, &8u32.into()).unwrap_err().to_string(),
+            "ValueError: value exceeds the maximum value"
+        );
         assert_eq!(wv_biguint.access(4).unwrap(), 5u32.into());
         assert_eq!(wv_biguint.len(), 13);
     }
@@ -597,13 +716,19 @@ mod tests {
 
         let mut wv_u8 = create_dummy_u8();
         wv_u8.update(4, &5u8).unwrap();
-        assert_eq!(wv_u8.update(4, &8u8).unwrap_err().to_string(), "ValueError: value exceeds the maximum value");
+        assert_eq!(
+            wv_u8.update(4, &8u8).unwrap_err().to_string(),
+            "ValueError: value exceeds the maximum value"
+        );
         assert_eq!(wv_u8.access(4).unwrap(), 5u8);
         assert_eq!(wv_u8.len(), 12);
 
         let mut wv_biguint = create_dummy_biguint();
         wv_biguint.update(4, &5u32.into()).unwrap();
-        assert_eq!(wv_biguint.update(4, &8u32.into()).unwrap_err().to_string(), "ValueError: value exceeds the maximum value");
+        assert_eq!(
+            wv_biguint.update(4, &8u32.into()).unwrap_err().to_string(),
+            "ValueError: value exceeds the maximum value"
+        );
         assert_eq!(wv_biguint.access(4).unwrap(), 5u32.into());
         assert_eq!(wv_biguint.len(), 12);
     }

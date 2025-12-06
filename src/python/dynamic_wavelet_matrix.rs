@@ -1,18 +1,17 @@
 use std::u8;
 
+use crate::{
+    dynamic_wavelet_matrix::dynamic_wavelet_matrix::DynamicWaveletMatrix,
+    traits::{
+        dynamic_wavelet_matrix::DynamicWaveletMatrixTrait, wavelet_matrix::WaveletMatrixTrait,
+    },
+};
 use num_bigint::BigUint;
 use num_traits::ToPrimitive;
 use pyo3::{
     exceptions::{PyRuntimeError, PyValueError},
     prelude::*,
     types::{PyInt, PyList, PySequence},
-};
-use crate::{
-    traits::{
-        wavelet_matrix::WaveletMatrixTrait,
-        dynamic_wavelet_matrix::DynamicWaveletMatrixTrait,
-    },
-    dynamic_wavelet_matrix::dynamic_wavelet_matrix::DynamicWaveletMatrix,
 };
 
 enum DynamicWaveletMatrixEnum {
@@ -37,18 +36,26 @@ pub(crate) struct PyDynamicWaveletMatrix {
 impl PyDynamicWaveletMatrix {
     /// Creates a new Wavelet Matrix from the given list or tuple of integers.
     #[new]
-    pub(crate) fn new(data: &Bound<'_, PyAny>, max_bit: Option<Bound<'_, PyInt>>) -> PyResult<Self> {
+    pub(crate) fn new(
+        data: &Bound<'_, PyAny>,
+        max_bit: Option<Bound<'_, PyInt>>,
+    ) -> PyResult<Self> {
         let values: Vec<BigUint> = data
             .clone()
             .cast_into::<PySequence>()
             .map_err(|_| PyValueError::new_err("Input must be a list or tuple"))?
             .try_iter()?
-            .map(
-                |item| item?.extract::<BigUint>().map_err(|_| PyValueError::new_err("Input elements must be non-negative integers")),
-            )
+            .map(|item| {
+                item?.extract::<BigUint>().map_err(|_| {
+                    PyValueError::new_err("Input elements must be non-negative integers")
+                })
+            })
             .collect::<PyResult<_>>()?;
-        let max_bit = max_bit.map(|max_bit| max_bit.extract::<usize>().ok()).flatten();
-        let bit_width = (values.iter().map(|v| v.bits()).max().unwrap_or(0) as usize).max(max_bit.unwrap_or(0));
+        let max_bit = max_bit
+            .map(|max_bit| max_bit.extract::<usize>().ok())
+            .flatten();
+        let bit_width =
+            (values.iter().map(|v| v.bits()).max().unwrap_or(0) as usize).max(max_bit.unwrap_or(0));
         let wv: DynamicWaveletMatrixEnum = match bit_width {
             0..=8 => {
                 let values = values
@@ -57,7 +64,7 @@ impl PyDynamicWaveletMatrix {
                     .collect::<Option<Vec<_>>>()
                     .ok_or(PyRuntimeError::new_err("Value out of range for u8"))?;
                 DynamicWaveletMatrixEnum::U8(DynamicWaveletMatrix::<u8>::new(&values, max_bit)?)
-            },
+            }
             9..=16 => {
                 let values = values
                     .iter()
@@ -65,7 +72,7 @@ impl PyDynamicWaveletMatrix {
                     .collect::<Option<Vec<_>>>()
                     .ok_or(PyRuntimeError::new_err("Value out of range for u16"))?;
                 DynamicWaveletMatrixEnum::U16(DynamicWaveletMatrix::<u16>::new(&values, max_bit)?)
-            },
+            }
             17..=32 => {
                 let values = values
                     .iter()
@@ -73,7 +80,7 @@ impl PyDynamicWaveletMatrix {
                     .collect::<Option<Vec<_>>>()
                     .ok_or(PyRuntimeError::new_err("Value out of range for u32"))?;
                 DynamicWaveletMatrixEnum::U32(DynamicWaveletMatrix::<u32>::new(&values, max_bit)?)
-            },
+            }
             33..=64 => {
                 let values = values
                     .iter()
@@ -81,7 +88,7 @@ impl PyDynamicWaveletMatrix {
                     .collect::<Option<Vec<_>>>()
                     .ok_or(PyRuntimeError::new_err("Value out of range for u64"))?;
                 DynamicWaveletMatrixEnum::U64(DynamicWaveletMatrix::<u64>::new(&values, max_bit)?)
-            },
+            }
             65..=128 => {
                 let values = values
                     .iter()
@@ -89,10 +96,10 @@ impl PyDynamicWaveletMatrix {
                     .collect::<Option<Vec<_>>>()
                     .ok_or(PyRuntimeError::new_err("Value out of range for u128"))?;
                 DynamicWaveletMatrixEnum::U128(DynamicWaveletMatrix::<u128>::new(&values, max_bit)?)
-            },
-            _ => {
-                DynamicWaveletMatrixEnum::BigUint(DynamicWaveletMatrix::<BigUint>::new(&values, max_bit)?)
-            },
+            }
+            _ => DynamicWaveletMatrixEnum::BigUint(DynamicWaveletMatrix::<BigUint>::new(
+                &values, max_bit,
+            )?),
         };
         Ok(PyDynamicWaveletMatrix { inner: wv })
     }
@@ -112,24 +119,48 @@ impl PyDynamicWaveletMatrix {
     /// Gets the value at the specified index.
     pub(crate) fn __getitem__(&self, py: Python<'_>, index: usize) -> PyResult<Py<PyInt>> {
         match &self.inner {
-            DynamicWaveletMatrixEnum::U8(wm) => wm.access(index).map(|value| PyInt::new(py, value).into()),
-            DynamicWaveletMatrixEnum::U16(wm) => wm.access(index).map(|value| PyInt::new(py, value).into()),
-            DynamicWaveletMatrixEnum::U32(wm) => wm.access(index).map(|value| PyInt::new(py, value).into()),
-            DynamicWaveletMatrixEnum::U64(wm) => wm.access(index).map(|value| PyInt::new(py, value).into()),
-            DynamicWaveletMatrixEnum::U128(wm) => wm.access(index).map(|value| PyInt::new(py, value).into()),
-            DynamicWaveletMatrixEnum::BigUint(wm) => wm.access(index).map(|value| value.into_pyobject(py).unwrap().unbind()),
+            DynamicWaveletMatrixEnum::U8(wm) => {
+                wm.access(index).map(|value| PyInt::new(py, value).into())
+            }
+            DynamicWaveletMatrixEnum::U16(wm) => {
+                wm.access(index).map(|value| PyInt::new(py, value).into())
+            }
+            DynamicWaveletMatrixEnum::U32(wm) => {
+                wm.access(index).map(|value| PyInt::new(py, value).into())
+            }
+            DynamicWaveletMatrixEnum::U64(wm) => {
+                wm.access(index).map(|value| PyInt::new(py, value).into())
+            }
+            DynamicWaveletMatrixEnum::U128(wm) => {
+                wm.access(index).map(|value| PyInt::new(py, value).into())
+            }
+            DynamicWaveletMatrixEnum::BigUint(wm) => wm
+                .access(index)
+                .map(|value| value.into_pyobject(py).unwrap().unbind()),
         }
     }
 
     /// Access the value at the specified index.
     pub(crate) fn access(&self, py: Python<'_>, index: usize) -> PyResult<Py<PyInt>> {
         match &self.inner {
-            DynamicWaveletMatrixEnum::U8(wm) => wm.access(index).map(|value| PyInt::new(py, value).into()),
-            DynamicWaveletMatrixEnum::U16(wm) => wm.access(index).map(|value| PyInt::new(py, value).into()),
-            DynamicWaveletMatrixEnum::U32(wm) => wm.access(index).map(|value| PyInt::new(py, value).into()),
-            DynamicWaveletMatrixEnum::U64(wm) => wm.access(index).map(|value| PyInt::new(py, value).into()),
-            DynamicWaveletMatrixEnum::U128(wm) => wm.access(index).map(|value| PyInt::new(py, value).into()),
-            DynamicWaveletMatrixEnum::BigUint(wm) => wm.access(index).map(|value| value.into_pyobject(py).unwrap().unbind()),
+            DynamicWaveletMatrixEnum::U8(wm) => {
+                wm.access(index).map(|value| PyInt::new(py, value).into())
+            }
+            DynamicWaveletMatrixEnum::U16(wm) => {
+                wm.access(index).map(|value| PyInt::new(py, value).into())
+            }
+            DynamicWaveletMatrixEnum::U32(wm) => {
+                wm.access(index).map(|value| PyInt::new(py, value).into())
+            }
+            DynamicWaveletMatrixEnum::U64(wm) => {
+                wm.access(index).map(|value| PyInt::new(py, value).into())
+            }
+            DynamicWaveletMatrixEnum::U128(wm) => {
+                wm.access(index).map(|value| PyInt::new(py, value).into())
+            }
+            DynamicWaveletMatrixEnum::BigUint(wm) => wm
+                .access(index)
+                .map(|value| value.into_pyobject(py).unwrap().unbind()),
         }
     }
 
@@ -166,12 +197,24 @@ impl PyDynamicWaveletMatrix {
         kth: usize,
     ) -> PyResult<Py<PyInt>> {
         match &self.inner {
-            DynamicWaveletMatrixEnum::U8(wm) => wm.quantile(start, end, kth).map(|value| PyInt::new(py, value).into()),
-            DynamicWaveletMatrixEnum::U16(wm) => wm.quantile(start, end, kth).map(|value| PyInt::new(py, value).into()),
-            DynamicWaveletMatrixEnum::U32(wm) => wm.quantile(start, end, kth).map(|value| PyInt::new(py, value).into()),
-            DynamicWaveletMatrixEnum::U64(wm) => wm.quantile(start, end, kth).map(|value| PyInt::new(py, value).into()),
-            DynamicWaveletMatrixEnum::U128(wm) => wm.quantile(start, end, kth).map(|value| PyInt::new(py, value).into()),
-            DynamicWaveletMatrixEnum::BigUint(wm) => wm.quantile(start, end, kth).map(|value| value.into_pyobject(py).unwrap().unbind()),
+            DynamicWaveletMatrixEnum::U8(wm) => wm
+                .quantile(start, end, kth)
+                .map(|value| PyInt::new(py, value).into()),
+            DynamicWaveletMatrixEnum::U16(wm) => wm
+                .quantile(start, end, kth)
+                .map(|value| PyInt::new(py, value).into()),
+            DynamicWaveletMatrixEnum::U32(wm) => wm
+                .quantile(start, end, kth)
+                .map(|value| PyInt::new(py, value).into()),
+            DynamicWaveletMatrixEnum::U64(wm) => wm
+                .quantile(start, end, kth)
+                .map(|value| PyInt::new(py, value).into()),
+            DynamicWaveletMatrixEnum::U128(wm) => wm
+                .quantile(start, end, kth)
+                .map(|value| PyInt::new(py, value).into()),
+            DynamicWaveletMatrixEnum::BigUint(wm) => wm
+                .quantile(start, end, kth)
+                .map(|value| value.into_pyobject(py).unwrap().unbind()),
         }
     }
 
@@ -192,12 +235,11 @@ impl PyDynamicWaveletMatrix {
             DynamicWaveletMatrixEnum::U128(wm) => wm.topk(start, end, k),
             DynamicWaveletMatrixEnum::BigUint(wm) => wm.topk(start, end, k),
         };
-        result
-            .and_then(|value| {
-                let pyobject = value.into_pyobject(py)?;
-                let pylist = pyobject.cast_into::<PyList>()?;
-                Ok(pylist.unbind())
-            })
+        result.and_then(|value| {
+            let pyobject = value.into_pyobject(py)?;
+            let pylist = pyobject.cast_into::<PyList>()?;
+            Ok(pylist.unbind())
+        })
     }
 
     /// Computes the sum of values in the range [start, end).
@@ -215,11 +257,10 @@ impl PyDynamicWaveletMatrix {
             DynamicWaveletMatrixEnum::U128(wm) => wm.range_sum(start, end),
             DynamicWaveletMatrixEnum::BigUint(wm) => wm.range_sum(start, end),
         };
-        result
-            .and_then(|value| {
-                let pyobject = value.into_pyobject(py)?;
-                Ok(pyobject.unbind())
-            })
+        result.and_then(|value| {
+            let pyobject = value.into_pyobject(py)?;
+            Ok(pyobject.unbind())
+        })
     }
 
     /// Finds the intersection of values in the two ranges [start1, end1) and [start2, end2).
@@ -237,14 +278,15 @@ impl PyDynamicWaveletMatrix {
             DynamicWaveletMatrixEnum::U32(wm) => wm.range_intersection(start1, end1, start2, end2),
             DynamicWaveletMatrixEnum::U64(wm) => wm.range_intersection(start1, end1, start2, end2),
             DynamicWaveletMatrixEnum::U128(wm) => wm.range_intersection(start1, end1, start2, end2),
-            DynamicWaveletMatrixEnum::BigUint(wm) => wm.range_intersection(start1, end1, start2, end2),
+            DynamicWaveletMatrixEnum::BigUint(wm) => {
+                wm.range_intersection(start1, end1, start2, end2)
+            }
         };
-        result
-            .and_then(|value| {
-                let pyobject = value.into_pyobject(py)?;
-                let pylist = pyobject.cast_into::<PyList>()?;
-                Ok(pylist.unbind())
-            })
+        result.and_then(|value| {
+            let pyobject = value.into_pyobject(py)?;
+            let pylist = pyobject.cast_into::<PyList>()?;
+            Ok(pylist.unbind())
+        })
     }
 
     /// Counts the number of elements within the optional range [lower, upper) in the range [start, end).
@@ -259,67 +301,85 @@ impl PyDynamicWaveletMatrix {
     ) -> PyResult<usize> {
         match &self.inner {
             DynamicWaveletMatrixEnum::U8(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u8>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u8>().ok());
+                let lower = lower.map(|value| value.extract::<u8>().ok());
+                let upper = upper.map(|value| value.extract::<u8>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(0)
                 } else {
-                    wm.range_freq(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
+                    wm.range_freq(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
                 }
-            },
+            }
             DynamicWaveletMatrixEnum::U16(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u16>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u16>().ok());
+                let lower = lower.map(|value| value.extract::<u16>().ok());
+                let upper = upper.map(|value| value.extract::<u16>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(0)
                 } else {
-                    wm.range_freq(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
+                    wm.range_freq(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
                 }
-            },
+            }
             DynamicWaveletMatrixEnum::U32(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u32>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u32>().ok());
+                let lower = lower.map(|value| value.extract::<u32>().ok());
+                let upper = upper.map(|value| value.extract::<u32>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(0)
                 } else {
-                    wm.range_freq(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
+                    wm.range_freq(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
                 }
-            },
+            }
             DynamicWaveletMatrixEnum::U64(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u64>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u64>().ok());
+                let lower = lower.map(|value| value.extract::<u64>().ok());
+                let upper = upper.map(|value| value.extract::<u64>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(0)
                 } else {
-                    wm.range_freq(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
+                    wm.range_freq(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
                 }
-            },
+            }
             DynamicWaveletMatrixEnum::U128(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u128>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u128>().ok());
+                let lower = lower.map(|value| value.extract::<u128>().ok());
+                let upper = upper.map(|value| value.extract::<u128>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(0)
                 } else {
-                    wm.range_freq(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
+                    wm.range_freq(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
                 }
-            },
+            }
             DynamicWaveletMatrixEnum::BigUint(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<BigUint>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<BigUint>().ok());
-                wm.range_freq(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
-            },
+                let lower = lower.map(|value| value.extract::<BigUint>().ok());
+                let upper = upper.map(|value| value.extract::<BigUint>().ok());
+                wm.range_freq(
+                    start,
+                    end,
+                    lower.flatten().as_ref(),
+                    upper.flatten().as_ref(),
+                )
+            }
         }
     }
 
@@ -335,74 +395,86 @@ impl PyDynamicWaveletMatrix {
     ) -> PyResult<Py<PyList>> {
         let result = match &self.inner {
             DynamicWaveletMatrixEnum::U8(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u8>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u8>().ok());
+                let lower = lower.map(|value| value.extract::<u8>().ok());
+                let upper = upper.map(|value| value.extract::<u8>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(vec![])
                 } else {
-                    wm.range_list(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
+                    wm.range_list(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
                 }
-            },
+            }
             DynamicWaveletMatrixEnum::U16(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u16>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u16>().ok());
+                let lower = lower.map(|value| value.extract::<u16>().ok());
+                let upper = upper.map(|value| value.extract::<u16>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(vec![])
                 } else {
-                    wm.range_list(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
+                    wm.range_list(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
                 }
-            },
+            }
             DynamicWaveletMatrixEnum::U32(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u32>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u32>().ok());
+                let lower = lower.map(|value| value.extract::<u32>().ok());
+                let upper = upper.map(|value| value.extract::<u32>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(vec![])
                 } else {
-                    wm.range_list(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
+                    wm.range_list(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
                 }
-            },
+            }
             DynamicWaveletMatrixEnum::U64(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u64>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u64>().ok());
+                let lower = lower.map(|value| value.extract::<u64>().ok());
+                let upper = upper.map(|value| value.extract::<u64>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(vec![])
                 } else {
-                    wm.range_list(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
+                    wm.range_list(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
                 }
-            },
+            }
             DynamicWaveletMatrixEnum::U128(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u128>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u128>().ok());
+                let lower = lower.map(|value| value.extract::<u128>().ok());
+                let upper = upper.map(|value| value.extract::<u128>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(vec![])
                 } else {
-                    wm.range_list(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
+                    wm.range_list(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
                 }
-            },
+            }
             DynamicWaveletMatrixEnum::BigUint(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<BigUint>().ok()).flatten();
-                let upper = upper
-                    .map(|value| value.extract::<BigUint>().ok()).flatten();
+                let lower = lower.map(|value| value.extract::<BigUint>().ok()).flatten();
+                let upper = upper.map(|value| value.extract::<BigUint>().ok()).flatten();
                 wm.range_list(start, end, lower.as_ref(), upper.as_ref())
             }
         };
-        result
-            .and_then(|value| {
-                let pyobject = value.into_pyobject(py)?;
-                let pylist = pyobject.cast_into::<PyList>()?;
-                Ok(pylist.unbind())
-            })
+        result.and_then(|value| {
+            let pyobject = value.into_pyobject(py)?;
+            let pylist = pyobject.cast_into::<PyList>()?;
+            Ok(pylist.unbind())
+        })
     }
 
     /// Finds the k largest values in the range [start, end).
@@ -422,12 +494,11 @@ impl PyDynamicWaveletMatrix {
             DynamicWaveletMatrixEnum::U128(wm) => wm.range_maxk(start, end, k),
             DynamicWaveletMatrixEnum::BigUint(wm) => wm.range_maxk(start, end, k),
         };
-        result
-            .and_then(|value| {
-                let pyobject = value.into_pyobject(py)?;
-                let pylist = pyobject.cast_into::<PyList>()?;
-                Ok(pylist.unbind())
-            })
+        result.and_then(|value| {
+            let pyobject = value.into_pyobject(py)?;
+            let pylist = pyobject.cast_into::<PyList>()?;
+            Ok(pylist.unbind())
+        })
     }
 
     /// Finds the k smallest values in the range [start, end).
@@ -447,12 +518,11 @@ impl PyDynamicWaveletMatrix {
             DynamicWaveletMatrixEnum::U128(wm) => wm.range_mink(start, end, k),
             DynamicWaveletMatrixEnum::BigUint(wm) => wm.range_mink(start, end, k),
         };
-        result
-            .and_then(|value| {
-                let pyobject = value.into_pyobject(py)?;
-                let pylist = pyobject.cast_into::<PyList>()?;
-                Ok(pylist.unbind())
-            })
+        result.and_then(|value| {
+            let pyobject = value.into_pyobject(py)?;
+            let pylist = pyobject.cast_into::<PyList>()?;
+            Ok(pylist.unbind())
+        })
     }
 
     /// Finds the previous value before upper bound in the range [start, end).
@@ -467,73 +537,86 @@ impl PyDynamicWaveletMatrix {
     ) -> PyResult<Option<Py<PyInt>>> {
         match &self.inner {
             DynamicWaveletMatrixEnum::U8(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u8>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u8>().ok());
+                let lower = lower.map(|value| value.extract::<u8>().ok());
+                let upper = upper.map(|value| value.extract::<u8>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(None)
                 } else {
-                    wm.prev_value(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
-                        .map(|value|value.map(|value|PyInt::new(py, value).into()))
+                    wm.prev_value(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
+                    .map(|value| value.map(|value| PyInt::new(py, value).into()))
                 }
-            },
+            }
             DynamicWaveletMatrixEnum::U16(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u16>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u16>().ok());
+                let lower = lower.map(|value| value.extract::<u16>().ok());
+                let upper = upper.map(|value| value.extract::<u16>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(None)
                 } else {
-                    wm.prev_value(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
-                        .map(|value|value.map(|value|PyInt::new(py, value).into()))
+                    wm.prev_value(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
+                    .map(|value| value.map(|value| PyInt::new(py, value).into()))
                 }
-            },
+            }
             DynamicWaveletMatrixEnum::U32(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u32>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u32>().ok());
+                let lower = lower.map(|value| value.extract::<u32>().ok());
+                let upper = upper.map(|value| value.extract::<u32>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(None)
                 } else {
-                    wm.prev_value(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
-                        .map(|value|value.map(|value|PyInt::new(py, value).into()))
+                    wm.prev_value(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
+                    .map(|value| value.map(|value| PyInt::new(py, value).into()))
                 }
-            },
+            }
             DynamicWaveletMatrixEnum::U64(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u64>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u64>().ok());
+                let lower = lower.map(|value| value.extract::<u64>().ok());
+                let upper = upper.map(|value| value.extract::<u64>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(None)
                 } else {
-                    wm.prev_value(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
-                        .map(|value|value.map(|value|PyInt::new(py, value).into()))
+                    wm.prev_value(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
+                    .map(|value| value.map(|value| PyInt::new(py, value).into()))
                 }
-            },
+            }
             DynamicWaveletMatrixEnum::U128(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u128>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u128>().ok());
+                let lower = lower.map(|value| value.extract::<u128>().ok());
+                let upper = upper.map(|value| value.extract::<u128>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(None)
                 } else {
-                    wm.prev_value(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
-                        .map(|value|value.map(|value|PyInt::new(py, value).into()))
+                    wm.prev_value(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
+                    .map(|value| value.map(|value| PyInt::new(py, value).into()))
                 }
-            },
+            }
             DynamicWaveletMatrixEnum::BigUint(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<BigUint>().ok()).flatten();
-                let upper = upper
-                    .map(|value| value.extract::<BigUint>().ok()).flatten();
+                let lower = lower.map(|value| value.extract::<BigUint>().ok()).flatten();
+                let upper = upper.map(|value| value.extract::<BigUint>().ok()).flatten();
                 wm.prev_value(start, end, lower.as_ref(), upper.as_ref())
-                    .map(|value|value.map(|value| value.into_pyobject(py).unwrap().unbind()))
-            },
+                    .map(|value| value.map(|value| value.into_pyobject(py).unwrap().unbind()))
+            }
         }
     }
 
@@ -549,73 +632,86 @@ impl PyDynamicWaveletMatrix {
     ) -> PyResult<Option<Py<PyInt>>> {
         match &self.inner {
             DynamicWaveletMatrixEnum::U8(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u8>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u8>().ok());
+                let lower = lower.map(|value| value.extract::<u8>().ok());
+                let upper = upper.map(|value| value.extract::<u8>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(None)
                 } else {
-                    wm.next_value(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
-                        .map(|value|value.map(|value|PyInt::new(py, value).into()))
+                    wm.next_value(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
+                    .map(|value| value.map(|value| PyInt::new(py, value).into()))
                 }
-            },
+            }
             DynamicWaveletMatrixEnum::U16(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u16>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u16>().ok());
+                let lower = lower.map(|value| value.extract::<u16>().ok());
+                let upper = upper.map(|value| value.extract::<u16>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(None)
                 } else {
-                    wm.next_value(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
-                        .map(|value|value.map(|value|PyInt::new(py, value).into()))
+                    wm.next_value(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
+                    .map(|value| value.map(|value| PyInt::new(py, value).into()))
                 }
-            },
+            }
             DynamicWaveletMatrixEnum::U32(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u32>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u32>().ok());
+                let lower = lower.map(|value| value.extract::<u32>().ok());
+                let upper = upper.map(|value| value.extract::<u32>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(None)
                 } else {
-                    wm.next_value(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
-                        .map(|value|value.map(|value|PyInt::new(py, value).into()))
+                    wm.next_value(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
+                    .map(|value| value.map(|value| PyInt::new(py, value).into()))
                 }
-            },
+            }
             DynamicWaveletMatrixEnum::U64(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u64>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u64>().ok());
+                let lower = lower.map(|value| value.extract::<u64>().ok());
+                let upper = upper.map(|value| value.extract::<u64>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(None)
                 } else {
-                    wm.next_value(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
-                        .map(|value|value.map(|value|PyInt::new(py, value).into()))
+                    wm.next_value(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
+                    .map(|value| value.map(|value| PyInt::new(py, value).into()))
                 }
-            },
+            }
             DynamicWaveletMatrixEnum::U128(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<u128>().ok());
-                let upper = upper
-                    .map(|value| value.extract::<u128>().ok());
+                let lower = lower.map(|value| value.extract::<u128>().ok());
+                let upper = upper.map(|value| value.extract::<u128>().ok());
                 if lower.is_some_and(|lower| lower.is_none()) {
                     Ok(None)
                 } else {
-                    wm.next_value(start, end, lower.flatten().as_ref(), upper.flatten().as_ref())
-                        .map(|value|value.map(|value|PyInt::new(py, value).into()))
+                    wm.next_value(
+                        start,
+                        end,
+                        lower.flatten().as_ref(),
+                        upper.flatten().as_ref(),
+                    )
+                    .map(|value| value.map(|value| PyInt::new(py, value).into()))
                 }
-            },
+            }
             DynamicWaveletMatrixEnum::BigUint(wm) => {
-                let lower = lower
-                    .map(|value| value.extract::<BigUint>().ok()).flatten();
-                let upper = upper
-                    .map(|value| value.extract::<BigUint>().ok()).flatten();
+                let lower = lower.map(|value| value.extract::<BigUint>().ok()).flatten();
+                let upper = upper.map(|value| value.extract::<BigUint>().ok()).flatten();
                 wm.next_value(start, end, lower.as_ref(), upper.as_ref())
-                    .map(|value|value.map(|value| value.into_pyobject(py).unwrap().unbind()))
-            },
+                    .map(|value| value.map(|value| value.into_pyobject(py).unwrap().unbind()))
+            }
         }
     }
 
@@ -632,23 +728,52 @@ impl PyDynamicWaveletMatrix {
 
     fn remove(&mut self, py: Python<'_>, index: usize) -> PyResult<Py<PyInt>> {
         match &mut self.inner {
-            DynamicWaveletMatrixEnum::U8(wm) => wm.remove(index).map(|value| PyInt::new(py, value).into()),
-            DynamicWaveletMatrixEnum::U16(wm) => wm.remove(index).map(|value| PyInt::new(py, value).into()),
-            DynamicWaveletMatrixEnum::U32(wm) => wm.remove(index).map(|value| PyInt::new(py, value).into()),
-            DynamicWaveletMatrixEnum::U64(wm) => wm.remove(index).map(|value| PyInt::new(py, value).into()),
-            DynamicWaveletMatrixEnum::U128(wm) => wm.remove(index).map(|value| PyInt::new(py, value).into()),
-            DynamicWaveletMatrixEnum::BigUint(wm) => wm.remove(index).map(|value| value.into_pyobject(py).unwrap().unbind()),
+            DynamicWaveletMatrixEnum::U8(wm) => {
+                wm.remove(index).map(|value| PyInt::new(py, value).into())
+            }
+            DynamicWaveletMatrixEnum::U16(wm) => {
+                wm.remove(index).map(|value| PyInt::new(py, value).into())
+            }
+            DynamicWaveletMatrixEnum::U32(wm) => {
+                wm.remove(index).map(|value| PyInt::new(py, value).into())
+            }
+            DynamicWaveletMatrixEnum::U64(wm) => {
+                wm.remove(index).map(|value| PyInt::new(py, value).into())
+            }
+            DynamicWaveletMatrixEnum::U128(wm) => {
+                wm.remove(index).map(|value| PyInt::new(py, value).into())
+            }
+            DynamicWaveletMatrixEnum::BigUint(wm) => wm
+                .remove(index)
+                .map(|value| value.into_pyobject(py).unwrap().unbind()),
         }
     }
 
-    fn update(&mut self, py: Python<'_>, index: usize, value: &Bound<'_, PyInt>) -> PyResult<Py<PyInt>> {
+    fn update(
+        &mut self,
+        py: Python<'_>,
+        index: usize,
+        value: &Bound<'_, PyInt>,
+    ) -> PyResult<Py<PyInt>> {
         match &mut self.inner {
-            DynamicWaveletMatrixEnum::U8(wm) => wm.update(index, &value.extract::<u8>()?).map(|old_value| PyInt::new(py, old_value).into()),
-            DynamicWaveletMatrixEnum::U16(wm) => wm.update(index, &value.extract::<u16>()?).map(|old_value| PyInt::new(py, old_value).into()),
-            DynamicWaveletMatrixEnum::U32(wm) => wm.update(index, &value.extract::<u32>()?).map(|old_value| PyInt::new(py, old_value).into()),
-            DynamicWaveletMatrixEnum::U64(wm) => wm.update(index, &value.extract::<u64>()?).map(|old_value| PyInt::new(py, old_value).into()),
-            DynamicWaveletMatrixEnum::U128(wm) => wm.update(index, &value.extract::<u128>()?).map(|old_value| PyInt::new(py, old_value).into()),
-            DynamicWaveletMatrixEnum::BigUint(wm) => wm.update(index, &value.extract::<BigUint>()?).map(|old_value| old_value.into_pyobject(py).unwrap().unbind()),
+            DynamicWaveletMatrixEnum::U8(wm) => wm
+                .update(index, &value.extract::<u8>()?)
+                .map(|old_value| PyInt::new(py, old_value).into()),
+            DynamicWaveletMatrixEnum::U16(wm) => wm
+                .update(index, &value.extract::<u16>()?)
+                .map(|old_value| PyInt::new(py, old_value).into()),
+            DynamicWaveletMatrixEnum::U32(wm) => wm
+                .update(index, &value.extract::<u32>()?)
+                .map(|old_value| PyInt::new(py, old_value).into()),
+            DynamicWaveletMatrixEnum::U64(wm) => wm
+                .update(index, &value.extract::<u64>()?)
+                .map(|old_value| PyInt::new(py, old_value).into()),
+            DynamicWaveletMatrixEnum::U128(wm) => wm
+                .update(index, &value.extract::<u128>()?)
+                .map(|old_value| PyInt::new(py, old_value).into()),
+            DynamicWaveletMatrixEnum::BigUint(wm) => wm
+                .update(index, &value.extract::<BigUint>()?)
+                .map(|old_value| old_value.into_pyobject(py).unwrap().unbind()),
         }
     }
 }
