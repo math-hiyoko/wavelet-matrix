@@ -105,6 +105,7 @@ where
 mod tests {
     use std::marker::PhantomData;
     use num_bigint::BigUint;
+    use pyo3::Python;
     use super::*;
     use crate::traits::{
         bit_width::BitWidth,
@@ -241,6 +242,8 @@ mod tests {
 
     #[test]
     fn test_empty() {
+        Python::initialize();
+
         let wv_u8 = SampleDynamicWaveletMatrix::<u8>::new(&Vec::new(), None).unwrap();
         assert_eq!(wv_u8.len(), 0);
         assert_eq!(wv_u8.height(), 0);
@@ -278,6 +281,8 @@ mod tests {
 
     #[test]
     fn test_all_zero() {
+        Python::initialize();
+
         let wv_u8 = SampleDynamicWaveletMatrix::<u8>::new(&vec![0u8; 64], None).unwrap();
         assert_eq!(wv_u8.len(), 64);
         assert_eq!(wv_u8.height(), 0);
@@ -319,6 +324,8 @@ mod tests {
 
     #[test]
     fn test_max_value() {
+        Python::initialize();
+
         let wv_u8 = SampleDynamicWaveletMatrix::<u8>::new(&vec![u8::MAX; 64], None).unwrap();
         assert_eq!(wv_u8.len(), 64);
         assert_eq!(wv_u8.height(), 8);
@@ -338,6 +345,8 @@ mod tests {
 
     #[test]
     fn test_access() {
+        Python::initialize();
+
         let wv_u8 = create_dummy_u8();
         assert_eq!(wv_u8.access(6).unwrap(), 5u8);
 
@@ -347,6 +356,8 @@ mod tests {
 
     #[test]
     fn test_rank() {
+        Python::initialize();
+
         let wv_u8 = create_dummy_u8();
         assert_eq!(wv_u8.rank(&5u8, 9).unwrap(), 4usize);
 
@@ -356,6 +367,8 @@ mod tests {
 
     #[test]
     fn test_select() {
+        Python::initialize();
+
         let wv_u8 = create_dummy_u8();
         assert_eq!(wv_u8.select(&5u8, 4).unwrap(), Some(6usize));
         assert_eq!(wv_u8.select(&5u8, 6).unwrap(), None);
@@ -367,6 +380,8 @@ mod tests {
 
     #[test]
     fn test_quantile() {
+        Python::initialize();
+
         let wv_u8 = create_dummy_u8();
         assert_eq!(wv_u8.quantile(2, 12, 8).unwrap(), 5u8);
 
@@ -376,6 +391,8 @@ mod tests {
 
     #[test]
     fn test_topk() {
+        Python::initialize();
+
         let wv_u8 = create_dummy_u8();
         let result_u8 = wv_u8.topk(1, 10, Some(2)).unwrap();
         assert_eq!(result_u8.len(), 2);
@@ -395,6 +412,8 @@ mod tests {
 
     #[test]
     fn test_range_sum() {
+        Python::initialize();
+
         let wv_u8 = create_dummy_u8();
         assert_eq!(wv_u8.range_sum(2, 8).unwrap(), 24u32.into());
 
@@ -404,6 +423,8 @@ mod tests {
 
     #[test]
     fn test_range_intersection() {
+        Python::initialize();
+
         let wv_u8 = create_dummy_u8();
         let result_u8 = wv_u8.range_intersection(0, 6, 6, 11).unwrap();
         assert_eq!(result_u8.len(), 2);
@@ -427,6 +448,8 @@ mod tests {
 
     #[test]
     fn test_range_freq() {
+        Python::initialize();
+
         let wv_u8 = create_dummy_u8();
         assert_eq!(wv_u8.range_freq(1, 9, Some(&4u8), Some(&6u8)).unwrap(), 4usize);
 
@@ -439,6 +462,8 @@ mod tests {
 
     #[test]
     fn test_range_list() {
+        Python::initialize();
+
         let wv_u8 = create_dummy_u8();
         let result_u8 = wv_u8.range_list(1, 9, Some(&4u8), Some(&6u8)).unwrap();
         assert_eq!(result_u8.len(), 2);
@@ -460,6 +485,8 @@ mod tests {
 
     #[test]
     fn test_range_maxk() {
+        Python::initialize();
+
         let wv_u8 = create_dummy_u8();
         let result_u8 = wv_u8.range_maxk(1, 9, Some(2)).unwrap();
         assert_eq!(result_u8.len(), 2);
@@ -479,6 +506,8 @@ mod tests {
 
     #[test]
     fn test_range_mink() {
+        Python::initialize();
+
         let wv_u8 = create_dummy_u8();
         let result_u8 = wv_u8.range_mink(1, 9, Some(2)).unwrap();
         assert_eq!(result_u8.len(), 2);
@@ -498,6 +527,8 @@ mod tests {
 
     #[test]
     fn test_prev_value() {
+        Python::initialize();
+
         let wv_u8 = create_dummy_u8();
         assert_eq!(
             wv_u8.prev_value(1, 9, Some(&4u8), Some(&7u8)).unwrap(),
@@ -513,6 +544,8 @@ mod tests {
 
     #[test]
     fn test_next_value() {
+        Python::initialize();
+
         let wv_u8 = create_dummy_u8();
         assert_eq!(
             wv_u8.next_value(1, 9, Some(&3u8), Some(&5u8)).unwrap(),
@@ -528,6 +561,8 @@ mod tests {
 
     #[test]
     fn test_insert() {
+        Python::initialize();
+
         let mut wv_u8 = create_dummy_u8();
         wv_u8.insert(4, &5u8).unwrap();
         assert_eq!(wv_u8.insert(4, &8u8).unwrap_err().to_string(), "ValueError: value exceeds the maximum value");
@@ -543,6 +578,8 @@ mod tests {
 
     #[test]
     fn test_remove() {
+        Python::initialize();
+
         let mut wv_u8 = create_dummy_u8();
         wv_u8.remove(4).unwrap();
         assert_eq!(wv_u8.access(4).unwrap(), 1u8);
@@ -556,6 +593,8 @@ mod tests {
 
     #[test]
     fn test_update() {
+        Python::initialize();
+
         let mut wv_u8 = create_dummy_u8();
         wv_u8.update(4, &5u8).unwrap();
         assert_eq!(wv_u8.update(4, &8u8).unwrap_err().to_string(), "ValueError: value exceeds the maximum value");
@@ -571,6 +610,8 @@ mod tests {
 
     #[test]
     fn test_insert_remove_values() {
+        Python::initialize();
+
         let mut wv_u8 = SampleDynamicWaveletMatrix::new(&vec![], Some(3)).unwrap();
         let elements: Vec<u8> = vec![5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0];
 

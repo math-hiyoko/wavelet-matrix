@@ -656,6 +656,7 @@ impl DynamicBitVectorTrait for DynamicBitVector {
 
 #[cfg(test)]
 mod tests {
+    use pyo3::Python;
     use super::*;
 
     fn create_dummy() -> DynamicBitVector {
@@ -665,6 +666,8 @@ mod tests {
 
     #[test]
     fn test_empty() {
+        Python::initialize();
+
         let mut bv = DynamicBitVector::new(&vec![]);
         assert_eq!(bv.access(0).unwrap_err().to_string(), "IndexError: index out of bounds");
         assert_eq!(bv.rank(true, 0).unwrap(), 0);
@@ -679,6 +682,8 @@ mod tests {
 
     #[test]
     fn test_exact_block() {
+        Python::initialize();
+
         let bits = vec![true; 1024];
         let bv = DynamicBitVector::new(&bits);
 
@@ -693,6 +698,8 @@ mod tests {
 
     #[test]
     fn test_access() {
+        Python::initialize();
+
         let bv = create_dummy();
 
         assert_eq!(bv.access(0).unwrap(), true);
@@ -711,6 +718,8 @@ mod tests {
 
     #[test]
     fn test_rank() {
+        Python::initialize();
+
         let bv = create_dummy();
 
         assert_eq!(bv.rank(true, 0).unwrap(), 0);
@@ -744,6 +753,8 @@ mod tests {
 
     #[test]
     fn test_select() {
+        Python::initialize();
+
         let bv = create_dummy();
 
         assert_eq!(
@@ -771,6 +782,8 @@ mod tests {
 
     #[test]
     fn test_insert() {
+        Python::initialize();
+
         let mut bv = create_dummy();
         assert_eq!(bv.insert(0, true).unwrap(), ());
         assert_eq!(bv.access(0).unwrap(), true);
@@ -789,6 +802,8 @@ mod tests {
 
     #[test]
     fn test_remove() {
+        Python::initialize();
+
         let mut bv = create_dummy();
         assert_eq!(bv.remove(0).unwrap(), true);
         assert_eq!(bv.access(0).unwrap(), false);
@@ -807,6 +822,8 @@ mod tests {
 
     #[test]
     fn test_insert_remove_values() {
+        Python::initialize();
+
         let mut bv = DynamicBitVector::new(&vec![]);
         let bits = vec![true, false, true, true, false, true, false, false].repeat(999);
 

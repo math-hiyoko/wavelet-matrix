@@ -123,6 +123,8 @@ impl BitVectorTrait for BitVector {
 
 #[cfg(test)]
 mod tests {
+    use pyo3::Python;
+
     use super::*;
 
     fn create_dummy() -> BitVector {
@@ -132,6 +134,8 @@ mod tests {
 
     #[test]
     fn test_empty() {
+        Python::initialize();
+
         let bv = BitVector::new(&vec![]);
 
         assert_eq!(bv.access(0).unwrap_err().to_string(), "IndexError: index out of bounds");
@@ -143,6 +147,8 @@ mod tests {
 
     #[test]
     fn test_exact_block() {
+        Python::initialize();
+
         let bits = vec![true; 1024];
         let bv = BitVector::new(&bits);
 
@@ -157,6 +163,8 @@ mod tests {
 
     #[test]
     fn test_access() {
+        Python::initialize();
+
         let bv = create_dummy();
 
         assert_eq!(bv.access(0).unwrap(), true);
@@ -172,6 +180,8 @@ mod tests {
 
     #[test]
     fn test_rank() {
+        Python::initialize();
+
         let bv = create_dummy();
 
         assert_eq!(bv.rank(true, 0).unwrap(), 0);
@@ -199,6 +209,8 @@ mod tests {
 
     #[test]
     fn test_select() {
+        Python::initialize();
+
         let bv = create_dummy();
 
         assert_eq!(bv.select(true, 0).unwrap_err().to_string(), "ValueError: kth must be greater than 0");

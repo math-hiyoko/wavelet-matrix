@@ -12,4 +12,4 @@ crate-type = ["cdylib"]
 num-bigint = "0.4.6"
 num-integer = "0.1.46"
 num-traits = "0.2.19"
-pyo3 = { version = "0.27", features = ["auto-initialize", "num-bigint"] }
+pyo3 = { version = "0.27", features = ["num-bigint"] }
