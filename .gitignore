@@ -73,3 +73,5 @@ docs/_build/
 
 target/
 Cargo.lock
+.ruff_cache/
+.benchmarks/

@@ -1,4 +1,4 @@
-use super::bit_vector::BitVectorTrait;
+use crate::traits::{bit_vector::bit_vector::BitVectorTrait, utils::bit_width::BitWidth};
 use num_bigint::{BigUint, ToBigUint};
 use num_traits::{One, Zero};
 use pyo3::{
@@ -7,8 +7,8 @@ use pyo3::{
 };
 use std::{
     cmp::PartialEq,
-    collections::{BinaryHeap, HashMap},
-    iter::zip,
+    collections::BinaryHeap,
+    iter::{once, zip},
     ops::{BitAnd, BitOr, BitOrAssign, Shl, ShlAssign, Shr},
 };
 
@@ -21,6 +21,7 @@ where
     NumberType: BitAnd<NumberType, Output = NumberType>
         + BitOr<NumberType, Output = NumberType>
         + BitOrAssign
+        + BitWidth
         + Clone
         + One
         + Ord
@@ -66,6 +67,32 @@ where
         if start == end { None } else { Some(start) }
     }
 
+    /// Get all values in the Wavelet Matrix as a vector.
+    fn values(&self) -> PyResult<Vec<NumberType>> {
+        let mut indices = (0..self.len()).collect::<Vec<usize>>();
+        let mut values = vec![NumberType::zero(); self.len()];
+        for (i, (layer, zero)) in zip(self.get_layers(), self.get_zeros()).enumerate() {
+            let bits = layer.values()?;
+            let rank = once([0usize; 2])
+                .chain(bits.iter().scan([0usize; 2], |acc, &bit| {
+                    acc[bit as usize] += 1;
+                    Some(*acc)
+                }))
+                .collect::<Vec<_>>();
+            for (index, value) in zip(indices.iter_mut(), values.iter_mut()) {
+                let bit = bits[*index];
+                if bit {
+                    *value |= NumberType::one() << (self.height() - i - 1);
+                    *index = zero + rank[*index][bit as usize];
+                } else {
+                    *index = rank[*index][bit as usize];
+                }
+                debug_assert!(*index <= self.len());
+            }
+        }
+        Ok(values)
+    }
+
     /// Get the value at the specified position.
     fn access(&self, mut index: usize) -> PyResult<NumberType> {
         if index >= self.len() {
@@ -82,7 +109,7 @@ where
             } else {
                 index = layer.rank(bit, index)?;
             }
-            debug_assert!(index < self.len());
+            debug_assert!(index <= self.len());
         }
 
         Ok(result)
@@ -92,6 +119,9 @@ where
     fn rank(&self, value: &NumberType, mut end: usize) -> PyResult<usize> {
         if end > self.len() {
             return Err(PyIndexError::new_err("index out of bounds"));
+        }
+        if value.bit_width() > self.height() {
+            return Ok(0usize);
         }
 
         let begin_index = match self.begin_index(value) {
@@ -118,6 +148,10 @@ where
         if kth.is_zero() {
             return Err(PyValueError::new_err("kth must be greater than 0"));
         }
+        if value.bit_width() > self.height() {
+            return Ok(None);
+        }
+
         let begin_index = match self.begin_index(value) {
             Some(index) => index,
             None => return Ok(None),
@@ -140,7 +174,7 @@ where
     }
 
     /// Find the k-th smallest value in the range [start, end) (1-indexed).
-    fn quantile(&self, start: usize, end: usize, mut kth: usize) -> PyResult<NumberType> {
+    fn quantile(&self, mut start: usize, mut end: usize, mut kth: usize) -> PyResult<NumberType> {
         if start >= end {
             return Err(PyValueError::new_err("start must be less than end"));
         }
@@ -154,11 +188,9 @@ where
             return Err(PyValueError::new_err("kth is larger than the range size"));
         }
 
-        let mut left = start;
-        let mut right = end;
         let mut result = NumberType::zero();
         for (layer, zero) in zip(self.get_layers(), self.get_zeros()) {
-            let count_zeros = layer.rank(false, right)? - layer.rank(false, left)?;
+            let count_zeros = layer.rank(false, end)? - layer.rank(false, start)?;
             let bit = if kth <= count_zeros {
                 false
             } else {
@@ -169,13 +201,13 @@ where
             result <<= 1;
             if bit {
                 result |= NumberType::one();
-                left = zero + layer.rank(bit, left)?;
-                right = zero + layer.rank(bit, right)?;
+                start = zero + layer.rank(bit, start)?;
+                end = zero + layer.rank(bit, end)?;
             } else {
-                left = layer.rank(bit, left)?;
-                right = layer.rank(bit, right)?;
+                start = layer.rank(bit, start)?;
+                end = layer.rank(bit, end)?;
             }
-            debug_assert!(right <= self.len());
+            debug_assert!(start < end && end <= self.len());
         }
 
         Ok(result)
@@ -187,7 +219,7 @@ where
         start: usize,
         end: usize,
         k: Option<usize>,
-    ) -> PyResult<Vec<HashMap<String, BigUint>>> {
+    ) -> PyResult<Vec<(NumberType, usize)>> {
         if start >= end {
             return Err(PyValueError::new_err("start must be less than end"));
         }
@@ -226,20 +258,7 @@ where
         }) = heap.pop()
         {
             if depth == self.height() {
-                result.push(HashMap::from([
-                    (
-                        "value".to_string(),
-                        value
-                            .to_biguint()
-                            .ok_or(PyRuntimeError::new_err("to_biguint failed"))?,
-                    ),
-                    (
-                        "count".to_string(),
-                        len.to_biguint()
-                            .ok_or(PyRuntimeError::new_err("to_biguint failed"))?,
-                    ),
-                ]));
-
+                result.push((value, len));
                 if result.len() == k {
                     break;
                 }
@@ -249,26 +268,28 @@ where
             let layer = &self.get_layers()[depth];
             let zero = self.get_zeros()[depth];
 
-            let left_zero = layer.rank(false, start)?;
-            let right_zero = layer.rank(false, end)?;
-            if left_zero < right_zero {
+            let start_zero = layer.rank(false, start)?;
+            let end_zero = layer.rank(false, end)?;
+            debug_assert!(start_zero <= end_zero);
+            if start_zero != end_zero {
                 heap.push(QueueItem {
-                    len: right_zero - left_zero,
+                    len: end_zero - start_zero,
                     depth: depth + 1,
-                    start: left_zero,
-                    end: right_zero,
+                    start: start_zero,
+                    end: end_zero,
                     value: &value << 1usize,
                 });
             }
 
-            let left_one = zero + layer.rank(true, start)?;
-            let right_one = zero + layer.rank(true, end)?;
-            if left_one < right_one {
+            let start_one = zero + layer.rank(true, start)?;
+            let end_one = zero + layer.rank(true, end)?;
+            debug_assert!(start_one <= end_one);
+            if end_one != start_one {
                 heap.push(QueueItem {
-                    len: right_one - left_one,
+                    len: end_one - start_one,
                     depth: depth + 1,
-                    start: left_one,
-                    end: right_one,
+                    start: start_one,
+                    end: end_one,
                     value: (&value << 1usize) | NumberType::one(),
                 });
             }
@@ -281,13 +302,13 @@ where
     fn range_sum(&self, start: usize, end: usize) -> PyResult<BigUint> {
         let result = self.range_list(start, end, None, None)?.iter().try_fold(
             BigUint::zero(),
-            |acc, item| -> PyResult<BigUint> {
-                let value = item
-                    .get("value")
-                    .ok_or(PyRuntimeError::new_err("invalid value type"))?;
-                let count = item
-                    .get("count")
-                    .ok_or(PyRuntimeError::new_err("invalid count type"))?;
+            |acc, (value, count)| -> PyResult<BigUint> {
+                let value = value
+                    .to_biguint()
+                    .ok_or(PyRuntimeError::new_err("failed to convert to BigUint"))?;
+                let count = count
+                    .to_biguint()
+                    .ok_or(PyRuntimeError::new_err("failed to convert to BigUint"))?;
 
                 Ok(acc + value * count)
             },
@@ -303,7 +324,7 @@ where
         end1: usize,
         start2: usize,
         end2: usize,
-    ) -> PyResult<Vec<HashMap<String, BigUint>>> {
+    ) -> PyResult<Vec<(NumberType, usize, usize)>> {
         if start1 >= end1 {
             return Err(PyValueError::new_err("start1 must be less than end1"));
         }
@@ -343,30 +364,34 @@ where
                 value,
             } in stack
             {
-                let left1_zero = layer.rank(false, start1)?;
-                let right1_zero = layer.rank(false, end1)?;
-                let left2_zero = layer.rank(false, start2)?;
-                let right2_zero = layer.rank(false, end2)?;
-                if left1_zero < right1_zero && left2_zero < right2_zero {
+                let start1_zero = layer.rank(false, start1)?;
+                let end1_zero = layer.rank(false, end1)?;
+                debug_assert!(start1_zero <= end1_zero);
+                let start2_zero = layer.rank(false, start2)?;
+                let end2_zero = layer.rank(false, end2)?;
+                debug_assert!(start2_zero <= end2_zero);
+                if start1_zero != end1_zero && start2_zero != end2_zero {
                     next_stack.push(StackItem {
-                        start1: left1_zero,
-                        end1: right1_zero,
-                        start2: left2_zero,
-                        end2: right2_zero,
+                        start1: start1_zero,
+                        end1: end1_zero,
+                        start2: start2_zero,
+                        end2: end2_zero,
                         value: &value << 1,
                     });
                 }
 
-                let left1_one = zero + layer.rank(true, start1)?;
-                let right1_one = zero + layer.rank(true, end1)?;
-                let left2_one = zero + layer.rank(true, start2)?;
-                let right2_one = zero + layer.rank(true, end2)?;
-                if left1_one < right1_one && left2_one < right2_one {
+                let start1_one = zero + layer.rank(true, start1)?;
+                let end1_one = zero + layer.rank(true, end1)?;
+                debug_assert!(start1_one <= end1_one);
+                let start2_one = zero + layer.rank(true, start2)?;
+                let end2_one = zero + layer.rank(true, end2)?;
+                debug_assert!(start2_one <= end2_one);
+                if start1_one != end1_one && start2_one != end2_one {
                     next_stack.push(StackItem {
-                        start1: left1_one,
-                        end1: right1_one,
-                        start2: left2_one,
-                        end2: right2_one,
+                        start1: start1_one,
+                        end1: end1_one,
+                        start2: start2_one,
+                        end2: end2_one,
                         value: (&value << 1) | NumberType::one(),
                     });
                 }
@@ -376,7 +401,7 @@ where
         }
 
         let result = stack
-            .into_iter()
+            .iter()
             .map(
                 |StackItem {
                      start1,
@@ -384,31 +409,9 @@ where
                      start2,
                      end2,
                      value,
-                 }| {
-                    Ok(HashMap::from([
-                        (
-                            "value".to_string(),
-                            value
-                                .to_biguint()
-                                .ok_or(PyRuntimeError::new_err("to_biguint failed"))?,
-                        ),
-                        (
-                            "count1".to_string(),
-                            (end1 - start1)
-                                .to_biguint()
-                                .ok_or(PyRuntimeError::new_err("to_biguint failed"))?,
-                        ),
-                        (
-                            "count2".to_string(),
-                            (end2 - start2)
-                                .to_biguint()
-                                .ok_or(PyRuntimeError::new_err("to_biguint failed"))?,
-                        ),
-                    ]))
-                },
+                 }| (value.clone(), end1 - start1, end2 - start2),
             )
-            .collect::<PyResult<Vec<_>>>()?;
-
+            .collect::<Vec<_>>();
         Ok(result)
     }
 
@@ -448,34 +451,38 @@ where
             let mut next_stack = Vec::new();
 
             for StackItem { start, end, value } in stack {
-                let left_zero = layer.rank(false, start)?;
-                let right_zero = layer.rank(false, end)?;
+                let start_zero = layer.rank(false, start)?;
+                let end_zero = layer.rank(false, end)?;
+                debug_assert!(start_zero <= end_zero);
                 let next_value_zero = &value << 1;
-                if lower.is_none_or(|lower| lower >> (self.height() - depth - 1) <= next_value_zero)
+                if start_zero != end_zero
+                    && lower
+                        .is_none_or(|lower| lower >> (self.height() - depth - 1) <= next_value_zero)
                     && upper
                         .is_none_or(|upper| next_value_zero <= upper >> (self.height() - depth - 1))
-                    && left_zero < right_zero
                 {
                     next_stack.push(StackItem {
-                        start: left_zero,
-                        end: right_zero,
+                        start: start_zero,
+                        end: end_zero,
                         value: next_value_zero,
                     });
                 }
 
-                let left_one = zero + layer.rank(true, start)?;
-                let right_one = zero + layer.rank(true, end)?;
+                let start_one = zero + layer.rank(true, start)?;
+                let end_one = zero + layer.rank(true, end)?;
+                debug_assert!(start_one <= end_one);
                 let next_value_one = (&value << 1) | NumberType::one();
-                if lower
-                    .is_none_or(|lower| (lower >> (self.height() - depth - 1)) <= next_value_one)
+                if start_one != end_one
+                    && lower.is_none_or(|lower| {
+                        (lower >> (self.height() - depth - 1)) <= next_value_one
+                    })
                     && upper.is_none_or(|upper| {
                         next_value_one <= (upper >> (self.height() - depth - 1))
                     })
-                    && left_one < right_one
                 {
                     next_stack.push(StackItem {
-                        start: left_one,
-                        end: right_one,
+                        start: start_one,
+                        end: end_one,
                         value: next_value_one,
                     });
                 }
@@ -501,7 +508,7 @@ where
         end: usize,
         lower: Option<&NumberType>,
         upper: Option<&NumberType>,
-    ) -> PyResult<Vec<HashMap<String, BigUint>>> {
+    ) -> PyResult<Vec<(NumberType, usize)>> {
         if start >= end {
             return Err(PyValueError::new_err("start must be less than end"));
         }
@@ -530,34 +537,38 @@ where
             let mut next_stack = Vec::new();
 
             for StackItem { start, end, value } in stack {
-                let left_zero = layer.rank(false, start)?;
-                let right_zero = layer.rank(false, end)?;
+                let start_zero = layer.rank(false, start)?;
+                let end_zero = layer.rank(false, end)?;
+                debug_assert!(start_zero <= end_zero);
                 let next_value_zero = &value << 1;
-                if lower.is_none_or(|lower| lower >> (self.height() - depth - 1) <= next_value_zero)
+                if start_zero != end_zero
+                    && lower
+                        .is_none_or(|lower| lower >> (self.height() - depth - 1) <= next_value_zero)
                     && upper
                         .is_none_or(|upper| next_value_zero <= upper >> (self.height() - depth - 1))
-                    && left_zero < right_zero
                 {
                     next_stack.push(StackItem {
-                        start: left_zero,
-                        end: right_zero,
+                        start: start_zero,
+                        end: end_zero,
                         value: next_value_zero,
                     });
                 }
 
-                let left_one = zero + layer.rank(true, start)?;
-                let right_one = zero + layer.rank(true, end)?;
+                let start_one = zero + layer.rank(true, start)?;
+                let end_one = zero + layer.rank(true, end)?;
+                debug_assert!(start_one <= end_one);
                 let next_value_one = (&value << 1) | NumberType::one();
-                if lower
-                    .is_none_or(|lower| (lower >> (self.height() - depth - 1)) <= next_value_one)
+                if start_one != end_one
+                    && lower.is_none_or(|lower| {
+                        (lower >> (self.height() - depth - 1)) <= next_value_one
+                    })
                     && upper.is_none_or(|upper| {
                         next_value_one <= (upper >> (self.height() - depth - 1))
                     })
-                    && left_one < right_one
                 {
                     next_stack.push(StackItem {
-                        start: left_one,
-                        end: right_one,
+                        start: start_one,
+                        end: end_one,
                         value: next_value_one,
                     });
                 }
@@ -571,23 +582,8 @@ where
             .filter(|StackItem { value, .. }| {
                 lower.is_none_or(|lower| lower <= value) && upper.is_none_or(|upper| value < upper)
             })
-            .map(|StackItem { start, end, value }| {
-                Ok(HashMap::from([
-                    (
-                        "value".to_string(),
-                        value
-                            .to_biguint()
-                            .ok_or(PyRuntimeError::new_err("to_biguint failed"))?,
-                    ),
-                    (
-                        "count".to_string(),
-                        (end - start)
-                            .to_biguint()
-                            .ok_or(PyRuntimeError::new_err("to_biguint failed"))?,
-                    ),
-                ]))
-            })
-            .collect::<PyResult<Vec<_>>>()?;
+            .map(|StackItem { start, end, value }| (value, end - start))
+            .collect::<Vec<_>>();
 
         Ok(result)
     }
@@ -598,7 +594,7 @@ where
         start: usize,
         end: usize,
         k: Option<usize>,
-    ) -> PyResult<Vec<HashMap<String, BigUint>>> {
+    ) -> PyResult<Vec<(NumberType, usize)>> {
         if start >= end {
             return Err(PyValueError::new_err("start must be less than end"));
         }
@@ -625,24 +621,26 @@ where
             let mut next_stack = Vec::new();
 
             for StackItem { start, end, value } in stack {
-                let left_one = zero + layer.rank(true, start)?;
-                let right_one = zero + layer.rank(true, end)?;
+                let start_one = zero + layer.rank(true, start)?;
+                let end_one = zero + layer.rank(true, end)?;
+                debug_assert!(start_one <= end_one);
                 let next_value_one = (&value << 1) | NumberType::one();
-                if left_one < right_one {
+                if start_one != end_one {
                     next_stack.push(StackItem {
-                        start: left_one,
-                        end: right_one,
+                        start: start_one,
+                        end: end_one,
                         value: next_value_one,
                     });
                 }
 
-                let left_zero = layer.rank(false, start)?;
-                let right_zero = layer.rank(false, end)?;
+                let start_zero = layer.rank(false, start)?;
+                let end_zero = layer.rank(false, end)?;
+                debug_assert!(start_zero <= end_zero);
                 let next_value_zero = &value << 1;
-                if left_zero < right_zero {
+                if start_zero != end_zero {
                     next_stack.push(StackItem {
-                        start: left_zero,
-                        end: right_zero,
+                        start: start_zero,
+                        end: end_zero,
                         value: next_value_zero,
                     });
                 }
@@ -657,24 +655,9 @@ where
 
         let result = stack
             .into_iter()
-            .map(|StackItem { start, end, value }| {
-                Ok(HashMap::from([
-                    (
-                        "value".to_string(),
-                        value
-                            .to_biguint()
-                            .ok_or(PyRuntimeError::new_err("to_biguint failed"))?,
-                    ),
-                    (
-                        "count".to_string(),
-                        (end - start)
-                            .to_biguint()
-                            .ok_or(PyRuntimeError::new_err("to_biguint failed"))?,
-                    ),
-                ]))
-            })
+            .map(|StackItem { start, end, value }| (value, end - start))
             .take(k)
-            .collect::<PyResult<Vec<_>>>()?;
+            .collect::<Vec<_>>();
 
         Ok(result)
     }
@@ -685,7 +668,7 @@ where
         start: usize,
         end: usize,
         k: Option<usize>,
-    ) -> PyResult<Vec<HashMap<String, BigUint>>> {
+    ) -> PyResult<Vec<(NumberType, usize)>> {
         if start >= end {
             return Err(PyValueError::new_err("start must be less than end"));
         }
@@ -712,24 +695,26 @@ where
             let mut next_stack = Vec::new();
 
             for StackItem { start, end, value } in stack {
-                let left_zero = layer.rank(false, start)?;
-                let right_zero = layer.rank(false, end)?;
+                let start_zero = layer.rank(false, start)?;
+                let end_zero = layer.rank(false, end)?;
+                debug_assert!(start_zero <= end_zero);
                 let next_value_zero = &value << 1;
-                if left_zero < right_zero {
+                if start_zero != end_zero {
                     next_stack.push(StackItem {
-                        start: left_zero,
-                        end: right_zero,
+                        start: start_zero,
+                        end: end_zero,
                         value: next_value_zero,
                     });
                 }
 
-                let left_one = zero + layer.rank(true, start)?;
-                let right_one = zero + layer.rank(true, end)?;
+                let start_one = zero + layer.rank(true, start)?;
+                let end_one = zero + layer.rank(true, end)?;
+                debug_assert!(start_one <= end_one);
                 let next_value_one = (&value << 1) | NumberType::one();
-                if left_one < right_one {
+                if start_one != end_one {
                     next_stack.push(StackItem {
-                        start: left_one,
-                        end: right_one,
+                        start: start_one,
+                        end: end_one,
                         value: next_value_one,
                     });
                 }
@@ -744,24 +729,9 @@ where
 
         let result = stack
             .into_iter()
-            .map(|StackItem { start, end, value }| {
-                Ok(HashMap::from([
-                    (
-                        "value".to_string(),
-                        value
-                            .to_biguint()
-                            .ok_or(PyRuntimeError::new_err("to_biguint failed"))?,
-                    ),
-                    (
-                        "count".to_string(),
-                        (end - start)
-                            .to_biguint()
-                            .ok_or(PyRuntimeError::new_err("to_biguint failed"))?,
-                    ),
-                ]))
-            })
+            .map(|StackItem { start, end, value }| (value, end - start))
             .take(k)
-            .collect::<PyResult<Vec<_>>>()?;
+            .collect::<Vec<_>>();
 
         Ok(result)
     }
@@ -812,44 +782,45 @@ where
             let mut next_stack = Vec::new();
 
             for StackItem { start, end, value } in stack {
-                let left_one = zero + layer.rank(true, start)?;
-                let right_one = zero + layer.rank(true, end)?;
+                let start_one = zero + layer.rank(true, start)?;
+                let end_one = zero + layer.rank(true, end)?;
+                debug_assert!(start_one <= end_one);
                 let next_value_one = (&value << 1) | NumberType::one();
-                if lower.is_none_or(|lower| lower >> (self.height() - depth - 1) <= next_value_one)
+                if start_one != end_one
+                    && lower
+                        .is_none_or(|lower| lower >> (self.height() - depth - 1) <= next_value_one)
                     && upper
                         .is_none_or(|upper| next_value_one <= upper >> (self.height() - depth - 1))
-                    && left_one < right_one
                 {
                     next_stack.push(StackItem {
-                        start: left_one,
-                        end: right_one,
+                        start: start_one,
+                        end: end_one,
                         value: next_value_one,
                     });
                 }
 
-                let left_zero = layer.rank(false, start)?;
-                let right_zero = layer.rank(false, end)?;
+                let start_zero = layer.rank(false, start)?;
+                let end_zero = layer.rank(false, end)?;
+                debug_assert!(start_zero <= end_zero);
                 let next_value_zero = &value << 1;
-                if lower.is_none_or(|lower| lower >> (self.height() - depth - 1) <= next_value_zero)
+                if start_zero != end_zero
+                    && lower
+                        .is_none_or(|lower| lower >> (self.height() - depth - 1) <= next_value_zero)
                     && upper
                         .is_none_or(|upper| next_value_zero <= upper >> (self.height() - depth - 1))
-                    && left_zero < right_zero
                 {
                     next_stack.push(StackItem {
-                        start: left_zero,
-                        end: right_zero,
+                        start: start_zero,
+                        end: end_zero,
                         value: next_value_zero,
                     });
                 }
 
-                if depth + 1 == self.height() && next_stack.len() >= 1 {
-                    let max_value = next_stack
-                        .iter()
-                        .filter(|item| {
-                            lower.is_none_or(|lower| lower <= &item.value)
-                                && upper.is_none_or(|upper| &item.value < upper)
-                        })
-                        .next();
+                if depth + 1 == self.height() && !next_stack.is_empty() {
+                    let max_value = next_stack.iter().find(|item| {
+                        lower.is_none_or(|lower| lower <= &item.value)
+                            && upper.is_none_or(|upper| &item.value < upper)
+                    });
                     match max_value {
                         Some(item) => return Ok(Some(item.value.clone())),
                         None => continue,
@@ -909,46 +880,47 @@ where
             let mut next_stack = Vec::new();
 
             for StackItem { start, end, value } in stack {
-                let left_zero = layer.rank(false, start)?;
-                let right_zero = layer.rank(false, end)?;
+                let start_zero = layer.rank(false, start)?;
+                let end_zero = layer.rank(false, end)?;
+                debug_assert!(start_zero <= end_zero);
                 let next_value_zero = &value << 1;
-                if lower.is_none_or(|lower| lower >> (self.height() - depth - 1) <= next_value_zero)
+                if start_zero != end_zero
+                    && lower
+                        .is_none_or(|lower| lower >> (self.height() - depth - 1) <= next_value_zero)
                     && upper
                         .is_none_or(|upper| next_value_zero <= upper >> (self.height() - depth - 1))
-                    && left_zero < right_zero
                 {
                     next_stack.push(StackItem {
-                        start: left_zero,
-                        end: right_zero,
+                        start: start_zero,
+                        end: end_zero,
                         value: next_value_zero,
                     });
                 }
 
-                let left_one = zero + layer.rank(true, start)?;
-                let right_one = zero + layer.rank(true, end)?;
+                let start_one = zero + layer.rank(true, start)?;
+                let end_one = zero + layer.rank(true, end)?;
+                debug_assert!(start_one <= end_one);
                 let next_value_one = (&value << 1) | NumberType::one();
-                if lower
-                    .is_none_or(|lower| (lower >> (self.height() - depth - 1)) <= next_value_one)
+                if start_one != end_one
+                    && lower.is_none_or(|lower| {
+                        (lower >> (self.height() - depth - 1)) <= next_value_one
+                    })
                     && upper.is_none_or(|upper| {
                         next_value_one <= (upper >> (self.height() - depth - 1))
                     })
-                    && left_one < right_one
                 {
                     next_stack.push(StackItem {
-                        start: left_one,
-                        end: right_one,
+                        start: start_one,
+                        end: end_one,
                         value: next_value_one,
                     });
                 }
 
-                if depth + 1 == self.height() && next_stack.len() >= 1 {
-                    let min_value = next_stack
-                        .iter()
-                        .filter(|item| {
-                            lower.is_none_or(|lower| lower <= &item.value)
-                                && upper.is_none_or(|upper| &item.value < upper)
-                        })
-                        .next();
+                if depth + 1 == self.height() && !next_stack.is_empty() {
+                    let min_value = next_stack.iter().find(|item| {
+                        lower.is_none_or(|lower| lower <= &item.value)
+                            && upper.is_none_or(|upper| &item.value < upper)
+                    });
                     match min_value {
                         Some(item) => return Ok(Some(item.value.clone())),
                         None => continue,
@@ -969,7 +941,7 @@ mod tests {
     use std::marker::PhantomData;
 
     use super::*;
-    use crate::traits::{bit_vector::SampleBitVector, bit_width::BitWidth};
+    use crate::traits::{bit_vector::bit_vector::SampleBitVector, utils::bit_width::BitWidth};
 
     struct SampleWaveletMatrix<NumberType> {
         layers: Vec<SampleBitVector>,
@@ -1024,6 +996,7 @@ mod tests {
         NumberType: BitAnd<NumberType, Output = NumberType>
             + BitOr<NumberType, Output = NumberType>
             + BitOrAssign
+            + BitWidth
             + Clone
             + One
             + Ord
@@ -1072,6 +1045,7 @@ mod tests {
         let wv_u8 = SampleWaveletMatrix::<u8>::new(&Vec::new());
         assert_eq!(wv_u8.len(), 0);
         assert_eq!(wv_u8.height(), 0);
+        assert_eq!(wv_u8.values().unwrap(), Vec::<u8>::new());
         assert_eq!(
             wv_u8.access(0).unwrap_err().to_string(),
             "IndexError: index out of bounds"
@@ -1125,6 +1099,7 @@ mod tests {
         let wv_biguint = SampleWaveletMatrix::<BigUint>::new(&Vec::new());
         assert_eq!(wv_biguint.len(), 0);
         assert_eq!(wv_biguint.height(), 0);
+        assert_eq!(wv_biguint.values().unwrap(), Vec::<BigUint>::new());
         assert_eq!(
             wv_biguint.access(0).unwrap_err().to_string(),
             "IndexError: index out of bounds"
@@ -1201,6 +1176,7 @@ mod tests {
         let wv_u8 = SampleWaveletMatrix::<u8>::new(&vec![0u8; 64]);
         assert_eq!(wv_u8.len(), 64);
         assert_eq!(wv_u8.height(), 0);
+        assert_eq!(wv_u8.values().unwrap(), vec![0u8; 64]);
         assert_eq!(wv_u8.access(1).unwrap(), 0u8);
         assert_eq!(wv_u8.rank(&0u8, 1).unwrap(), 1);
         assert_eq!(wv_u8.select(&0u8, 1).unwrap(), Some(0));
@@ -1217,6 +1193,7 @@ mod tests {
         let wv_biguint = SampleWaveletMatrix::<BigUint>::new(&vec![0u32.into(); 64]);
         assert_eq!(wv_biguint.len(), 64);
         assert_eq!(wv_biguint.height(), 0);
+        assert_eq!(wv_biguint.values().unwrap(), vec![0u32.into(); 64]);
         assert_eq!(wv_biguint.access(1).unwrap(), 0u32.into());
         assert_eq!(wv_biguint.rank(&0u32.into(), 1).unwrap(), 1);
         assert_eq!(wv_biguint.select(&0u32.into(), 1).unwrap(), Some(0));
@@ -1244,6 +1221,7 @@ mod tests {
         let wv_u8 = SampleWaveletMatrix::<u8>::new(&vec![u8::MAX; 64]);
         assert_eq!(wv_u8.len(), 64);
         assert_eq!(wv_u8.height(), 8);
+        assert_eq!(wv_u8.values().unwrap(), vec![u8::MAX; 64]);
         assert_eq!(wv_u8.access(1).unwrap(), u8::MAX);
         assert_eq!(wv_u8.rank(&u8::MAX, 1).unwrap(), 1);
         assert_eq!(wv_u8.select(&u8::MAX, 1).unwrap(), Some(0));
@@ -1259,6 +1237,36 @@ mod tests {
         assert_eq!(wv_u8.range_mink(0, 64, None).unwrap().len(), 1);
         assert_eq!(wv_u8.prev_value(0, 64, None, None).unwrap(), Some(u8::MAX));
         assert_eq!(wv_u8.next_value(0, 64, None, None).unwrap(), Some(u8::MAX));
+    }
+
+    #[test]
+    fn test_values() {
+        Python::initialize();
+
+        let wv_u8 = create_dummy_u8();
+        assert_eq!(
+            wv_u8.values().unwrap(),
+            vec![5u8, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0],
+        );
+
+        let wv_biguint = create_dummy_biguint();
+        assert_eq!(
+            wv_biguint.values().unwrap(),
+            vec![
+                5u32.into(),
+                4u32.into(),
+                5u32.into(),
+                5u32.into(),
+                2u32.into(),
+                1u32.into(),
+                5u32.into(),
+                6u32.into(),
+                1u32.into(),
+                3u32.into(),
+                5u32.into(),
+                0u32.into()
+            ],
+        );
     }
 
     #[test]
@@ -1312,20 +1320,16 @@ mod tests {
         Python::initialize();
 
         let wv_u8 = create_dummy_u8();
-        let result_u8 = wv_u8.topk(1, 10, Some(2)).unwrap();
-        assert_eq!(result_u8.len(), 2);
-        assert_eq!(result_u8[0].get("value"), Some(&BigUint::from(5u8)));
-        assert_eq!(result_u8[0].get("count"), Some(&BigUint::from(3usize)));
-        assert_eq!(result_u8[1].get("value"), Some(&BigUint::from(1u8)));
-        assert_eq!(result_u8[1].get("count"), Some(&BigUint::from(2usize)));
+        assert_eq!(
+            wv_u8.topk(1, 10, Some(2)).unwrap(),
+            vec![(5u8, 3usize), (1u8, 2usize)],
+        );
 
         let wv_biguint = create_dummy_biguint();
-        let result_biguint = wv_biguint.topk(1, 10, Some(2)).unwrap();
-        assert_eq!(result_biguint.len(), 2);
-        assert_eq!(result_biguint[0].get("value"), Some(&BigUint::from(5u32)));
-        assert_eq!(result_biguint[0].get("count"), Some(&BigUint::from(3usize)));
-        assert_eq!(result_biguint[1].get("value"), Some(&BigUint::from(1u32)));
-        assert_eq!(result_biguint[1].get("count"), Some(&BigUint::from(2usize)));
+        assert_eq!(
+            wv_biguint.topk(1, 10, Some(2)).unwrap(),
+            vec![(5u32.into(), 3usize), (1u32.into(), 2usize)],
+        );
     }
 
     #[test]
@@ -1344,35 +1348,15 @@ mod tests {
         Python::initialize();
 
         let wv_u8 = create_dummy_u8();
-        let result_u8 = wv_u8.range_intersection(0, 6, 6, 11).unwrap();
-        assert_eq!(result_u8.len(), 2);
-        assert_eq!(result_u8[0].get("value"), Some(&BigUint::from(1u8)));
-        assert_eq!(result_u8[0].get("count1"), Some(&BigUint::from(1usize)));
-        assert_eq!(result_u8[0].get("count2"), Some(&BigUint::from(1usize)));
-        assert_eq!(result_u8[1].get("value"), Some(&BigUint::from(5u8)));
-        assert_eq!(result_u8[1].get("count1"), Some(&BigUint::from(3usize)));
-        assert_eq!(result_u8[1].get("count2"), Some(&BigUint::from(2usize)));
+        assert_eq!(
+            wv_u8.range_intersection(0, 6, 6, 11).unwrap(),
+            vec![(1u8, 1usize, 1usize), (5u8, 3usize, 2usize),],
+        );
 
         let wv_biguint = create_dummy_biguint();
-        let result_biguint = wv_biguint.range_intersection(0, 6, 6, 11).unwrap();
-        assert_eq!(result_biguint.len(), 2);
-        assert_eq!(result_biguint[0].get("value"), Some(&BigUint::from(1u32)));
         assert_eq!(
-            result_biguint[0].get("count1"),
-            Some(&BigUint::from(1usize))
-        );
-        assert_eq!(
-            result_biguint[0].get("count2"),
-            Some(&BigUint::from(1usize))
-        );
-        assert_eq!(result_biguint[1].get("value"), Some(&BigUint::from(5u32)));
-        assert_eq!(
-            result_biguint[1].get("count1"),
-            Some(&BigUint::from(3usize))
-        );
-        assert_eq!(
-            result_biguint[1].get("count2"),
-            Some(&BigUint::from(2usize))
+            wv_biguint.range_intersection(0, 6, 6, 11).unwrap(),
+            vec![(1u32.into(), 1usize, 1usize), (5u32.into(), 3usize, 2usize),],
         );
     }
 
@@ -1400,22 +1384,18 @@ mod tests {
         Python::initialize();
 
         let wv_u8 = create_dummy_u8();
-        let result_u8 = wv_u8.range_list(1, 9, Some(&4u8), Some(&6u8)).unwrap();
-        assert_eq!(result_u8.len(), 2);
-        assert_eq!(result_u8[0].get("value"), Some(&BigUint::from(4u8)));
-        assert_eq!(result_u8[0].get("count"), Some(&BigUint::from(1usize)));
-        assert_eq!(result_u8[1].get("value"), Some(&BigUint::from(5u8)));
-        assert_eq!(result_u8[1].get("count"), Some(&BigUint::from(3usize)));
+        assert_eq!(
+            wv_u8.range_list(1, 9, Some(&4u8), Some(&6u8)).unwrap(),
+            vec![(4u8, 1usize), (5u8, 3usize),],
+        );
 
         let wv_biguint = create_dummy_biguint();
-        let result_biguint = wv_biguint
-            .range_list(1, 9, Some(&4u32.into()), Some(&6u32.into()))
-            .unwrap();
-        assert_eq!(result_biguint.len(), 2);
-        assert_eq!(result_biguint[0].get("value"), Some(&BigUint::from(4u32)));
-        assert_eq!(result_biguint[0].get("count"), Some(&BigUint::from(1usize)));
-        assert_eq!(result_biguint[1].get("value"), Some(&BigUint::from(5u32)));
-        assert_eq!(result_biguint[1].get("count"), Some(&BigUint::from(3usize)));
+        assert_eq!(
+            wv_biguint
+                .range_list(1, 9, Some(&4u32.into()), Some(&6u32.into()))
+                .unwrap(),
+            vec![(4u32.into(), 1usize), (5u32.into(), 3usize),],
+        );
     }
 
     #[test]
@@ -1423,20 +1403,16 @@ mod tests {
         Python::initialize();
 
         let wv_u8 = create_dummy_u8();
-        let result_u8 = wv_u8.range_maxk(1, 9, Some(2)).unwrap();
-        assert_eq!(result_u8.len(), 2);
-        assert_eq!(result_u8[0].get("value"), Some(&BigUint::from(6u8)));
-        assert_eq!(result_u8[0].get("count"), Some(&BigUint::from(1usize)));
-        assert_eq!(result_u8[1].get("value"), Some(&BigUint::from(5u8)));
-        assert_eq!(result_u8[1].get("count"), Some(&BigUint::from(3usize)));
+        assert_eq!(
+            wv_u8.range_maxk(1, 9, Some(2)).unwrap(),
+            vec![(6u8, 1usize), (5u8, 3usize),],
+        );
 
         let wv_biguint = create_dummy_biguint();
-        let result_biguint = wv_biguint.range_maxk(1, 9, Some(2)).unwrap();
-        assert_eq!(result_biguint.len(), 2);
-        assert_eq!(result_biguint[0].get("value"), Some(&BigUint::from(6u32)));
-        assert_eq!(result_biguint[0].get("count"), Some(&BigUint::from(1usize)));
-        assert_eq!(result_biguint[1].get("value"), Some(&BigUint::from(5u32)));
-        assert_eq!(result_biguint[1].get("count"), Some(&BigUint::from(3usize)));
+        assert_eq!(
+            wv_biguint.range_maxk(1, 9, Some(2)).unwrap(),
+            vec![(6u32.into(), 1usize), (5u32.into(), 3usize),],
+        );
     }
 
     #[test]
@@ -1444,20 +1420,16 @@ mod tests {
         Python::initialize();
 
         let wv_u8 = create_dummy_u8();
-        let result_u8 = wv_u8.range_mink(1, 9, Some(2)).unwrap();
-        assert_eq!(result_u8.len(), 2);
-        assert_eq!(result_u8[0].get("value"), Some(&BigUint::from(1u8)));
-        assert_eq!(result_u8[0].get("count"), Some(&BigUint::from(2usize)));
-        assert_eq!(result_u8[1].get("value"), Some(&BigUint::from(2u8)));
-        assert_eq!(result_u8[1].get("count"), Some(&BigUint::from(1usize)));
+        assert_eq!(
+            wv_u8.range_mink(1, 9, Some(2)).unwrap(),
+            vec![(1u8, 2usize), (2u8, 1usize),],
+        );
 
         let wv_biguint = create_dummy_biguint();
-        let result_biguint = wv_biguint.range_mink(1, 9, Some(2)).unwrap();
-        assert_eq!(result_biguint.len(), 2);
-        assert_eq!(result_biguint[0].get("value"), Some(&BigUint::from(1u32)));
-        assert_eq!(result_biguint[0].get("count"), Some(&BigUint::from(2usize)));
-        assert_eq!(result_biguint[1].get("value"), Some(&BigUint::from(2u32)));
-        assert_eq!(result_biguint[1].get("count"), Some(&BigUint::from(1usize)));
+        assert_eq!(
+            wv_biguint.range_mink(1, 9, Some(2)).unwrap(),
+            vec![(1u32.into(), 2usize), (2u32.into(), 1usize),],
+        );
     }
 
     #[test]

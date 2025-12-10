@@ -1,5 +1,7 @@
 use super::bit_vector::BitVector;
-use crate::traits::{bit_width::BitWidth, wavelet_matrix::WaveletMatrixTrait};
+use crate::traits::{
+    utils::bit_width::BitWidth, wavelet_matrix::wavelet_matrix::WaveletMatrixTrait,
+};
 use num_bigint::ToBigUint;
 use num_traits::{One, Zero};
 use std::{
@@ -8,6 +10,7 @@ use std::{
     ops::{BitAnd, BitOr, BitOrAssign, Shl, ShlAssign, Shr},
 };
 
+#[derive(Clone)]
 pub(crate) struct WaveletMatrix<NumberType> {
     layers: Vec<BitVector>,
     zeros: Vec<usize>,
@@ -21,8 +24,8 @@ where
     NumberType: BitAnd<NumberType, Output = NumberType> + BitWidth + Clone + Hash + One + Ord,
     for<'a> &'a NumberType: Shr<usize, Output = NumberType>,
 {
-    pub(crate) fn new(data: &Vec<NumberType>) -> Self {
-        let mut values = data.clone();
+    pub(crate) fn new(data: &[NumberType]) -> Self {
+        let mut values = data.to_owned();
         let height = values.iter().max().map_or(0usize, |max| max.bit_width());
         let len = values.len();
         let mut layers: Vec<BitVector> = Vec::with_capacity(height);
@@ -66,6 +69,7 @@ where
     NumberType: BitAnd<NumberType, Output = NumberType>
         + BitOr<NumberType, Output = NumberType>
         + BitOrAssign
+        + BitWidth
         + Clone
         + Hash
         + One
@@ -130,6 +134,7 @@ mod tests {
         let wv_u8 = WaveletMatrix::<u8>::new(&Vec::new());
         assert_eq!(wv_u8.len(), 0);
         assert_eq!(wv_u8.height(), 0);
+        assert_eq!(wv_u8.values().unwrap(), Vec::<u8>::new());
         assert_eq!(
             wv_u8.access(0).unwrap_err().to_string(),
             "IndexError: index out of bounds"
@@ -186,6 +191,7 @@ mod tests {
         let wv_biguint = WaveletMatrix::<BigUint>::new(&Vec::new());
         assert_eq!(wv_biguint.len(), 0);
         assert_eq!(wv_biguint.height(), 0);
+        assert_eq!(wv_biguint.values().unwrap(), Vec::<BigUint>::new());
         assert_eq!(
             wv_biguint.access(0).unwrap_err().to_string(),
             "IndexError: index out of bounds"
@@ -265,6 +271,7 @@ mod tests {
         let wv_u8 = WaveletMatrix::<u8>::new(&vec![0u8; 64]);
         assert_eq!(wv_u8.len(), 64);
         assert_eq!(wv_u8.height(), 0);
+        assert_eq!(wv_u8.values().unwrap(), vec![0u8; 64]);
         assert_eq!(wv_u8.access(1).unwrap(), 0u8);
         assert_eq!(wv_u8.rank(&0u8, 1).unwrap(), 1);
         assert_eq!(wv_u8.select(&0u8, 1).unwrap(), Some(0));
@@ -281,6 +288,7 @@ mod tests {
         let wv_biguint = WaveletMatrix::<BigUint>::new(&vec![0u32.into(); 64]);
         assert_eq!(wv_biguint.len(), 64);
         assert_eq!(wv_biguint.height(), 0);
+        assert_eq!(wv_biguint.values().unwrap(), vec![0u32.into(); 64]);
         assert_eq!(wv_biguint.access(1).unwrap(), 0u32.into());
         assert_eq!(wv_biguint.rank(&0u32.into(), 1).unwrap(), 1);
         assert_eq!(wv_biguint.select(&0u32.into(), 1).unwrap(), Some(0));
@@ -308,6 +316,7 @@ mod tests {
         let wv_u8 = WaveletMatrix::<u8>::new(&vec![u8::MAX; 64]);
         assert_eq!(wv_u8.len(), 64);
         assert_eq!(wv_u8.height(), 8);
+        assert_eq!(wv_u8.values().unwrap(), vec![u8::MAX; 64]);
         assert_eq!(wv_u8.access(1).unwrap(), u8::MAX);
         assert_eq!(wv_u8.rank(&u8::MAX, 1).unwrap(), 1);
         assert_eq!(wv_u8.select(&u8::MAX, 1).unwrap(), Some(0));
@@ -323,6 +332,36 @@ mod tests {
         assert_eq!(wv_u8.range_mink(0, 64, None).unwrap().len(), 1);
         assert_eq!(wv_u8.prev_value(0, 64, None, None).unwrap(), Some(u8::MAX));
         assert_eq!(wv_u8.next_value(0, 64, None, None).unwrap(), Some(u8::MAX));
+    }
+
+    #[test]
+    fn test_values() {
+        Python::initialize();
+
+        let wv_u8 = create_u8();
+        assert_eq!(
+            wv_u8.values().unwrap(),
+            vec![5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0]
+        );
+
+        let wv_biguint = create_biguint();
+        assert_eq!(
+            wv_biguint.values().unwrap(),
+            vec![
+                5u32.into(),
+                4u32.into(),
+                5u32.into(),
+                5u32.into(),
+                2u32.into(),
+                1u32.into(),
+                5u32.into(),
+                6u32.into(),
+                1u32.into(),
+                3u32.into(),
+                5u32.into(),
+                0u32.into()
+            ]
+        );
     }
 
     #[test]
@@ -376,20 +415,16 @@ mod tests {
         Python::initialize();
 
         let wv_u8 = create_u8();
-        let result_u8 = wv_u8.topk(1, 10, Some(2)).unwrap();
-        assert_eq!(result_u8.len(), 2);
-        assert_eq!(result_u8[0].get("value"), Some(&BigUint::from(5u8)));
-        assert_eq!(result_u8[0].get("count"), Some(&BigUint::from(3usize)));
-        assert_eq!(result_u8[1].get("value"), Some(&BigUint::from(1u8)));
-        assert_eq!(result_u8[1].get("count"), Some(&BigUint::from(2usize)));
+        assert_eq!(
+            wv_u8.topk(1, 10, Some(2)).unwrap(),
+            vec![(5u8, 3usize), (1u8, 2usize),],
+        );
 
         let wv_biguint = create_biguint();
-        let result_biguint = wv_biguint.topk(1, 10, Some(2)).unwrap();
-        assert_eq!(result_biguint.len(), 2);
-        assert_eq!(result_biguint[0].get("value"), Some(&BigUint::from(5u32)));
-        assert_eq!(result_biguint[0].get("count"), Some(&BigUint::from(3usize)));
-        assert_eq!(result_biguint[1].get("value"), Some(&BigUint::from(1u32)));
-        assert_eq!(result_biguint[1].get("count"), Some(&BigUint::from(2usize)));
+        assert_eq!(
+            wv_biguint.topk(1, 10, Some(2)).unwrap(),
+            vec![(5u32.into(), 3usize), (1u32.into(), 2usize),],
+        );
     }
 
     #[test]
@@ -408,35 +443,15 @@ mod tests {
         Python::initialize();
 
         let wv_u8 = create_u8();
-        let result_u8 = wv_u8.range_intersection(0, 6, 6, 11).unwrap();
-        assert_eq!(result_u8.len(), 2);
-        assert_eq!(result_u8[0].get("value"), Some(&BigUint::from(1u8)));
-        assert_eq!(result_u8[0].get("count1"), Some(&BigUint::from(1usize)));
-        assert_eq!(result_u8[0].get("count2"), Some(&BigUint::from(1usize)));
-        assert_eq!(result_u8[1].get("value"), Some(&BigUint::from(5u8)));
-        assert_eq!(result_u8[1].get("count1"), Some(&BigUint::from(3usize)));
-        assert_eq!(result_u8[1].get("count2"), Some(&BigUint::from(2usize)));
+        assert_eq!(
+            wv_u8.range_intersection(0, 6, 6, 11).unwrap(),
+            vec![(1u8, 1usize, 1usize), (5u8, 3usize, 2usize),],
+        );
 
         let wv_biguint = create_biguint();
-        let result_biguint = wv_biguint.range_intersection(0, 6, 6, 11).unwrap();
-        assert_eq!(result_biguint.len(), 2);
-        assert_eq!(result_biguint[0].get("value"), Some(&BigUint::from(1u32)));
         assert_eq!(
-            result_biguint[0].get("count1"),
-            Some(&BigUint::from(1usize))
-        );
-        assert_eq!(
-            result_biguint[0].get("count2"),
-            Some(&BigUint::from(1usize))
-        );
-        assert_eq!(result_biguint[1].get("value"), Some(&BigUint::from(5u32)));
-        assert_eq!(
-            result_biguint[1].get("count1"),
-            Some(&BigUint::from(3usize))
-        );
-        assert_eq!(
-            result_biguint[1].get("count2"),
-            Some(&BigUint::from(2usize))
+            wv_biguint.range_intersection(0, 6, 6, 11).unwrap(),
+            vec![(1u32.into(), 1usize, 1usize), (5u32.into(), 3usize, 2usize),],
         );
     }
 
@@ -464,22 +479,18 @@ mod tests {
         Python::initialize();
 
         let wv_u8 = create_u8();
-        let result_u8 = wv_u8.range_list(1, 9, Some(&4u8), Some(&6u8)).unwrap();
-        assert_eq!(result_u8.len(), 2);
-        assert_eq!(result_u8[0].get("value"), Some(&BigUint::from(4u8)));
-        assert_eq!(result_u8[0].get("count"), Some(&BigUint::from(1usize)));
-        assert_eq!(result_u8[1].get("value"), Some(&BigUint::from(5u8)));
-        assert_eq!(result_u8[1].get("count"), Some(&BigUint::from(3usize)));
+        assert_eq!(
+            wv_u8.range_list(1, 9, Some(&4u8), Some(&6u8)).unwrap(),
+            vec![(4u8, 1usize), (5u8, 3usize),],
+        );
 
         let wv_biguint = create_biguint();
-        let result_biguint = wv_biguint
-            .range_list(1, 9, Some(&4u32.into()), Some(&6u32.into()))
-            .unwrap();
-        assert_eq!(result_biguint.len(), 2);
-        assert_eq!(result_biguint[0].get("value"), Some(&BigUint::from(4u32)));
-        assert_eq!(result_biguint[0].get("count"), Some(&BigUint::from(1usize)));
-        assert_eq!(result_biguint[1].get("value"), Some(&BigUint::from(5u32)));
-        assert_eq!(result_biguint[1].get("count"), Some(&BigUint::from(3usize)));
+        assert_eq!(
+            wv_biguint
+                .range_list(1, 9, Some(&4u32.into()), Some(&6u32.into()))
+                .unwrap(),
+            vec![(4u32.into(), 1usize), (5u32.into(), 3usize),],
+        );
     }
 
     #[test]
@@ -487,20 +498,16 @@ mod tests {
         Python::initialize();
 
         let wv_u8 = create_u8();
-        let result_u8 = wv_u8.range_maxk(1, 9, Some(2)).unwrap();
-        assert_eq!(result_u8.len(), 2);
-        assert_eq!(result_u8[0].get("value"), Some(&BigUint::from(6u8)));
-        assert_eq!(result_u8[0].get("count"), Some(&BigUint::from(1usize)));
-        assert_eq!(result_u8[1].get("value"), Some(&BigUint::from(5u8)));
-        assert_eq!(result_u8[1].get("count"), Some(&BigUint::from(3usize)));
+        assert_eq!(
+            wv_u8.range_maxk(1, 9, Some(2)).unwrap(),
+            vec![(6u8, 1usize), (5u8, 3usize),],
+        );
 
         let wv_biguint = create_biguint();
-        let result_biguint = wv_biguint.range_maxk(1, 9, Some(2)).unwrap();
-        assert_eq!(result_biguint.len(), 2);
-        assert_eq!(result_biguint[0].get("value"), Some(&BigUint::from(6u32)));
-        assert_eq!(result_biguint[0].get("count"), Some(&BigUint::from(1usize)));
-        assert_eq!(result_biguint[1].get("value"), Some(&BigUint::from(5u32)));
-        assert_eq!(result_biguint[1].get("count"), Some(&BigUint::from(3usize)));
+        assert_eq!(
+            wv_biguint.range_maxk(1, 9, Some(2)).unwrap(),
+            vec![(6u32.into(), 1usize), (5u32.into(), 3usize),],
+        );
     }
 
     #[test]
@@ -508,20 +515,16 @@ mod tests {
         Python::initialize();
 
         let wv_u8 = create_u8();
-        let result_u8 = wv_u8.range_mink(1, 9, Some(2)).unwrap();
-        assert_eq!(result_u8.len(), 2);
-        assert_eq!(result_u8[0].get("value"), Some(&BigUint::from(1u8)));
-        assert_eq!(result_u8[0].get("count"), Some(&BigUint::from(2usize)));
-        assert_eq!(result_u8[1].get("value"), Some(&BigUint::from(2u8)));
-        assert_eq!(result_u8[1].get("count"), Some(&BigUint::from(1usize)));
+        assert_eq!(
+            wv_u8.range_mink(1, 9, Some(2)).unwrap(),
+            vec![(1u8, 2usize), (2u8, 1usize),],
+        );
 
         let wv_biguint = create_biguint();
-        let result_biguint = wv_biguint.range_mink(1, 9, Some(2)).unwrap();
-        assert_eq!(result_biguint.len(), 2);
-        assert_eq!(result_biguint[0].get("value"), Some(&BigUint::from(1u32)));
-        assert_eq!(result_biguint[0].get("count"), Some(&BigUint::from(2usize)));
-        assert_eq!(result_biguint[1].get("value"), Some(&BigUint::from(2u32)));
-        assert_eq!(result_biguint[1].get("count"), Some(&BigUint::from(1usize)));
+        assert_eq!(
+            wv_biguint.range_mink(1, 9, Some(2)).unwrap(),
+            vec![(1u32.into(), 2usize), (2u32.into(), 1usize),],
+        );
     }
 
     #[test]

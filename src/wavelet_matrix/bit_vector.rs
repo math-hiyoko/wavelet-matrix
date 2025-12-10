@@ -1,13 +1,15 @@
-use crate::traits::{bit_select::BitSelect, bit_vector::BitVectorTrait};
+use crate::traits::{bit_vector::bit_vector::BitVectorTrait, utils::bit_select::BitSelect};
 use num_integer::Integer;
 use num_traits::{One, Zero};
 use pyo3::{
     PyResult,
     exceptions::{PyIndexError, PyRuntimeError, PyValueError},
 };
+use std::iter::once;
 
 type BlockType = u64;
 
+#[derive(Clone)]
 pub(crate) struct BitVector {
     len: usize,
     ranks: Vec<usize>,
@@ -15,7 +17,7 @@ pub(crate) struct BitVector {
 }
 
 impl BitVector {
-    pub(super) fn new(bits: &Vec<bool>) -> Self {
+    pub(super) fn new(bits: &[bool]) -> Self {
         let len = bits.len();
         // Pack blocks into BitType words
         let blocks: Vec<BlockType> = bits
@@ -34,7 +36,7 @@ impl BitVector {
             })
             .collect();
         // Build the rank index structure.
-        let ranks: Vec<usize> = std::iter::once(0usize)
+        let ranks: Vec<usize> = once(0usize)
             .chain(blocks.iter().scan(0usize, |acc, block| {
                 *acc += block.count_ones() as usize;
                 Some(*acc)
@@ -46,6 +48,19 @@ impl BitVector {
 }
 
 impl BitVectorTrait for BitVector {
+    #[inline]
+    fn values(&self) -> PyResult<Vec<bool>> {
+        Ok(self
+            .blocks
+            .iter()
+            .flat_map(|&block| {
+                (0..BlockType::BITS as usize)
+                    .map(move |i| ((block >> i) & BlockType::one()).is_one())
+            })
+            .take(self.len)
+            .collect())
+    }
+
     #[inline]
     fn access(&self, index: usize) -> PyResult<bool> {
         if index >= self.len {
@@ -135,6 +150,7 @@ mod tests {
 
         let bv = BitVector::new(&vec![]);
 
+        assert_eq!(bv.values().unwrap(), Vec::<bool>::new());
         assert_eq!(
             bv.access(0).unwrap_err().to_string(),
             "IndexError: index out of bounds"
@@ -159,6 +175,17 @@ mod tests {
             assert_eq!(bv.select(true, i + 1).unwrap(), Some(i));
             assert_eq!(bv.select(false, i + 1).unwrap(), None);
         }
+    }
+
+    #[test]
+    fn test_values() {
+        Python::initialize();
+
+        let bv = create_dummy();
+        assert_eq!(
+            bv.values().unwrap(),
+            vec![true, false, true, true, false, true, false, false].repeat(999)
+        );
     }
 
     #[test]

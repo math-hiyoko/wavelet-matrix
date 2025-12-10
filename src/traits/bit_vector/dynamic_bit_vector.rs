@@ -1,31 +1,33 @@
+use super::bit_vector::BitVectorTrait;
 use num_traits::Zero;
 use pyo3::{
     PyResult,
     exceptions::{PyIndexError, PyValueError},
 };
 
-pub(crate) trait BitVectorTrait {
-    /// Get the bit value at the specified position.
-    fn access(&self, index: usize) -> PyResult<bool>;
+pub(crate) trait DynamicBitVectorTrait: BitVectorTrait {
+    /// Inserts a bit at the specified position.
+    fn insert(&mut self, index: usize, bit: bool) -> PyResult<()>;
 
-    /// Count the number of bit in the range [0, end).
-    fn rank(&self, bit: bool, end: usize) -> PyResult<usize>;
-
-    /// Find the position of the k-th bit (1-indexed).
-    fn select(&self, bit: bool, kth: usize) -> PyResult<Option<usize>>;
+    /// Removes a bit at the specified position.
+    fn remove(&mut self, index: usize) -> PyResult<bool>;
 }
 
 #[allow(dead_code)]
-pub(super) struct SampleBitVector(Vec<bool>);
+pub(in crate::traits) struct SampleDynamicBitVector(Vec<bool>);
 
 #[allow(dead_code)]
-impl SampleBitVector {
-    pub fn new(data: Vec<bool>) -> Self {
-        SampleBitVector(data)
+impl SampleDynamicBitVector {
+    pub(in crate::traits) fn new(data: &[bool]) -> Self {
+        SampleDynamicBitVector(data.to_owned())
     }
 }
 
-impl BitVectorTrait for SampleBitVector {
+impl BitVectorTrait for SampleDynamicBitVector {
+    fn values(&self) -> PyResult<Vec<bool>> {
+        Ok(self.0.clone())
+    }
+
     fn access(&self, index: usize) -> PyResult<bool> {
         if index >= self.0.len() {
             return Err(PyIndexError::new_err("index out of bounds"));
@@ -56,22 +58,41 @@ impl BitVectorTrait for SampleBitVector {
     }
 }
 
+impl DynamicBitVectorTrait for SampleDynamicBitVector {
+    fn insert(&mut self, index: usize, bit: bool) -> PyResult<()> {
+        if index > self.0.len() {
+            return Err(PyIndexError::new_err("index out of bounds"));
+        }
+        self.0.insert(index, bit);
+        Ok(())
+    }
+
+    fn remove(&mut self, index: usize) -> PyResult<bool> {
+        if index >= self.0.len() {
+            return Err(PyIndexError::new_err("index out of bounds"));
+        }
+        let bit = self.0.remove(index);
+        Ok(bit)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::*;
     use pyo3::Python;
 
-    fn create_dummy() -> SampleBitVector {
+    use super::*;
+
+    fn create_dummy() -> SampleDynamicBitVector {
         let bits = vec![true, false, true, true, false, true, false, false].repeat(999);
-        SampleBitVector::new(bits)
+        SampleDynamicBitVector::new(&bits)
     }
 
     #[test]
     fn test_empty() {
         Python::initialize();
 
-        let bv = SampleBitVector::new(vec![]);
-
+        let mut bv = SampleDynamicBitVector::new(&vec![]);
+        assert_eq!(bv.values().unwrap(), Vec::<bool>::new());
         assert_eq!(
             bv.access(0).unwrap_err().to_string(),
             "IndexError: index out of bounds"
@@ -80,6 +101,24 @@ mod tests {
         assert_eq!(bv.rank(false, 0).unwrap(), 0);
         assert_eq!(bv.select(true, 1).unwrap(), None);
         assert_eq!(bv.select(false, 1).unwrap(), None);
+        assert_eq!(bv.insert(0, true).unwrap(), ());
+        assert_eq!(bv.access(0).unwrap(), true);
+        assert_eq!(bv.remove(0).unwrap(), true);
+        assert_eq!(
+            bv.access(0).unwrap_err().to_string(),
+            "IndexError: index out of bounds"
+        );
+    }
+
+    #[test]
+    fn test_values() {
+        Python::initialize();
+
+        let bv = create_dummy();
+        assert_eq!(
+            bv.values().unwrap(),
+            vec![true, false, true, true, false, true, false, false].repeat(999)
+        );
     }
 
     #[test]
@@ -164,5 +203,73 @@ mod tests {
         assert_eq!(bv.select(false, 3000).unwrap(), Some(5999));
         assert_eq!(bv.select(false, 3996).unwrap(), Some(7991));
         assert_eq!(bv.select(false, 3997).unwrap(), None);
+    }
+
+    #[test]
+    fn test_insert() {
+        Python::initialize();
+
+        let mut bv = create_dummy();
+        assert_eq!(bv.insert(0, true).unwrap(), ());
+        assert_eq!(bv.access(0).unwrap(), true);
+        assert_eq!(bv.rank(true, 1).unwrap(), 1);
+        assert_eq!(bv.rank(false, 1).unwrap(), 0);
+        assert_eq!(bv.select(true, 1).unwrap(), Some(0));
+        assert_eq!(bv.select(false, 1).unwrap(), Some(2));
+
+        assert_eq!(bv.insert(5000, false).unwrap(), ());
+        assert_eq!(bv.access(5000).unwrap(), false);
+        assert_eq!(bv.rank(true, 5001).unwrap(), 2501);
+        assert_eq!(bv.rank(false, 5001).unwrap(), 2500);
+        assert_eq!(bv.select(true, 2501).unwrap(), Some(4998));
+        assert_eq!(bv.select(false, 2500).unwrap(), Some(5000));
+    }
+
+    #[test]
+    fn test_remove() {
+        Python::initialize();
+
+        let mut bv = create_dummy();
+        assert_eq!(bv.remove(0).unwrap(), true);
+        assert_eq!(bv.access(0).unwrap(), false);
+        assert_eq!(bv.rank(true, 1).unwrap(), 0);
+        assert_eq!(bv.rank(false, 1).unwrap(), 1);
+        assert_eq!(bv.select(true, 1).unwrap(), Some(1));
+        assert_eq!(bv.select(false, 1).unwrap(), Some(0));
+
+        assert_eq!(bv.remove(5000).unwrap(), false);
+        assert_eq!(bv.access(5000).unwrap(), true);
+        assert_eq!(bv.rank(true, 5001).unwrap(), 2501);
+        assert_eq!(bv.rank(false, 5001).unwrap(), 2500);
+        assert_eq!(bv.select(true, 2500).unwrap(), Some(4999));
+        assert_eq!(bv.select(false, 2501).unwrap(), Some(5002));
+    }
+
+    #[test]
+    fn test_insert_remove_values() {
+        Python::initialize();
+
+        let mut bv = SampleDynamicBitVector::new(&vec![]);
+        let bits = vec![true, false, true, true, false, true, false, false].repeat(999);
+
+        for (index, &bit) in bits.iter().enumerate() {
+            bv.insert(index, bit).unwrap();
+            assert_eq!(bv.access(index).unwrap(), bit);
+        }
+        assert_eq!(bits.len(), bits.len());
+
+        for &bit in &bits {
+            assert_eq!(bv.remove(0).unwrap(), bit);
+        }
+
+        for &bit in bits.iter().rev() {
+            bv.insert(0, bit).unwrap();
+            assert_eq!(bv.access(0).unwrap(), bit);
+        }
+        assert_eq!(bits.len(), bits.len());
+
+        for (index, &bit) in bits.iter().enumerate().rev() {
+            assert_eq!(bv.remove(index).unwrap(), bit);
+        }
     }
 }
