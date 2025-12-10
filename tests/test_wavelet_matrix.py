@@ -66,7 +66,9 @@ class TestWaveletMatrix:
         assert wv_all_zero.quantile(0, 10, 1) == 0
         assert wv_all_zero.topk(0, 10, 1) == [{"value": 0, "count": 10}]
         assert wv_all_zero.range_sum(0, 10) == 0
-        assert wv_all_zero.range_intersection(0, 10, 5, 15) == [{"value": 0, "count1": 10, "count2": 10}]
+        assert wv_all_zero.range_intersection(0, 10, 5, 15) == [
+            {"value": 0, "count1": 10, "count2": 10}
+        ]
         assert wv_all_zero.range_freq(0, 10) == 10
         assert wv_all_zero.range_list(0, 10) == [{"value": 0, "count": 10}]
         assert wv_all_zero.range_maxk(0, 10, 1) == [{"value": 0, "count": 10}]

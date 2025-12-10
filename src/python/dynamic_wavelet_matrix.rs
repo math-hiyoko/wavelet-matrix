@@ -140,7 +140,9 @@ impl PyDynamicWaveletMatrix {
                     }
                     return Ok(PyList::new(py, &values)?.unbind().into());
                 } else {
-                    return Err(PyTypeError::new_err("index must be a non-negative integer or a slice"));
+                    return Err(PyTypeError::new_err(
+                        "index must be a non-negative integer or a slice",
+                    ));
                 }
             };
         }
@@ -162,7 +164,9 @@ impl PyDynamicWaveletMatrix {
             DynamicWaveletMatrixEnum::U32(wm) => Ok(format!("WaveletMatrix({:?})", wm.values()?)),
             DynamicWaveletMatrixEnum::U64(wm) => Ok(format!("WaveletMatrix({:?})", wm.values()?)),
             DynamicWaveletMatrixEnum::U128(wm) => Ok(format!("WaveletMatrix({:?})", wm.values()?)),
-            DynamicWaveletMatrixEnum::BigUint(wm) => Ok(format!("WaveletMatrix({:?})", wm.values()?)),
+            DynamicWaveletMatrixEnum::BigUint(wm) => {
+                Ok(format!("WaveletMatrix({:?})", wm.values()?))
+            }
         }
     }
 
@@ -173,7 +177,9 @@ impl PyDynamicWaveletMatrix {
             DynamicWaveletMatrixEnum::U32(wm) => Ok(format!("WaveletMatrix({:?})", wm.values()?)),
             DynamicWaveletMatrixEnum::U64(wm) => Ok(format!("WaveletMatrix({:?})", wm.values()?)),
             DynamicWaveletMatrixEnum::U128(wm) => Ok(format!("WaveletMatrix({:?})", wm.values()?)),
-            DynamicWaveletMatrixEnum::BigUint(wm) => Ok(format!("WaveletMatrix({:?})", wm.values()?)),
+            DynamicWaveletMatrixEnum::BigUint(wm) => {
+                Ok(format!("WaveletMatrix({:?})", wm.values()?))
+            }
         }
     }
 
@@ -204,7 +210,9 @@ impl PyDynamicWaveletMatrix {
             .map_err(|_| PyIndexError::new_err("index must be a non-negative integer"))?;
 
         match &self.inner {
-            DynamicWaveletMatrixEnum::U8(wm) => wm.access(index).map(|value| PyInt::new(py, value).into()),
+            DynamicWaveletMatrixEnum::U8(wm) => {
+                wm.access(index).map(|value| PyInt::new(py, value).into())
+            }
             DynamicWaveletMatrixEnum::U16(wm) => {
                 wm.access(index).map(|value| PyInt::new(py, value).into())
             }
@@ -250,7 +258,11 @@ impl PyDynamicWaveletMatrix {
     }
 
     /// Finds the position of the k-th occurrence of the given value.
-    pub(crate) fn select(&self, value: &Bound<'_, PyInt>, kth: &Bound<'_, PyInt>) -> PyResult<Option<usize>> {
+    pub(crate) fn select(
+        &self,
+        value: &Bound<'_, PyInt>,
+        kth: &Bound<'_, PyInt>,
+    ) -> PyResult<Option<usize>> {
         let kth = kth
             .extract::<usize>()
             .map_err(|_| PyValueError::new_err("kth must be a positive integer"))?;

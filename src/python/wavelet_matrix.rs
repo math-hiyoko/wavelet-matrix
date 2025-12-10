@@ -133,7 +133,9 @@ impl PyWaveletMatrix {
                     }
                     return Ok(PyList::new(py, &values)?.unbind().into());
                 } else {
-                    return Err(PyTypeError::new_err("index must be a non-negative integer or a slice"));
+                    return Err(PyTypeError::new_err(
+                        "index must be a non-negative integer or a slice",
+                    ));
                 }
             };
         }
@@ -243,7 +245,11 @@ impl PyWaveletMatrix {
     }
 
     /// Finds the position of the k-th occurrence of the given value.
-    pub(crate) fn select(&self, value: &Bound<'_, PyInt>, kth: &Bound<'_, PyInt>) -> PyResult<Option<usize>> {
+    pub(crate) fn select(
+        &self,
+        value: &Bound<'_, PyInt>,
+        kth: &Bound<'_, PyInt>,
+    ) -> PyResult<Option<usize>> {
         let kth = kth
             .extract::<usize>()
             .map_err(|_| PyValueError::new_err("kth must be a positive integer"))?;

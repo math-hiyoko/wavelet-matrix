@@ -774,7 +774,12 @@ mod tests {
         fn assert_avl(&self) -> isize {
             match self {
                 Node::Leaf { .. } => 0,
-                Node::Internal { left, right, balance, .. } => {
+                Node::Internal {
+                    left,
+                    right,
+                    balance,
+                    ..
+                } => {
                     let left_height = left.assert_avl();
                     let right_height = right.assert_avl();
                     let real_balance = right_height - left_height;
