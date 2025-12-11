@@ -154,9 +154,18 @@
 wavelet_matrix    </h1>
 
                 
-                
-                
-                
+                        <input id="mod-wavelet_matrix-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+
+                        <label class="view-source-button" for="mod-wavelet_matrix-view-source"><span>View Source</span></label>
+
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">1</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos">2</span></a>
+</span><span id="L-3"><a href="#L-3"><span class="linenos">3</span></a><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">wavelet_matrix</span><span class="o">.</span><span class="vm">__doc__</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos">4</span></a><span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">wavelet_matrix</span><span class="p">,</span> <span class="s2">&quot;__all__&quot;</span><span class="p">):</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos">5</span></a>    <span class="n">__all__</span> <span class="o">=</span> <span class="n">wavelet_matrix</span><span class="o">.</span><span class="n">__all__</span>
+</span></pre></div>
+
+
             </section>
                 <section id="WaveletMatrix">
                     <div class="attr class">
@@ -171,7 +180,7 @@ wavelet_matrix    </h1>
             <div class="docstring"><p>A Wavelet Matrix data structure for efficient rank, select, and quantile queries.</p>
 
 <p>The Wavelet Matrix decomposes a sequence into multiple bit vectors,
-one for each bit position. This allows for efficient queries on the sequence.
+one for each bit position. This allows for efficient queries on the sequence.<br />
 This class supports various integer types, automatically selecting
 the appropriate internal representation based on the input data.</p>
 </div>
@@ -200,6 +209,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#WaveletMatrix.values"></a>
     
             <div class="docstring"><p>Get all values in the Wavelet Matrix as a list.</p>
+
+<h1 id="exapmles">Exapmles</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">WaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span> <span class="o">=</span> <span class="n">WaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+<span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -215,6 +234,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#WaveletMatrix.access"></a>
     
             <div class="docstring"><p>Access the value at the specified index.</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">WaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span> <span class="o">=</span> <span class="n">WaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="mi">5</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -230,6 +259,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#WaveletMatrix.rank"></a>
     
             <div class="docstring"><p>Counts the occurrences of the given value in the range [0, end).</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">WaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span> <span class="o">=</span> <span class="n">WaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span><span class="o">.</span><span class="n">rank</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span>
+<span class="mi">4</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -245,6 +284,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#WaveletMatrix.select"></a>
     
             <div class="docstring"><p>Finds the position of the k-th occurrence of the given value.</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">WaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span> <span class="o">=</span> <span class="n">WaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="mi">6</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -260,6 +309,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#WaveletMatrix.quantile"></a>
     
             <div class="docstring"><p>Find the k-th smallest value in the range [start, end) (1-indexed).</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">WaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span> <span class="o">=</span> <span class="n">WaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+<span class="mi">5</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -275,6 +334,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#WaveletMatrix.topk"></a>
     
             <div class="docstring"><p>Finds the top-k most frequent elements in the range [start, end).</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">WaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span> <span class="o">=</span> <span class="n">WaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span><span class="o">.</span><span class="n">topk</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="p">[{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">},</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}]</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -290,6 +359,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#WaveletMatrix.range_sum"></a>
     
             <div class="docstring"><p>Computes the sum of values in the range [start, end).</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">WaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span> <span class="o">=</span> <span class="n">WaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span><span class="o">.</span><span class="n">range_sum</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+<span class="mi">24</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -305,6 +384,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#WaveletMatrix.range_intersection"></a>
     
             <div class="docstring"><p>Finds the intersection of values in the two ranges [start1, end1) and [start2, end2).</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">WaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span> <span class="o">=</span> <span class="n">WaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span><span class="o">.</span><span class="n">range_intersection</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span>
+<span class="p">[{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;count1&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;count2&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;count1&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;count2&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}]</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -320,6 +409,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#WaveletMatrix.range_freq"></a>
     
             <div class="docstring"><p>Counts the number of elements c in the range [start, end) such that lower &lt;= c &lt; upper.</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">WaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span> <span class="o">=</span> <span class="n">WaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span><span class="o">.</span><span class="n">range_freq</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="mi">4</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -335,6 +434,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#WaveletMatrix.range_list"></a>
     
             <div class="docstring"><p>Lists all elements c in the range [start, end) such that lower &lt;= c &lt; upper.</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">WaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span> <span class="o">=</span> <span class="n">WaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span><span class="o">.</span><span class="n">range_list</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="p">[{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">}]</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -350,6 +459,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#WaveletMatrix.range_maxk"></a>
     
             <div class="docstring"><p>Finds the k largest values in the range [start, end).</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">WaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span> <span class="o">=</span> <span class="n">WaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span><span class="o">.</span><span class="n">range_maxk</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="p">[{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">}]</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -365,6 +484,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#WaveletMatrix.range_mink"></a>
     
             <div class="docstring"><p>Finds the k smallest values in the range [start, end).</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">WaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span> <span class="o">=</span> <span class="n">WaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span><span class="o">.</span><span class="n">range_mink</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="p">[{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}]</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -380,6 +509,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#WaveletMatrix.prev_value"></a>
     
             <div class="docstring"><p>Finds the maximum value c in the range [start, end) such that lower &lt;= c &lt; upper.</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">WaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span> <span class="o">=</span> <span class="n">WaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span><span class="o">.</span><span class="n">prev_value</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
+<span class="mi">6</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -395,6 +534,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#WaveletMatrix.next_value"></a>
     
             <div class="docstring"><p>Finds the minimum value c in the range [start, end) such that lower &lt;= c &lt; upper.</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">WaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span> <span class="o">=</span> <span class="n">WaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">wm</span><span class="o">.</span><span class="n">next_value</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="mi">4</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -442,6 +591,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.values"></a>
     
             <div class="docstring"><p>Get all values in the Wavelet Matrix as a list.</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">DynamicWaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span> <span class="o">=</span> <span class="n">DynamicWaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+<span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -457,6 +616,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.access"></a>
     
             <div class="docstring"><p>Access the value at the specified index.</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">DynamicWaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span> <span class="o">=</span> <span class="n">DynamicWaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="mi">5</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -472,6 +641,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.rank"></a>
     
             <div class="docstring"><p>Counts the occurrences of the given value in the range [0, end).</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">DynamicWaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span> <span class="o">=</span> <span class="n">DynamicWaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span><span class="o">.</span><span class="n">rank</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span>
+<span class="mi">4</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -487,6 +666,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.select"></a>
     
             <div class="docstring"><p>Finds the position of the k-th occurrence of the given value.</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">DynamicWaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span> <span class="o">=</span> <span class="n">DynamicWaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="mi">6</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -502,6 +691,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.quantile"></a>
     
             <div class="docstring"><p>Find the k-th smallest value in the range [start, end) (1-indexed).</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">DynamicWaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span> <span class="o">=</span> <span class="n">DynamicWaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+<span class="mi">5</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -517,6 +716,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.topk"></a>
     
             <div class="docstring"><p>Finds the top-k most frequent elements in the range [start, end).</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">DynamicWaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span> <span class="o">=</span> <span class="n">DynamicWaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span><span class="o">.</span><span class="n">topk</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="p">[{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">},</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}]</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -532,6 +741,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.range_sum"></a>
     
             <div class="docstring"><p>Computes the sum of values in the range [start, end).</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">DynamicWaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span> <span class="o">=</span> <span class="n">DynamicWaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span><span class="o">.</span><span class="n">range_sum</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+<span class="mi">24</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -547,6 +766,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.range_intersection"></a>
     
             <div class="docstring"><p>Finds the intersection of values in the two ranges [start1, end1) and [start2, end2).</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">DynamicWaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span> <span class="o">=</span> <span class="n">DynamicWaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span><span class="o">.</span><span class="n">range_intersection</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span>
+<span class="p">[{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;count1&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;count2&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;count1&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;count2&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}]</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -562,6 +791,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.range_freq"></a>
     
             <div class="docstring"><p>Counts the number of elements c in the range [start, end) such that lower &lt;= c &lt; upper.</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">DynamicWaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span> <span class="o">=</span> <span class="n">DynamicWaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span><span class="o">.</span><span class="n">range_freq</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="mi">4</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -577,6 +816,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.range_list"></a>
     
             <div class="docstring"><p>Lists all elements c in the range [start, end) such that lower &lt;= c &lt; upper.</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">DynamicWaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span> <span class="o">=</span> <span class="n">DynamicWaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span><span class="o">.</span><span class="n">range_list</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="p">[{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">}]</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -592,6 +841,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.range_maxk"></a>
     
             <div class="docstring"><p>Finds the k largest values in the range [start, end).</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">DynamicWaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span> <span class="o">=</span> <span class="n">DynamicWaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span><span class="o">.</span><span class="n">range_maxk</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="p">[{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">}]</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -607,6 +866,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.range_mink"></a>
     
             <div class="docstring"><p>Finds the k smallest values in the range [start, end).</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">DynamicWaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span> <span class="o">=</span> <span class="n">DynamicWaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span><span class="o">.</span><span class="n">range_mink</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="p">[{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}]</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -622,6 +891,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.prev_value"></a>
     
             <div class="docstring"><p>Finds the maximum value c in the range [start, end) such that lower &lt;= c &lt; upper.</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">DynamicWaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span> <span class="o">=</span> <span class="n">DynamicWaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span><span class="o">.</span><span class="n">prev_value</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
+<span class="mi">6</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -637,6 +916,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.next_value"></a>
     
             <div class="docstring"><p>Finds the minimum value c in the range [start, end) such that lower &lt;= c &lt; upper.</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">DynamicWaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span> <span class="o">=</span> <span class="n">DynamicWaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span><span class="o">.</span><span class="n">next_value</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="mi">4</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -652,6 +941,16 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.max_bit"></a>
     
             <div class="docstring"><p>Returns the maximum bit length of the values stored in the Wavelet Matrix.</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">DynamicWaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span> <span class="o">=</span> <span class="n">DynamicWaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span><span class="o">.</span><span class="n">max_bit</span><span class="p">()</span>
+<span class="mi">3</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -667,6 +966,17 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.insert"></a>
     
             <div class="docstring"><p>Inserts a value at the specified index.</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">DynamicWaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span> <span class="o">=</span> <span class="n">DynamicWaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">max_bit</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+<span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -682,6 +992,18 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.remove"></a>
     
             <div class="docstring"><p>Removes and returns the value at the specified index.</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">DynamicWaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span> <span class="o">=</span> <span class="n">DynamicWaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="mi">5</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+<span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+</code></pre>
+</div>
 </div>
 
 
@@ -697,6 +1019,18 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.update"></a>
     
             <div class="docstring"><p>Updates the value at the specified index and returns the old value.</p>
+
+<h1 id="examples">Examples</h1>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="n">DynamicWaveletMatrix</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span> <span class="o">=</span> <span class="n">DynamicWaveletMatrix</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">max_bit</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="mi">5</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dwm</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+<span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+</code></pre>
+</div>
 </div>
 
 
