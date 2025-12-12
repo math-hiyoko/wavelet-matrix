@@ -47,6 +47,20 @@ WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
 [{'value': 5, 'count': 3}, {'value': 1, 'count': 2}]
 ```
 
+#### Sum values in a range (range_sum)
+```python
+>>> # Sum of elements in the range [2, 8).
+>>> wm.range_sum(start=2, end=8)
+24
+```
+
+#### List intersection of two ranges (range_intersection)
+```python
+>>> # List the intersection of two ranges [0, 6) and [6, 11).
+>>> wm.range_intersection(start1=0, end1=6, start2=6, end2=11)
+[{'value': 1, 'count1': 1, 'count2': 1}, {'value': 5, 'count1': 3, 'count2': 2}]
+```
+
 #### Count values in a range (range_freq)
 ```python
 >>> # Count values c in the range [1, 9) such that 4 <= c < 6.
@@ -66,6 +80,27 @@ WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
 >>> # List values in [1, 9) with the top-2 maximum values.
 >>> wm.range_maxk(start=1, end=9, k=2)
 [{'value': 6, 'count': 1}, {'value': 5, 'count': 3}]
+```
+
+#### List top-k minimum values (range_mink)
+```python
+>>> # List values in [1, 9) with the top-2 minimum values.
+>>> wm.range_mink(start=1, end=9, k=2)
+[{'value': 1, 'count': 2}, {'value': 2, 'count': 1}]
+```
+
+#### Get the maximun value (prev_value)
+```python
+>>> # Get the maximum value c in the range [1, 9) such that 4 <= c < 7.
+>>> wm.prev_value(start=1, end=9, lower=4, upper=7)
+6
+```
+
+#### Get the minimun value (next_value)
+```python
+>>> # Get the minimum value c in the range [1, 9) such that 4 <= c < 7.
+>>> wm.next_value(start=1, end=9, lower=4, upper=7)
+4
 ```
 
 ### Dynamic Wavelet Matrix
