@@ -167,12 +167,7 @@ jobs:
         with:
           name: wheels-linux-x86_64
           path: dist
-      - name: Run cargo tests
-        run: cargo test --all --release
-        env:
-          RUSTC_WRAPPER: ""
-          SCCACHE_GHA_ENABLED: "0"
-      - name: Run pytest
+      - name: Install wheels
         run: |
           python -m pip install --upgrade pip
           python -m pip install wavelet-matrix \
@@ -180,7 +175,15 @@ jobs:
             --find-links dist \
             --only-binary=:all:
           python -m pip install pytest pytest-benchmark
-          pytest
+      - name: Run cargo tests
+        run: cargo test --all --release
+        env:
+          RUSTC_WRAPPER: ""
+          SCCACHE_GHA_ENABLED: "0"
+      - name: Run pytest
+        run: pytest --benchmark-skip
+      - name: Run benchmarks
+        run: pytest --benchmark-only
 
   release:
     name: Release
