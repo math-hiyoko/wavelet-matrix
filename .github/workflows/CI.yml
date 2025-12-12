@@ -187,7 +187,6 @@ jobs:
             echo "::error::Docs are out of date. Please run pdoc and commit generated docs."
             exit 1
           fi
-          
       - name: Run cargo tests
         run: cargo test --all --release
         env:
