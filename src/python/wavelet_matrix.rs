@@ -504,8 +504,7 @@ impl PyWaveletMatrix {
     /// - Time: `O(L log V)`  
     ///
     /// where:
-    /// - `L` = the number of distinct values `c` in the range `[start, end)`
-    ///   that satisfy `lower <= c < upper`
+    /// - `L` = the number of distinct values `c` in the intersection of the two ranges
     /// - `V` = range of possible values (max value domain)
     ///
     /// # Examples
