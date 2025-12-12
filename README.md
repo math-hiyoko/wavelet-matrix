@@ -2,7 +2,7 @@
 
 High-performance indexed sequence structure powered by Rust, providing fast rank/select, top-k, quantile, and range queries with optional dynamic updates.
 
-- Document: https://math-hiyoko.github.io/wavelet-matrix/
+- Document: https://math-hiyoko.github.io/wavelet-matrix
 - Repository: https://github.com/math-hiyoko/wavelet-matrix
 
 
@@ -38,6 +38,13 @@ WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
 >>> # Find 8th smallest value in the range [2, 12)
 >>> wm.quantile(start=2, end=12, kth=8)
 5
+```
+
+#### List top-k highest frequent values (topk)
+```python
+>>> # List values in [start, end) with the top-k highest frequencies.
+>>> wm.topk(start=1, end=10, k=2)
+[{'value': 5, 'count': 3}, {'value': 1, 'count': 2}]
 ```
 
 #### Count values in a range (range_freq)
