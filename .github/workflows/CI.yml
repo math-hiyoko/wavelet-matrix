@@ -117,7 +117,7 @@ jobs:
     strategy:
       matrix:
         platform:
-          - runner: macos-13
+          - runner: macos-14
             target: x86_64
           - runner: macos-14
             target: aarch64
@@ -153,11 +153,43 @@ jobs:
           name: wheels-sdist
           path: dist
 
+  test:
+    needs: linux
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+      - name: Download linux wheels artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: wheels-linux-x86_64
+          path: dist
+      - name: Install wheels
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install wavelet-matrix \
+            --no-index \
+            --find-links dist \
+            --only-binary=:all:
+          python -m pip install pytest pytest-benchmark
+      - name: Run cargo tests
+        run: cargo test --all --release
+        env:
+          RUSTC_WRAPPER: ""
+          SCCACHE_GHA_ENABLED: "0"
+      - name: Run pytest
+        run: pytest --benchmark-skip
+      - name: Run benchmarks
+        run: pytest --benchmark-only
+
   release:
     name: Release
     runs-on: ubuntu-latest
     if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
-    needs: [linux, musllinux, windows, macos, sdist]
+    needs: [linux, musllinux, windows, macos, sdist, test]
     permissions:
       # Use to sign the release artifacts
       id-token: write

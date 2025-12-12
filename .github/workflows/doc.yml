@@ -1,0 +1,46 @@
+name: Generate Docs
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # push するので必要
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pdoc
+        run: pip install pdoc
+
+      - name: Generate documentation
+        run: |
+          pdoc wavelet_matrix \
+            --output-directory docs \
+            --no-show-source \
+            --docformat markdown \
+            --footer-text "© 2025 Koki Watanabe"
+
+      - name: Commit and push docs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add docs
+          # 変更がないときに失敗しないようにする
+          git diff --cached --quiet && echo "No changes in docs." && exit 0
+          
+          git commit -m "[skip ci] Auto-update docs via pdoc"
+          git push

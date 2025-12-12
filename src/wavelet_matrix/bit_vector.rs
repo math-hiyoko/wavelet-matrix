@@ -1,19 +1,21 @@
-use crate::traits::{bit_vector::bit_vector::BitVectorTrait, utils::bit_select::BitSelect};
+use crate::traits::bit_vector::bit_vector::BitVectorTrait;
 use num_integer::Integer;
 use num_traits::{One, Zero};
 use pyo3::{
     PyResult,
-    exceptions::{PyIndexError, PyRuntimeError, PyValueError},
+    exceptions::{PyIndexError, PyValueError},
 };
 use std::iter::once;
 
 type BlockType = u64;
+const SELECT_INDEX_INTERBVAL: usize = 64;
 
 #[derive(Clone)]
 pub(crate) struct BitVector {
     len: usize,
     ranks: Vec<usize>,
     blocks: Vec<BlockType>,
+    select_index: [Vec<usize>; 2],
 }
 
 impl BitVector {
@@ -43,7 +45,31 @@ impl BitVector {
             }))
             .collect();
 
-        Self { len, ranks, blocks }
+        let mut select_index = [
+            Vec::with_capacity((len - ranks.last().unwrap()) / SELECT_INDEX_INTERBVAL + 1),
+            Vec::with_capacity((ranks.last().unwrap() / SELECT_INDEX_INTERBVAL) + 1),
+        ];
+        for select_index_inner in select_index.iter_mut() {
+            select_index_inner.push(0);
+        }
+        let mut count = [0usize, 0usize];
+        for (index, &bit) in bits.iter().enumerate() {
+            let bit = bit as usize;
+            count[bit] += 1;
+            if count[bit].is_multiple_of(SELECT_INDEX_INTERBVAL) {
+                select_index[bit].push(index);
+            }
+        }
+        for select_index_inner in select_index.iter_mut() {
+            select_index_inner.push(len);
+        }
+
+        Self {
+            len,
+            ranks,
+            blocks,
+            select_index,
+        }
     }
 }
 
@@ -92,7 +118,7 @@ impl BitVectorTrait for BitVector {
     }
 
     #[inline]
-    fn select(&self, bit: bool, mut kth: usize) -> PyResult<Option<usize>> {
+    fn select(&self, bit: bool, kth: usize) -> PyResult<Option<usize>> {
         if kth.is_zero() {
             return Err(PyValueError::new_err("kth must be greater than 0"));
         }
@@ -100,17 +126,12 @@ impl BitVectorTrait for BitVector {
             return Ok(None);
         }
 
-        // Find the block containing the k-th bit
-        let block_index = {
-            let mut left = 0usize;
-            let mut right = self.ranks.len();
+        let index = {
+            let mut left = self.select_index[bit as usize][kth / SELECT_INDEX_INTERBVAL];
+            let mut right = self.select_index[bit as usize][kth / SELECT_INDEX_INTERBVAL + 1];
             while left + 1 < right {
                 let mid = (left + right) / 2;
-                let rank_at_mid = if bit {
-                    self.ranks[mid]
-                } else {
-                    (mid * BlockType::BITS as usize).min(self.len) - self.ranks[mid]
-                };
+                let rank_at_mid = self.rank(bit, mid)?;
                 if rank_at_mid < kth {
                     left = mid;
                 } else {
@@ -120,15 +141,6 @@ impl BitVectorTrait for BitVector {
             left
         };
 
-        kth -= if bit {
-            self.ranks[block_index]
-        } else {
-            (block_index * BlockType::BITS as usize).min(self.len) - self.ranks[block_index]
-        };
-        let index = block_index * BlockType::BITS as usize
-            + self.blocks[block_index]
-                .bit_select(bit, kth)
-                .ok_or(PyRuntimeError::new_err("Failed to find the k-th bit"))?;
         Ok(Some(index))
     }
 }
