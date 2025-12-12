@@ -54,6 +54,13 @@ WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
 4
 ```
 
+#### List values in a range (range_list)
+```python
+>>> # List values c in the range [start, end) such that lower <= c < upper.
+>>> wm.range_list(start=1, end=9, lower=4, upper=6)
+[{'value': 4, 'count': 1}, {'value': 5, 'count': 3}]
+```
+
 #### List top-k maximum values (range_maxk)
 ```python
 >>> # List values in [1, 9) with the top-2 maximum values.
