@@ -201,6 +201,19 @@ the appropriate internal representation based on the input data.</p>
     
             <div class="docstring"><p>Get all values in the Wavelet Matrix as a list.</p>
 
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(N log V)</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>N</code> = length of the sequence  </li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
+
 <h1 id="exapmles">Exapmles</h1>
 
 <div class="pdoc-code codehilite">
@@ -225,6 +238,18 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#WaveletMatrix.access"></a>
     
             <div class="docstring"><p>Access the value at the specified index.</p>
+
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(log V)</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
 
 <h1 id="examples">Examples</h1>
 
@@ -251,6 +276,18 @@ the appropriate internal representation based on the input data.</p>
     
             <div class="docstring"><p>Counts the occurrences of the given value in the range [0, end).</p>
 
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(log V)</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
+
 <h1 id="examples">Examples</h1>
 
 <div class="pdoc-code codehilite">
@@ -275,6 +312,19 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#WaveletMatrix.select"></a>
     
             <div class="docstring"><p>Finds the position of the k-th occurrence of the given value.</p>
+
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O((log N) (log V))</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>N</code> = length of the sequence  </li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
 
 <h1 id="examples">Examples</h1>
 
@@ -301,6 +351,18 @@ the appropriate internal representation based on the input data.</p>
     
             <div class="docstring"><p>Find the k-th smallest value in the range [start, end) (1-indexed).</p>
 
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(log V)</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
+
 <h1 id="examples">Examples</h1>
 
 <div class="pdoc-code codehilite">
@@ -325,6 +387,19 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#WaveletMatrix.topk"></a>
     
             <div class="docstring"><p>Finds the top-k most frequent elements in the range [start, end).</p>
+
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(L (log L) (log V))</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>L</code> = the number of distinct values in the range <code>[start, end)</code></li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
 
 <h1 id="examples">Examples</h1>
 
@@ -351,6 +426,20 @@ the appropriate internal representation based on the input data.</p>
     
             <div class="docstring"><p>Computes the sum of values in the range [start, end).</p>
 
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(L log V)</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>L</code> = the number of distinct values <code>c</code> in the range <code>[start, end)</code>
+that satisfy <code>lower &lt;= c &lt; upper</code></li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
+
 <h1 id="examples">Examples</h1>
 
 <div class="pdoc-code codehilite">
@@ -375,6 +464,20 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#WaveletMatrix.range_intersection"></a>
     
             <div class="docstring"><p>Finds the intersection of values in the two ranges [start1, end1) and [start2, end2).</p>
+
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(L log V)</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>L</code> = the number of distinct values <code>c</code> in the range <code>[start, end)</code>
+that satisfy <code>lower &lt;= c &lt; upper</code></li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
 
 <h1 id="examples">Examples</h1>
 
@@ -401,6 +504,18 @@ the appropriate internal representation based on the input data.</p>
     
             <div class="docstring"><p>Counts the number of elements c in the range [start, end) such that lower &lt;= c &lt; upper.</p>
 
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(log V)</code>  </li>
+</ul>
+
+<p>where: </p>
+
+<ul>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
+
 <h1 id="examples">Examples</h1>
 
 <div class="pdoc-code codehilite">
@@ -425,6 +540,20 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#WaveletMatrix.range_list"></a>
     
             <div class="docstring"><p>Lists all elements c in the range [start, end) such that lower &lt;= c &lt; upper.</p>
+
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(L log V)</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>L</code> = the number of distinct values <code>c</code> in the range <code>[start, end)</code>
+that satisfy <code>lower &lt;= c &lt; upper</code></li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
 
 <h1 id="examples">Examples</h1>
 
@@ -451,6 +580,18 @@ the appropriate internal representation based on the input data.</p>
     
             <div class="docstring"><p>Finds the k largest values in the range [start, end).</p>
 
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(k log V)</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
+
 <h1 id="examples">Examples</h1>
 
 <div class="pdoc-code codehilite">
@@ -475,6 +616,18 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#WaveletMatrix.range_mink"></a>
     
             <div class="docstring"><p>Finds the k smallest values in the range [start, end).</p>
+
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(k log V)</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
 
 <h1 id="examples">Examples</h1>
 
@@ -501,6 +654,20 @@ the appropriate internal representation based on the input data.</p>
     
             <div class="docstring"><p>Finds the maximum value c in the range [start, end) such that lower &lt;= c &lt; upper.</p>
 
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(L log V)</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>L</code> = the number of distinct values <code>c</code> in the range <code>[start, end)</code>
+that satisfy <code>lower &lt;= c &lt; upper</code></li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
+
 <h1 id="examples">Examples</h1>
 
 <div class="pdoc-code codehilite">
@@ -525,6 +692,20 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#WaveletMatrix.next_value"></a>
     
             <div class="docstring"><p>Finds the minimum value c in the range [start, end) such that lower &lt;= c &lt; upper.</p>
+
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(L log V)</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>L</code> = the number of distinct values <code>c</code> in the range <code>[start, end)</code>
+that satisfy <code>lower &lt;= c &lt; upper</code></li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
 
 <h1 id="examples">Examples</h1>
 
@@ -583,6 +764,19 @@ the appropriate internal representation based on the input data.</p>
     
             <div class="docstring"><p>Get all values in the Wavelet Matrix as a list.</p>
 
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(N log V)</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>N</code> = length of the sequence  </li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
+
 <h1 id="examples">Examples</h1>
 
 <div class="pdoc-code codehilite">
@@ -607,6 +801,19 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.access"></a>
     
             <div class="docstring"><p>Access the value at the specified index.</p>
+
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O((log N) (log V))</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>N</code> = length of the sequence  </li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
 
 <h1 id="examples">Examples</h1>
 
@@ -633,6 +840,19 @@ the appropriate internal representation based on the input data.</p>
     
             <div class="docstring"><p>Counts the occurrences of the given value in the range [0, end).</p>
 
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O((log N) (log V))</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>N</code> = length of the sequence  </li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
+
 <h1 id="examples">Examples</h1>
 
 <div class="pdoc-code codehilite">
@@ -657,6 +877,19 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.select"></a>
     
             <div class="docstring"><p>Finds the position of the k-th occurrence of the given value.</p>
+
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O((log N) (log V))</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>N</code> = length of the sequence  </li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
 
 <h1 id="examples">Examples</h1>
 
@@ -683,6 +916,19 @@ the appropriate internal representation based on the input data.</p>
     
             <div class="docstring"><p>Find the k-th smallest value in the range [start, end) (1-indexed).</p>
 
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O((log N) (log V))</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>N</code> = length of the sequence  </li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
+
 <h1 id="examples">Examples</h1>
 
 <div class="pdoc-code codehilite">
@@ -707,6 +953,20 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.topk"></a>
     
             <div class="docstring"><p>Finds the top-k most frequent elements in the range [start, end).</p>
+
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(L (log L) (log N) (log V))</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>L</code> = the number of distinct values in the range <code>[start, end)</code></li>
+<li><code>N</code> = length of the sequence </li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
 
 <h1 id="examples">Examples</h1>
 
@@ -733,6 +993,21 @@ the appropriate internal representation based on the input data.</p>
     
             <div class="docstring"><p>Computes the sum of values in the range [start, end).</p>
 
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(L (log N) (log V))</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>L</code> = the number of distinct values <code>c</code> in the range <code>[start, end)</code>
+that satisfy <code>lower &lt;= c &lt; upper</code></li>
+<li><code>N</code> = length of the sequence</li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
+
 <h1 id="examples">Examples</h1>
 
 <div class="pdoc-code codehilite">
@@ -757,6 +1032,21 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.range_intersection"></a>
     
             <div class="docstring"><p>Finds the intersection of values in the two ranges [start1, end1) and [start2, end2).</p>
+
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(L (log N) (log V))</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>L</code> = the number of distinct values <code>c</code> in the range <code>[start, end)</code>
+that satisfy <code>lower &lt;= c &lt; upper</code></li>
+<li><code>N</code> = length of the sequence</li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
 
 <h1 id="examples">Examples</h1>
 
@@ -783,6 +1073,19 @@ the appropriate internal representation based on the input data.</p>
     
             <div class="docstring"><p>Counts the number of elements c in the range [start, end) such that lower &lt;= c &lt; upper.</p>
 
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O((log N) (log V))</code>  </li>
+</ul>
+
+<p>where: </p>
+
+<ul>
+<li><code>N</code> = length of the sequence</li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
+
 <h1 id="examples">Examples</h1>
 
 <div class="pdoc-code codehilite">
@@ -807,6 +1110,21 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.range_list"></a>
     
             <div class="docstring"><p>Lists all elements c in the range [start, end) such that lower &lt;= c &lt; upper.</p>
+
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(L (log N) (log V))</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>L</code> = the number of distinct values <code>c</code> in the range <code>[start, end)</code>
+that satisfy <code>lower &lt;= c &lt; upper</code></li>
+<li><code>N</code> = length of the sequence</li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
 
 <h1 id="examples">Examples</h1>
 
@@ -833,6 +1151,19 @@ the appropriate internal representation based on the input data.</p>
     
             <div class="docstring"><p>Finds the k largest values in the range [start, end).</p>
 
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(k (log N) (log V))</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>N</code> = length of the sequence</li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
+
 <h1 id="examples">Examples</h1>
 
 <div class="pdoc-code codehilite">
@@ -857,6 +1188,19 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.range_mink"></a>
     
             <div class="docstring"><p>Finds the k smallest values in the range [start, end).</p>
+
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(k (log N) (log V))</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>N</code> = length of the sequence</li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
 
 <h1 id="examples">Examples</h1>
 
@@ -883,6 +1227,21 @@ the appropriate internal representation based on the input data.</p>
     
             <div class="docstring"><p>Finds the maximum value c in the range [start, end) such that lower &lt;= c &lt; upper.</p>
 
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(L (log N) (log V))</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>L</code> = the number of distinct values <code>c</code> in the range <code>[start, end)</code>
+that satisfy <code>lower &lt;= c &lt; upper</code></li>
+<li><code>N</code> = length of the sequence</li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
+
 <h1 id="examples">Examples</h1>
 
 <div class="pdoc-code codehilite">
@@ -907,6 +1266,21 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.next_value"></a>
     
             <div class="docstring"><p>Finds the minimum value c in the range [start, end) such that lower &lt;= c &lt; upper.</p>
+
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(L (log N) (log V))</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>L</code> = the number of distinct values <code>c</code> in the range <code>[start, end)</code>
+that satisfy <code>lower &lt;= c &lt; upper</code></li>
+<li><code>N</code> = length of the sequence</li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
 
 <h1 id="examples">Examples</h1>
 
@@ -933,6 +1307,12 @@ the appropriate internal representation based on the input data.</p>
     
             <div class="docstring"><p>Returns the maximum bit length of the values stored in the Wavelet Matrix.</p>
 
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O(1)</code>  </li>
+</ul>
+
 <h1 id="examples">Examples</h1>
 
 <div class="pdoc-code codehilite">
@@ -957,6 +1337,19 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.insert"></a>
     
             <div class="docstring"><p>Inserts a value at the specified index.</p>
+
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O((log N) (log V))</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>N</code> = length of the sequence</li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
 
 <h1 id="examples">Examples</h1>
 
@@ -984,6 +1377,19 @@ the appropriate internal representation based on the input data.</p>
     
             <div class="docstring"><p>Removes and returns the value at the specified index.</p>
 
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O((log N) (log V))</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>N</code> = length of the sequence</li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
+
 <h1 id="examples">Examples</h1>
 
 <div class="pdoc-code codehilite">
@@ -1010,6 +1416,19 @@ the appropriate internal representation based on the input data.</p>
     <a class="headerlink" href="#DynamicWaveletMatrix.update"></a>
     
             <div class="docstring"><p>Updates the value at the specified index and returns the old value.</p>
+
+<h1 id="complexity">Complexity</h1>
+
+<ul>
+<li>Time: <code>O((log N) (log V))</code>  </li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>N</code> = length of the sequence</li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
 
 <h1 id="examples">Examples</h1>
 
