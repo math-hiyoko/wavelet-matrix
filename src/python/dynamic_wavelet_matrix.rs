@@ -353,10 +353,9 @@ impl PyDynamicWaveletMatrix {
     ///
     /// # Complexity
     ///
-    /// - Time: `O((log N) (log V))`  
+    /// - Time: `O(log V)` (amortized)
     ///
     /// where:
-    /// - `N` = length of the sequence  
     /// - `V` = range of possible values (max value domain)
     ///
     /// # Examples
