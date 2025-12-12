@@ -179,6 +179,7 @@ jobs:
         run: |
           pdoc wavelet_matrix \
             --output-directory docs \
+            --no-search \
             --no-show-source \
             --docformat markdown \
             --footer-text "© 2025 Koki Watanabe"
