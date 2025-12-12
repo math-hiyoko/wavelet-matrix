@@ -109,13 +109,16 @@ DynamicWaveletMatrix([5, 4, 5, 5, 5, 1, 5, 6, 1, 3, 5, 0], max_bit=4)
 ### Running Tests
 
 ```bash
-pip install -e ".[dev]"
+$ pip install -e ".[dev]"
+
+# Cargo test
+$ cargo test --all --release
 
 # Run tests
-pytest tests/
+$ pytest --benchmark-skip
 
 # Run benchmarks
-pytest benchmarks/
+$ pytest --benchmark-only
 ```
 
 ## References
