@@ -5,7 +5,6 @@ High-performance indexed sequence structure powered by Rust, providing fast rank
 - Document: https://math-hiyoko.github.io/wavelet-matrix/
 - Repository: https://github.com/math-hiyoko/wavelet-matrix
 
-
 ## Quick Start
 
 ### WaveletMatrix
