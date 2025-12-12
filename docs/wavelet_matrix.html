@@ -154,9 +154,18 @@
 wavelet_matrix    </h1>
 
                 
-                
-                
-                
+                        <input id="mod-wavelet_matrix-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+
+                        <label class="view-source-button" for="mod-wavelet_matrix-view-source"><span>View Source</span></label>
+
+                        <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">1</span></a><span class="kn">from</span><span class="w"> </span><span class="nn">.wavelet_matrix</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos">2</span></a>
+</span><span id="L-3"><a href="#L-3"><span class="linenos">3</span></a><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">wavelet_matrix</span><span class="o">.</span><span class="vm">__doc__</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos">4</span></a><span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">wavelet_matrix</span><span class="p">,</span> <span class="s2">&quot;__all__&quot;</span><span class="p">):</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos">5</span></a>    <span class="n">__all__</span> <span class="o">=</span> <span class="n">wavelet_matrix</span><span class="o">.</span><span class="n">__all__</span>
+</span></pre></div>
+
+
             </section>
                 <section id="WaveletMatrix">
                     <div class="attr class">
@@ -510,7 +519,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 <li>Time: <code>O(log V)</code>  </li>
 </ul>
 
-<p>where: </p>
+<p>where:</p>
 
 <ul>
 <li><code>V</code> = range of possible values (max value domain)</li>
@@ -964,7 +973,7 @@ the appropriate internal representation based on the input data.</p>
 
 <ul>
 <li><code>L</code> = the number of distinct values in the range <code>[start, end)</code></li>
-<li><code>N</code> = length of the sequence </li>
+<li><code>N</code> = length of the sequence</li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
 
@@ -1079,7 +1088,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 <li>Time: <code>O((log N) (log V))</code>  </li>
 </ul>
 
-<p>where: </p>
+<p>where:</p>
 
 <ul>
 <li><code>N</code> = length of the sequence</li>
