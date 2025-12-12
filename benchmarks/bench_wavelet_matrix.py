@@ -35,13 +35,13 @@ class BenchWaveletMatrix:
 
     def bench_rank(self, benchmark, random_wavelet_matrix, size):
         """Benchmark WaveletMatrix rank"""
-        value = random_wavelet_matrix[0]
+        value = random_wavelet_matrix[random.randint(0, size - 1)]
         end = random.randint(0, size)
         benchmark(random_wavelet_matrix.rank, value, end)
 
     def bench_select(self, benchmark, random_wavelet_matrix, size):
         """Benchmark WaveletMatrix select"""
-        value = random_wavelet_matrix[0]
+        value = random_wavelet_matrix[random.randint(0, size - 1)]
         kth = random_wavelet_matrix.rank(value, size)
         benchmark(random_wavelet_matrix.select, value, kth)
 

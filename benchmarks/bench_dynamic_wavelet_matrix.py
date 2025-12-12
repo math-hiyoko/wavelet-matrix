@@ -36,13 +36,13 @@ class BenchDynamicWaveletMatrix:
 
     def bench_dynamic_rank(self, benchmark, random_dynamic_wavelet_matrix, size):
         """Benchmark DynamicWaveletMatrix rank"""
-        value = random_dynamic_wavelet_matrix[0]
+        value = random_dynamic_wavelet_matrix[random.randint(0, size - 1)]
         end = random.randint(0, size)
         benchmark(random_dynamic_wavelet_matrix.rank, value, end)
 
     def bench_dynamic_select(self, benchmark, random_dynamic_wavelet_matrix, size):
         """Benchmark DynamicWaveletMatrix select"""
-        value = random_dynamic_wavelet_matrix[0]
+        value = random_dynamic_wavelet_matrix[random.randint(0, size - 1)]
         kth = random_dynamic_wavelet_matrix.rank(value, size)
         benchmark(random_dynamic_wavelet_matrix.select, value, kth)
 
