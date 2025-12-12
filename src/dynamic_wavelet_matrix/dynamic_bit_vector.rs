@@ -14,10 +14,10 @@ type BlockType = u64;
 const BITS_SIZE_LIMIT: usize = BlockType::BITS as usize / 2;
 
 #[derive(Debug, Clone)]
-enum Node {
+enum DynamicBitVectorNode {
     Internal {
-        left: Box<Node>,
-        right: Box<Node>,
+        left: Box<DynamicBitVectorNode>,
+        right: Box<DynamicBitVectorNode>,
         left_total: usize,
         left_ones: usize,
         balance: isize,
@@ -27,37 +27,92 @@ enum Node {
     },
 }
 
-impl Node {
-    fn new_leaf(bits: BlockType) -> Self {
-        Node::Leaf { bits }
-    }
-
-    fn new_internal(
-        left: Box<Node>,
-        right: Box<Node>,
-        left_total: usize,
-        left_ones: usize,
-        balance: isize,
-    ) -> Self {
-        Node::Internal {
-            left,
-            right,
-            left_total,
-            left_ones,
-            balance,
+impl DynamicBitVectorNode {
+    fn new(bits: &[bool]) -> Self {
+        if bits.is_empty() {
+            return Self::Leaf {
+                bits: BlockType::zero(),
+            };
         }
+
+        struct DynamicBitVectorNodeBuildItem {
+            node: Box<DynamicBitVectorNode>,
+            total: usize,
+            ones: usize,
+            height: usize,
+        }
+
+        let mut nodes = bits
+            .chunks(BITS_SIZE_LIMIT)
+            .map(|chunk| DynamicBitVectorNodeBuildItem {
+                node: Box::new(DynamicBitVectorNode::Leaf {
+                    bits: chunk
+                        .iter()
+                        .enumerate()
+                        .fold(BlockType::zero(), |acc, (i, &bit)| {
+                            if bit {
+                                acc | (BlockType::one() << i)
+                            } else {
+                                acc
+                            }
+                        }),
+                }),
+                total: chunk.len(),
+                ones: chunk.iter().filter(|&&b| b).count(),
+                height: 0usize,
+            })
+            .collect::<Vec<DynamicBitVectorNodeBuildItem>>();
+
+        fn merge_nodes(
+            left: &DynamicBitVectorNodeBuildItem,
+            right: &DynamicBitVectorNodeBuildItem,
+        ) -> DynamicBitVectorNodeBuildItem {
+            let balance = right.height as isize - left.height as isize;
+            debug_assert!(
+                (-1..=1).contains(&balance),
+                "unbalanced tree detected during build"
+            );
+            let internal = Box::new(DynamicBitVectorNode::Internal {
+                left: left.node.clone(),
+                right: right.node.clone(),
+                left_total: left.total,
+                left_ones: left.ones,
+                balance,
+            });
+            DynamicBitVectorNodeBuildItem {
+                node: internal,
+                total: left.total + right.total,
+                ones: left.ones + right.ones,
+                height: max(left.height, right.height) + 1,
+            }
+        }
+
+        while nodes.len() > 1 {
+            let mut next_nodes = (0..nodes.len() - 1)
+                .step_by(2)
+                .map(|i| merge_nodes(&nodes[i], &nodes[i + 1]))
+                .collect::<Vec<DynamicBitVectorNodeBuildItem>>();
+            if nodes.len() % 2 == 1 {
+                let left = next_nodes.pop().unwrap();
+                let right = nodes.last().unwrap();
+                next_nodes.push(merge_nodes(&left, right));
+            }
+            nodes = next_nodes;
+        }
+
+        nodes[0].node.as_ref().clone()
     }
 
     #[inline]
     fn values(&self, len: usize) -> Vec<bool> {
         match self {
-            Node::Leaf { bits } => {
+            DynamicBitVectorNode::Leaf { bits } => {
                 debug_assert!(len <= BlockType::BITS as usize);
                 (0..len)
                     .map(|i| ((bits >> i) & BlockType::one()).is_one())
                     .collect()
             }
-            Node::Internal {
+            DynamicBitVectorNode::Internal {
                 left,
                 right,
                 left_total,
@@ -80,31 +135,31 @@ impl Node {
     fn rotate_right(&mut self) -> isize {
         let d_node = replace(
             self,
-            Node::Leaf {
+            DynamicBitVectorNode::Leaf {
                 bits: BlockType::zero(),
             },
         );
 
         let (b_node, e_node, b_total, b_ones, d_balance) = match d_node {
-            Node::Internal {
+            DynamicBitVectorNode::Internal {
                 left,
                 right,
                 left_total,
                 left_ones,
                 balance,
             } => (left, right, left_total, left_ones, balance),
-            Node::Leaf { .. } => panic!("rotate_right called on Leaf node"),
+            DynamicBitVectorNode::Leaf { .. } => panic!("rotate_right called on Leaf node"),
         };
 
         let (a_node, c_node, a_total, a_ones, b_balance) = match *b_node {
-            Node::Internal {
+            DynamicBitVectorNode::Internal {
                 left,
                 right,
                 left_total,
                 left_ones,
                 balance,
             } => (left, right, left_total, left_ones, balance),
-            Node::Leaf { .. } => panic!("rotate_right: left child is Leaf"),
+            DynamicBitVectorNode::Leaf { .. } => panic!("rotate_right: left child is Leaf"),
         };
 
         let c_height = 2usize;
@@ -113,21 +168,21 @@ impl Node {
         let c_total = b_total - a_total;
         let c_ones = b_ones - a_ones;
 
-        let new_d_node = Box::new(Node::new_internal(
-            c_node,
-            e_node,
-            c_total,
-            c_ones,
-            e_height as isize - c_height as isize,
-        ));
+        let new_d_node = Box::new(DynamicBitVectorNode::Internal {
+            left: c_node,
+            right: e_node,
+            left_total: c_total,
+            left_ones: c_ones,
+            balance: e_height as isize - c_height as isize,
+        });
 
-        let new_b_node = Box::new(Node::new_internal(
-            a_node,
-            new_d_node,
-            a_total,
-            a_ones,
-            (max(c_height, e_height) + 1) as isize - a_height as isize,
-        ));
+        let new_b_node = Box::new(DynamicBitVectorNode::Internal {
+            left: a_node,
+            right: new_d_node,
+            left_total: a_total,
+            left_ones: a_ones,
+            balance: (max(c_height, e_height) + 1) as isize - a_height as isize,
+        });
 
         *self = *new_b_node;
 
@@ -152,52 +207,52 @@ impl Node {
     fn rotate_left(&mut self) -> isize {
         let b_node = replace(
             self,
-            Node::Leaf {
+            DynamicBitVectorNode::Leaf {
                 bits: BlockType::zero(),
             },
         );
 
         let (a_node, d_node, a_total, a_ones, b_balance) = match b_node {
-            Node::Internal {
+            DynamicBitVectorNode::Internal {
                 left,
                 right,
                 left_total,
                 left_ones,
                 balance,
             } => (left, right, left_total, left_ones, balance),
-            Node::Leaf { .. } => panic!("rotate_left called on Leaf node"),
+            DynamicBitVectorNode::Leaf { .. } => panic!("rotate_left called on Leaf node"),
         };
 
         let (c_node, e_node, c_total, c_ones, d_balance) = match *d_node {
-            Node::Internal {
+            DynamicBitVectorNode::Internal {
                 left,
                 right,
                 left_total,
                 left_ones,
                 balance,
             } => (left, right, left_total, left_ones, balance),
-            Node::Leaf { .. } => panic!("rotate_left: right child is Leaf"),
+            DynamicBitVectorNode::Leaf { .. } => panic!("rotate_left: right child is Leaf"),
         };
 
         let c_height = 2usize;
         let e_height = (c_height as isize + d_balance) as usize;
         let a_height = ((max(c_height, e_height) + 1) as isize - b_balance) as usize;
 
-        let new_b_node = Box::new(Node::new_internal(
-            a_node,
-            c_node,
-            a_total,
-            a_ones,
-            c_height as isize - a_height as isize,
-        ));
+        let new_b_node = Box::new(DynamicBitVectorNode::Internal {
+            left: a_node,
+            right: c_node,
+            left_total: a_total,
+            left_ones: a_ones,
+            balance: c_height as isize - a_height as isize,
+        });
 
-        let new_d_node = Box::new(Node::new_internal(
-            new_b_node,
-            e_node,
-            a_total + c_total,
-            a_ones + c_ones,
-            e_height as isize - (max(a_height, c_height) + 1) as isize,
-        ));
+        let new_d_node = Box::new(DynamicBitVectorNode::Internal {
+            left: new_b_node,
+            right: e_node,
+            left_total: a_total + c_total,
+            left_ones: a_ones + c_ones,
+            balance: e_height as isize - (max(a_height, c_height) + 1) as isize,
+        });
 
         *self = *new_d_node;
 
@@ -216,7 +271,7 @@ impl Node {
     #[inline]
     fn rebalance(&mut self) -> isize {
         match self {
-            Node::Internal {
+            DynamicBitVectorNode::Internal {
                 left,
                 right,
                 balance,
@@ -227,7 +282,7 @@ impl Node {
                     "rebalance called on balanced node"
                 );
                 if *balance == -2 {
-                    if let Node::Internal {
+                    if let DynamicBitVectorNode::Internal {
                         balance: left_balance,
                         ..
                     } = **left
@@ -237,7 +292,7 @@ impl Node {
                     }
                     self.rotate_right()
                 } else if *balance == 2 {
-                    if let Node::Internal {
+                    if let DynamicBitVectorNode::Internal {
                         balance: right_balance,
                         ..
                     } = **right
@@ -250,26 +305,26 @@ impl Node {
                     0isize
                 }
             }
-            Node::Leaf { .. } => 0isize,
+            DynamicBitVectorNode::Leaf { .. } => 0isize,
         }
     }
 
     #[inline]
     fn split_leaf(&mut self, len: usize) {
         match self {
-            Node::Leaf { bits } => {
+            DynamicBitVectorNode::Leaf { bits } => {
                 let left_total = len / 2;
                 let left_bits = *bits & ((BlockType::one() << left_total) - BlockType::one());
                 let right_bits = *bits >> left_total;
-                *self = Node::Internal {
-                    left: Box::new(Node::Leaf { bits: left_bits }),
-                    right: Box::new(Node::Leaf { bits: right_bits }),
+                *self = DynamicBitVectorNode::Internal {
+                    left: Box::new(DynamicBitVectorNode::Leaf { bits: left_bits }),
+                    right: Box::new(DynamicBitVectorNode::Leaf { bits: right_bits }),
                     left_total,
                     left_ones: left_bits.count_ones() as usize,
                     balance: 0isize,
                 };
             }
-            Node::Internal { .. } => {
+            DynamicBitVectorNode::Internal { .. } => {
                 panic!("split_leaf called on Internal node");
             }
         }
@@ -279,7 +334,7 @@ impl Node {
     /// returns the change in height of the subtree after insertion.
     fn insert(&mut self, index: usize, bit: bool, len: usize) -> isize {
         match self {
-            Node::Leaf { bits } => {
+            DynamicBitVectorNode::Leaf { bits } => {
                 let left_bits = *bits & ((BlockType::one() << index) - BlockType::one());
                 let right_bits = if index + 1 < BlockType::BITS as usize {
                     (*bits >> index) << (index + 1)
@@ -299,7 +354,7 @@ impl Node {
                     0isize
                 }
             }
-            Node::Internal {
+            DynamicBitVectorNode::Internal {
                 left,
                 right,
                 left_total,
@@ -333,8 +388,8 @@ impl Node {
                 debug_assert!(
                     {
                         let balance = match self {
-                            Node::Internal { balance, .. } => *balance,
-                            Node::Leaf { .. } => 0,
+                            DynamicBitVectorNode::Internal { balance, .. } => *balance,
+                            DynamicBitVectorNode::Leaf { .. } => 0,
                         };
                         (-1..=1).contains(&balance)
                     },
@@ -354,7 +409,7 @@ impl Node {
         block_len: usize,
     ) {
         let mut node = self;
-        while let Node::Internal {
+        while let DynamicBitVectorNode::Internal {
             left,
             right,
             left_total,
@@ -383,7 +438,7 @@ impl Node {
         );
 
         let node_bits = match node {
-            Node::Leaf { bits } => bits,
+            DynamicBitVectorNode::Leaf { bits } => bits,
             _ => unreachable!("insert_batch: reached non-leaf node"),
         };
         let left_bits = *node_bits & ((BlockType::one() << index) - BlockType::one());
@@ -394,7 +449,7 @@ impl Node {
     #[inline]
     fn leftmost_leaf_size(&self, mut len: usize) -> usize {
         let mut node = self;
-        while let Node::Internal {
+        while let DynamicBitVectorNode::Internal {
             left, left_total, ..
         } = node
         {
@@ -408,7 +463,7 @@ impl Node {
     #[inline]
     fn rightmost_leaf_size(&self, mut len: usize) -> usize {
         let mut node = self;
-        while let Node::Internal {
+        while let DynamicBitVectorNode::Internal {
             right, left_total, ..
         } = node
         {
@@ -423,14 +478,14 @@ impl Node {
     /// returns the removed bit and the change in height of the subtree after removal.
     fn remove(&mut self, index: usize, mut len: usize) -> (bool, isize) {
         match self {
-            Node::Leaf { bits } => {
+            DynamicBitVectorNode::Leaf { bits } => {
                 let bit = ((*bits >> index) & BlockType::one()).is_one();
                 let left_bits = *bits & ((BlockType::one() << index) - BlockType::one());
                 let right_bits = (*bits >> (index + 1)) << index;
                 *bits = left_bits | right_bits;
                 (bit, 0isize)
             }
-            Node::Internal {
+            DynamicBitVectorNode::Internal {
                 left,
                 right,
                 left_total,
@@ -455,13 +510,13 @@ impl Node {
                         if right.leftmost_leaf_size(len - *left_total) <= BITS_SIZE_LIMIT / 2 + 1 {
                             // merge left and right
                             let left_bits = match **left {
-                                Node::Leaf { bits } => bits,
+                                DynamicBitVectorNode::Leaf { bits } => bits,
                                 _ => unreachable!("left child is not Leaf during merge"),
                             };
                             right.insert_batch(0, left_bits, len - *left_total, *left_total);
                             *self = replace(
                                 right,
-                                Node::Leaf {
+                                DynamicBitVectorNode::Leaf {
                                     bits: BlockType::zero(),
                                 },
                             );
@@ -490,7 +545,7 @@ impl Node {
                         if left.rightmost_leaf_size(*left_total) <= BITS_SIZE_LIMIT / 2 + 1 {
                             // merge left and right
                             let right_bits = match **right {
-                                Node::Leaf { bits } => bits,
+                                DynamicBitVectorNode::Leaf { bits } => bits,
                                 _ => unreachable!("right child is not Leaf during merge"),
                             };
                             left.insert_batch(
@@ -501,7 +556,7 @@ impl Node {
                             );
                             *self = replace(
                                 left,
-                                Node::Leaf {
+                                DynamicBitVectorNode::Leaf {
                                     bits: BlockType::zero(),
                                 },
                             );
@@ -523,8 +578,8 @@ impl Node {
                 debug_assert!(
                     {
                         let balance = match self {
-                            Node::Internal { balance, .. } => *balance,
-                            Node::Leaf { .. } => 0,
+                            DynamicBitVectorNode::Internal { balance, .. } => *balance,
+                            DynamicBitVectorNode::Leaf { .. } => 0,
                         };
                         (-1..=1).contains(&balance)
                     },
@@ -540,83 +595,15 @@ impl Node {
 pub(crate) struct DynamicBitVector {
     len: usize,
     ones: usize,
-    root: Box<Node>,
+    root: Box<DynamicBitVectorNode>,
 }
 
 impl DynamicBitVector {
     pub(super) fn new(bits: &[bool]) -> Self {
-        if bits.is_empty() {
-            return Self {
-                len: 0,
-                ones: 0,
-                root: Node::new_leaf(BlockType::zero()).into(),
-            };
-        }
-
-        struct NodeBuildItem {
-            node: Box<Node>,
-            total: usize,
-            ones: usize,
-            height: u8,
-        }
-
-        let mut nodes = bits
-            .chunks(BITS_SIZE_LIMIT)
-            .map(|chunk| NodeBuildItem {
-                node: Box::new(Node::new_leaf(chunk.iter().enumerate().fold(
-                    BlockType::zero(),
-                    |acc, (i, &bit)| {
-                        if bit {
-                            acc | (BlockType::one() << i)
-                        } else {
-                            acc
-                        }
-                    },
-                ))),
-                total: chunk.len(),
-                ones: chunk.iter().filter(|&&b| b).count(),
-                height: 0u8,
-            })
-            .collect::<Vec<NodeBuildItem>>();
-
-        fn merge_nodes(left: &NodeBuildItem, right: &NodeBuildItem) -> NodeBuildItem {
-            let balance = right.height as isize - left.height as isize;
-            debug_assert!(
-                (-1..=1).contains(&balance),
-                "unbalanced tree detected during build"
-            );
-            let internal = Box::new(Node::new_internal(
-                left.node.clone(),
-                right.node.clone(),
-                left.total,
-                left.ones,
-                balance,
-            ));
-            NodeBuildItem {
-                node: internal,
-                total: left.total + right.total,
-                ones: left.ones + right.ones,
-                height: max(left.height, right.height) + 1,
-            }
-        }
-
-        while nodes.len() > 1 {
-            let mut next_nodes = (0..nodes.len() - 1)
-                .step_by(2)
-                .map(|i| merge_nodes(&nodes[i], &nodes[i + 1]))
-                .collect::<Vec<NodeBuildItem>>();
-            if nodes.len() % 2 == 1 {
-                let left = next_nodes.pop().unwrap();
-                let right = nodes.last().unwrap();
-                next_nodes.push(merge_nodes(&left, right));
-            }
-            nodes = next_nodes;
-        }
-
         Self {
             len: bits.len(),
-            ones: nodes[0].ones,
-            root: nodes[0].node.clone(),
+            ones: bits.iter().filter(|&&b| b).count(),
+            root: Box::new(DynamicBitVectorNode::new(bits)),
         }
     }
 }
@@ -634,7 +621,7 @@ impl BitVectorTrait for DynamicBitVector {
         }
 
         let mut node = &*self.root;
-        while let Node::Internal {
+        while let DynamicBitVectorNode::Internal {
             left,
             right,
             left_total,
@@ -650,7 +637,7 @@ impl BitVectorTrait for DynamicBitVector {
         }
 
         let bits = match node {
-            Node::Leaf { bits } => bits,
+            DynamicBitVectorNode::Leaf { bits } => bits,
             _ => unreachable!("access: reached non-leaf node"),
         };
         let bit = ((bits >> index) & BlockType::one()).is_one();
@@ -671,7 +658,7 @@ impl BitVectorTrait for DynamicBitVector {
 
         let mut node = &*self.root;
         let mut rank = 0usize;
-        while let Node::Internal {
+        while let DynamicBitVectorNode::Internal {
             left,
             right,
             left_total,
@@ -689,7 +676,7 @@ impl BitVectorTrait for DynamicBitVector {
         }
 
         let bits = match node {
-            Node::Leaf { bits } => bits,
+            DynamicBitVectorNode::Leaf { bits } => bits,
             _ => unreachable!("access: reached non-leaf node"),
         };
         rank += (*bits & ((1 << end) - BlockType::one())).count_ones() as usize;
@@ -707,7 +694,7 @@ impl BitVectorTrait for DynamicBitVector {
 
         let mut node = &*self.root;
         let mut index = 0usize;
-        while let Node::Internal {
+        while let DynamicBitVectorNode::Internal {
             left,
             right,
             left_total,
@@ -730,7 +717,7 @@ impl BitVectorTrait for DynamicBitVector {
         }
 
         let bits = match node {
-            Node::Leaf { bits } => bits,
+            DynamicBitVectorNode::Leaf { bits } => bits,
             _ => unreachable!("select: reached non-leaf node"),
         };
         let offset = bits.bit_select(bit, kth).ok_or(PyRuntimeError::new_err(
@@ -770,11 +757,11 @@ mod tests {
     use super::*;
     use pyo3::Python;
 
-    impl Node {
+    impl DynamicBitVectorNode {
         fn assert_avl(&self) -> isize {
             match self {
-                Node::Leaf { .. } => 0,
-                Node::Internal {
+                DynamicBitVectorNode::Leaf { .. } => 0,
+                DynamicBitVectorNode::Internal {
                     left,
                     right,
                     balance,

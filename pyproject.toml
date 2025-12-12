@@ -5,17 +5,37 @@ build-backend = "maturin"
 [project]
 name = "wavelet-matrix"
 dynamic = ["version"]
-description = "Python Wavelet Matrix accelerated by Rust, with support for dynamic updates and fast rank/select/quantile queries."
+description = "High-performance indexed sequence structure powered by Rust, providing fast rank/select, top-k, quantile, and range queries with optional dynamic updates."
 authors = [
     {name = "Koki Watanabe"}
 ]
 readme = "README.md"
 requires-python = ">=3.8"
 license = { file = "LICENSE" }
-keywords = ["wavelet-matrix", "data-structure", "algorithm", "rank", "select", "quantile"]
+keywords = [
+    "wavelet-matrix",
+    "wavelet matrix",
+    "data-structure",
+    "data structure",
+    "algorithm",
+    "sequence index",
+    "compressed data structure",
+    "rank",
+    "select",
+    "quantile",
+    "top-k",
+    "range query",
+    "range search",
+    "dynamic update",
+    "indexing",
+    "fast lookup",
+    "rust extension",
+    "python extension",
+]
 classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
+    "Intended Audience :: Information Technology",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
@@ -27,7 +47,14 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Database",
+    "Topic :: Database :: Database Engines/Servers",
+    "Topic :: Text Processing :: Indexing",
+    "Topic :: Utilities",
 ]
 
 [project.optional-dependencies]
@@ -35,13 +62,13 @@ dev = [
     "pytest>=7.0",
     "pytest-benchmark>=4.0",
     "maturin>=1.9,<2.0",
+    "pdoc>=16.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/math-hiyoko/wavelet-matrix"
-Documentation = "https://github.com/math-hiyoko/wavelet-matrix#readme"
-Source = "https://github.com/math-hiyoko/wavelet-matrix"
-Tracker = "https://github.com/math-hiyoko/wavelet-matrix/issues"
+homepage = "https://github.com/math-hiyoko/wavelet-matrix"
+documentation = "https://math-hiyoko.github.io/wavelet-matrix"
+repository = "https://github.com/math-hiyoko/wavelet-matrix"
 
 [tool.maturin]
 features = ["pyo3/extension-module"]

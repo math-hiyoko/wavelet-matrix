@@ -53,27 +53,6 @@ class BenchDynamicWaveletMatrix:
         kth = random.randint(1, end - start)
         benchmark(random_dynamic_wavelet_matrix.quantile, start, end, kth)
 
-    def bench_dynamic_topk(self, benchmark, random_dynamic_wavelet_matrix, size):
-        """Benchmark DynamicWaveletMatrix topk"""
-        start = size // 4
-        end = size * 3 // 4
-        k = 10
-        benchmark(random_dynamic_wavelet_matrix.topk, start, end, k)
-
-    def bench_dynamic_range_sum(self, benchmark, random_dynamic_wavelet_matrix, size):
-        """Benchmark DynamicWaveletMatrix range_sum"""
-        start = size // 4
-        end = size * 3 // 4
-        benchmark(random_dynamic_wavelet_matrix.range_sum, start, end)
-
-    def bench_dynamic_range_intersection(self, benchmark, random_dynamic_wavelet_matrix, size):
-        """Benchmark DynamicWaveletMatrix range_intersection"""
-        start1 = 0
-        end1 = size // 3
-        start2 = size * 2 // 3
-        end2 = size
-        benchmark(random_dynamic_wavelet_matrix.range_intersection, start1, end1, start2, end2)
-
     def bench_dynamic_range_freq(self, benchmark, random_dynamic_wavelet_matrix, size, max_bit):
         """Benchmark DynamicWaveletMatrix range_freq"""
         start = size // 4
@@ -81,14 +60,6 @@ class BenchDynamicWaveletMatrix:
         lower = 1 << (max_bit // 4)
         upper = 1 << (max_bit * 3 // 4)
         benchmark(random_dynamic_wavelet_matrix.range_freq, start, end, lower, upper)
-
-    def bench_dynamic_range_list(self, benchmark, random_dynamic_wavelet_matrix, size, max_bit):
-        """Benchmark DynamicWaveletMatrix range_list"""
-        start = size // 4
-        end = size * 3 // 4
-        lower = 1 << (max_bit // 4)
-        upper = 1 << (max_bit * 3 // 4)
-        benchmark(random_dynamic_wavelet_matrix.range_list, start, end, lower, upper)
 
     def bench_dynamic_range_maxk(self, benchmark, random_dynamic_wavelet_matrix, size):
         """Benchmark DynamicWaveletMatrix range_maxk"""
@@ -103,22 +74,6 @@ class BenchDynamicWaveletMatrix:
         end = size * 3 // 4
         k = 10
         benchmark(random_dynamic_wavelet_matrix.range_mink, start, end, k)
-
-    def bench_dynamic_prev_value(self, benchmark, random_dynamic_wavelet_matrix, size, max_bit):
-        """Benchmark DynamicWaveletMatrix prev_value"""
-        start = size // 4
-        end = size * 3 // 4
-        lower = None
-        upper = 1 << (max_bit // 2)
-        benchmark(random_dynamic_wavelet_matrix.prev_value, start, end, lower, upper)
-
-    def bench_dynamic_next_value(self, benchmark, random_dynamic_wavelet_matrix, size, max_bit):
-        """Benchmark DynamicWaveletMatrix next_value"""
-        start = size // 4
-        end = size * 3 // 4
-        lower = 1 << (max_bit // 2)
-        upper = None
-        benchmark(random_dynamic_wavelet_matrix.next_value, start, end, lower, upper)
 
     def bench_dynamic_insert(self, benchmark, random_dynamic_wavelet_matrix, size, max_bit):
         """Benchmark DynamicWaveletMatrix insert"""

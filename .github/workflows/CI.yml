@@ -48,6 +48,12 @@ jobs:
           args: --release --out dist --find-interpreter
           sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
           manylinux: auto
+      - name: Test rust code
+        run: cargo test --all --release
+      - name: Test wheels
+        run: |
+          python -m pip install "wavelet-matrix[dev]" --no-index --find-links dist
+          pytest --benchmark-skip 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -79,6 +85,12 @@ jobs:
           args: --release --out dist --find-interpreter
           sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
           manylinux: musllinux_1_2
+      - name: Test rust code
+        run: cargo test --all --release
+      - name: Test wheels
+        run: |
+          python -m pip install "wavelet-matrix[dev]" --no-index --find-links dist
+          pytest --benchmark-skip 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -106,6 +118,12 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
+      - name: Test rust code
+        run: cargo test --all --release
+      - name: Test wheels
+        run: |
+          python -m pip install "wavelet-matrix[dev]" --no-index --find-links dist
+          pytest --benchmark-skip 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -132,6 +150,12 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
+      - name: Test rust code
+        run: cargo test --all --release
+      - name: Test wheels
+        run: |
+          python -m pip install "wavelet-matrix[dev]" --no-index --find-links dist
+          pytest --benchmark-skip 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -147,6 +171,12 @@ jobs:
         with:
           command: sdist
           args: --out dist
+      - name: Test rust code
+        run: cargo test --all --release
+      - name: Test wheels
+        run: |
+          python -m pip install "wavelet-matrix[dev]" --no-index --find-links dist
+          pytest --benchmark-skip 
       - name: Upload sdist
         uses: actions/upload-artifact@v4
         with:

@@ -22,9 +22,9 @@ enum WaveletMatrixEnum {
 /// A Wavelet Matrix data structure for efficient rank, select, and quantile queries.
 ///
 /// The Wavelet Matrix decomposes a sequence into multiple bit vectors,
-/// one for each bit position. This allows for efficient queries on the sequence.
+/// one for each bit position. This allows for efficient queries on the sequence.  
 /// This class supports various integer types, automatically selecting
-/// the appropriate internal representation based on the input data.
+/// the appropriate internal representation based on the input data.  
 #[derive(Clone)]
 #[pyclass(unsendable, name = "WaveletMatrix")]
 pub(crate) struct PyWaveletMatrix {
@@ -181,6 +181,22 @@ impl PyWaveletMatrix {
     }
 
     /// Get all values in the Wavelet Matrix as a list.
+    ///
+    /// # Complexity
+    ///
+    /// - Time: `O(N log V)`  
+    ///
+    /// where:
+    /// - `N` = length of the sequence  
+    /// - `V` = range of possible values (max value domain)
+    ///
+    /// # Exapmles
+    /// ```python
+    /// >>> from wavelet_matrix import WaveletMatrix
+    /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
+    /// >>> wm.values()
+    /// [5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0]
+    /// ```
     pub(crate) fn values(&self, py: Python<'_>) -> PyResult<Py<PyList>> {
         match &self.inner {
             WaveletMatrixEnum::U8(wm) => Ok(PyList::new(py, &wm.values()?)?.unbind()),
@@ -193,6 +209,21 @@ impl PyWaveletMatrix {
     }
 
     /// Access the value at the specified index.
+    ///
+    /// # Complexity
+    ///
+    /// - Time: `O(log V)`  
+    ///
+    /// where:
+    /// - `V` = range of possible values (max value domain)
+    ///
+    /// # Examples
+    /// ```python
+    /// >>> from wavelet_matrix import WaveletMatrix
+    /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
+    /// >>> wm.access(3)
+    /// 5
+    /// ```
     pub(crate) fn access(&self, py: Python<'_>, index: &Bound<'_, PyInt>) -> PyResult<Py<PyInt>> {
         let index = index
             .extract::<usize>()
@@ -219,6 +250,21 @@ impl PyWaveletMatrix {
     }
 
     /// Counts the occurrences of the given value in the range [0, end).
+    ///
+    /// # Complexity
+    ///
+    /// - Time: `O(log V)`  
+    ///
+    /// where:
+    /// - `V` = range of possible values (max value domain)
+    ///
+    /// # Examples
+    /// ```python
+    /// >>> from wavelet_matrix import WaveletMatrix
+    /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
+    /// >>> wm.rank(5, 9)
+    /// 4
+    /// ```
     pub(crate) fn rank(&self, value: &Bound<'_, PyInt>, end: &Bound<'_, PyInt>) -> PyResult<usize> {
         let end = end
             .extract::<usize>()
@@ -245,6 +291,22 @@ impl PyWaveletMatrix {
     }
 
     /// Finds the position of the k-th occurrence of the given value.
+    ///
+    /// # Complexity
+    ///
+    /// - Time: `O((log N) (log V))`  
+    ///
+    /// where:
+    /// - `N` = length of the sequence  
+    /// - `V` = range of possible values (max value domain)
+    ///
+    /// # Examples
+    /// ```python
+    /// >>> from wavelet_matrix import WaveletMatrix
+    /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
+    /// >>> wm.select(5, 4)
+    /// 6
+    /// ```
     pub(crate) fn select(
         &self,
         value: &Bound<'_, PyInt>,
@@ -275,6 +337,21 @@ impl PyWaveletMatrix {
     }
 
     /// Find the k-th smallest value in the range [start, end) (1-indexed).
+    ///
+    /// # Complexity
+    ///
+    /// - Time: `O(log V)`  
+    ///
+    /// where:
+    /// - `V` = range of possible values (max value domain)
+    ///
+    /// # Examples
+    /// ```python
+    /// >>> from wavelet_matrix import WaveletMatrix
+    /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
+    /// >>> wm.quantile(2, 12, 8)
+    /// 5
+    /// ```
     pub(crate) fn quantile(
         &self,
         py: Python<'_>,
@@ -315,6 +392,22 @@ impl PyWaveletMatrix {
     }
 
     /// Finds the top-k most frequent elements in the range [start, end).
+    ///
+    /// # Complexity
+    ///
+    /// - Time: `O(L (log L) (log V))`  
+    ///
+    /// where:
+    /// - `L` = the number of distinct values in the range `[start, end)`
+    /// - `V` = range of possible values (max value domain)
+    ///
+    /// # Examples
+    /// ```python
+    /// >>> from wavelet_matrix import WaveletMatrix
+    /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
+    /// >>> wm.topk(1, 10, 2)
+    /// [{'value': 5, 'count': 3}, {'value': 1, 'count': 2}]
+    /// ```
     #[pyo3(signature = (start, end, k=None))]
     pub(crate) fn topk(
         &self,
@@ -364,6 +457,23 @@ impl PyWaveletMatrix {
     }
 
     /// Computes the sum of values in the range [start, end).
+    ///
+    /// # Complexity
+    ///
+    /// - Time: `O(L log V)`  
+    ///
+    /// where:
+    /// - `L` = the number of distinct values `c` in the range `[start, end)`
+    ///   that satisfy `lower <= c < upper`
+    /// - `V` = range of possible values (max value domain)
+    ///
+    /// # Examples
+    /// ```python
+    /// >>> from wavelet_matrix import WaveletMatrix
+    /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
+    /// >>> wm.range_sum(2, 8)
+    /// 24
+    /// ```
     pub(crate) fn range_sum(
         &self,
         py: Python<'_>,
@@ -389,6 +499,23 @@ impl PyWaveletMatrix {
     }
 
     /// Finds the intersection of values in the two ranges [start1, end1) and [start2, end2).
+    ///
+    /// # Complexity
+    ///
+    /// - Time: `O(L log V)`  
+    ///
+    /// where:
+    /// - `L` = the number of distinct values `c` in the range `[start, end)`
+    ///   that satisfy `lower <= c < upper`
+    /// - `V` = range of possible values (max value domain)
+    ///
+    /// # Examples
+    /// ```python
+    /// >>> from wavelet_matrix import WaveletMatrix
+    /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
+    /// >>> wm.range_intersection(0, 6, 6, 11)
+    /// [{'value': 1, 'count1': 1, 'count2': 1}, {'value': 5, 'count1': 3, 'count2': 2}]
+    /// ```
     pub(crate) fn range_intersection(
         &self,
         py: Python<'_>,
@@ -438,6 +565,21 @@ impl PyWaveletMatrix {
     }
 
     /// Counts the number of elements c in the range [start, end) such that lower <= c < upper.
+    ///
+    /// # Complexity
+    ///
+    /// - Time: `O(log V)`  
+    ///
+    /// where:
+    /// - `V` = range of possible values (max value domain)
+    ///
+    /// # Examples
+    /// ```python
+    /// >>> from wavelet_matrix import WaveletMatrix
+    /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
+    /// >>> wm.range_freq(1, 9, 4, 6)
+    /// 4
+    /// ```
     #[pyo3(signature = (start, end, lower=None, upper=None))]
     pub fn range_freq(
         &self,
@@ -481,6 +623,23 @@ impl PyWaveletMatrix {
     }
 
     /// Lists all elements c in the range [start, end) such that lower <= c < upper.
+    ///
+    /// # Complexity
+    ///
+    /// - Time: `O(L log V)`  
+    ///
+    /// where:
+    /// - `L` = the number of distinct values `c` in the range `[start, end)`
+    ///   that satisfy `lower <= c < upper`
+    /// - `V` = range of possible values (max value domain)
+    ///
+    /// # Examples
+    /// ```python
+    /// >>> from wavelet_matrix import WaveletMatrix
+    /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
+    /// >>> wm.range_list(1, 9, 4, 6)
+    /// [{'value': 4, 'count': 1}, {'value': 5, 'count': 3}]
+    /// ```
     #[pyo3(signature = (start, end, lower=None, upper=None))]
     pub fn range_list(
         &self,
@@ -535,6 +694,21 @@ impl PyWaveletMatrix {
     }
 
     /// Finds the k largest values in the range [start, end).
+    ///
+    /// # Complexity
+    ///
+    /// - Time: `O(k log V)`  
+    ///
+    /// where:
+    /// - `V` = range of possible values (max value domain)
+    ///
+    /// # Examples
+    /// ```python
+    /// >>> from wavelet_matrix import WaveletMatrix
+    /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
+    /// >>> wm.range_maxk(1, 9, 2)
+    /// [{'value': 6, 'count': 1}, {'value': 5, 'count': 3}]
+    /// ```
     #[pyo3(signature = (start, end, k=None))]
     fn range_maxk(
         &self,
@@ -584,6 +758,21 @@ impl PyWaveletMatrix {
     }
 
     /// Finds the k smallest values in the range [start, end).
+    ///
+    /// # Complexity
+    ///
+    /// - Time: `O(k log V)`  
+    ///
+    /// where:
+    /// - `V` = range of possible values (max value domain)
+    ///
+    /// # Examples
+    /// ```python
+    /// >>> from wavelet_matrix import WaveletMatrix
+    /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
+    /// >>> wm.range_mink(1, 9, 2)
+    /// [{'value': 1, 'count': 2}, {'value': 2, 'count': 1}]
+    /// ```
     #[pyo3(signature = (start, end, k=None))]
     pub fn range_mink(
         &self,
@@ -633,6 +822,23 @@ impl PyWaveletMatrix {
     }
 
     /// Finds the maximum value c in the range [start, end) such that lower <= c < upper.
+    ///
+    /// # Complexity
+    ///
+    /// - Time: `O(L log V)`  
+    ///
+    /// where:
+    /// - `L` = the number of distinct values `c` in the range `[start, end)`
+    ///   that satisfy `lower <= c < upper`
+    /// - `V` = range of possible values (max value domain)
+    ///
+    /// # Examples
+    /// ```python
+    /// >>> from wavelet_matrix import WaveletMatrix
+    /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
+    /// >>> wm.prev_value(1, 9, 4, 7)
+    /// 6
+    /// ```
     #[pyo3(signature = (start, end, lower=None, upper=None))]
     pub fn prev_value(
         &self,
@@ -679,6 +885,23 @@ impl PyWaveletMatrix {
     }
 
     /// Finds the minimum value c in the range [start, end) such that lower <= c < upper.
+    ///
+    /// # Complexity
+    ///
+    /// - Time: `O(L log V)`  
+    ///
+    /// where:
+    /// - `L` = the number of distinct values `c` in the range `[start, end)`
+    ///   that satisfy `lower <= c < upper`
+    /// - `V` = range of possible values (max value domain)
+    ///
+    /// # Examples
+    /// ```python
+    /// >>> from wavelet_matrix import WaveletMatrix
+    /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
+    /// >>> wm.next_value(1, 9, 3, 5)
+    /// 4
+    /// ```
     #[pyo3(signature = (start, end, lower=None, upper=None))]
     pub fn next_value(
         &self,
