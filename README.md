@@ -42,7 +42,7 @@ WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
 
 #### List top-k highest frequent values (topk)
 ```python
->>> # List values in [start, end) with the top-k highest frequencies.
+>>> # List values in [1, 10) with the top-2 highest frequencies.
 >>> wm.topk(start=1, end=10, k=2)
 [{'value': 5, 'count': 3}, {'value': 1, 'count': 2}]
 ```
@@ -56,7 +56,7 @@ WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
 
 #### List values in a range (range_list)
 ```python
->>> # List values c in the range [start, end) such that lower <= c < upper.
+>>> # List values c in the range [1, 9) such that 4 <= c < 6.
 >>> wm.range_list(start=1, end=9, lower=4, upper=6)
 [{'value': 4, 'count': 1}, {'value': 5, 'count': 3}]
 ```
@@ -93,7 +93,7 @@ DynamicWaveletMatrix([5, 4, 5, 5, 8, 2, 1, 5, 6, 1, 3, 5, 0], max_bit=4)
 ```python
 >>> dwm
 DynamicWaveletMatrix([5, 4, 5, 5, 8, 2, 1, 5, 6, 1, 3, 5, 0], max_bit=4)
->>> # Remove a value at index 4.
+>>> # Remove the value at index 4.
 >>> dwm.remove(index=4)
 8
 >>> dwm
@@ -104,7 +104,7 @@ DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0], max_bit=4)
 ```python
 >>> dwm
 DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0], max_bit=4)
->>> # Update a value at index 4 to 5
+>>> # Update the value at index 4 to 5
 >>> dwm.update(index=4, value=5)
 2
 >>> dwm
