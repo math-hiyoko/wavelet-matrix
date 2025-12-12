@@ -1,5 +1,7 @@
 # Wavelet Matrix
 
+[![CI](https://github.com/math-hiyoko/wavelet-matrix/actions/workflows/CI.yml/badge.svg)](https://github.com/math-hiyoko/wavelet-matrix/actions/workflows/CI.yml)
+
 High-performance indexed sequence structure powered by Rust, providing fast rank/select, top-k, quantile, and range queries with optional dynamic updates.
 
 - Document: https://math-hiyoko.github.io/wavelet-matrix/
