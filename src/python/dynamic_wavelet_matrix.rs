@@ -566,8 +566,7 @@ impl PyDynamicWaveletMatrix {
     /// - Time: `O(L (log N) (log V))`  
     ///
     /// where:
-    /// - `L` = the number of distinct values `c` in the range `[start, end)`
-    ///   that satisfy `lower <= c < upper`
+    /// - `L` = the number of distinct values `c` in the intersection of the two ranges
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
     ///

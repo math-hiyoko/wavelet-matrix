@@ -167,14 +167,26 @@ jobs:
         with:
           name: wheels-linux-x86_64
           path: dist
-      - name: Install wheels
+      - name: Install packages
         run: |
           python -m pip install --upgrade pip
           python -m pip install wavelet-matrix \
             --no-index \
             --find-links dist \
             --only-binary=:all:
-          python -m pip install pytest pytest-benchmark
+          python -m pip install pytest pytest-benchmark pdoc
+      - name: Docs check
+        run: |
+          pdoc wavelet_matrix \
+            --output-directory docs \
+            --no-search \
+            --no-show-source \
+            --docformat markdown \
+            --footer-text "© 2025 Koki Watanabe"
+          if ! git diff --exit-code -- docs; then
+            echo "::error::Docs are out of date. Please run pdoc and commit generated docs."
+            exit 1
+          fi
       - name: Run cargo tests
         run: cargo test --all --release
         env:
