@@ -56,7 +56,8 @@ jobs:
           SCCACHE_GHA_ENABLED: "0"
       - name: Test wheels
         run: |
-          python -m pip install "wavelet-matrix[dev]" --no-index --find-links dist
+          python -m pip install wavelet-matrix --no-index --find-links dist --only-binary=:all:
+          python -m pip install pytest pytest-benchmark
           pytest --benchmark-skip 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -91,9 +92,14 @@ jobs:
           manylinux: musllinux_1_2
       - name: Test rust code
         run: cargo test --all --release
+        env:
+          CARGO_TERM_COLOR: always
+          RUSTC_WRAPPER: ""
+          SCCACHE_GHA_ENABLED: "0"
       - name: Test wheels
         run: |
-          python -m pip install "wavelet-matrix[dev]" --no-index --find-links dist
+          python -m pip install wavelet-matrix --no-index --find-links dist --only-binary=:all:
+          python -m pip install pytest pytest-benchmark
           pytest --benchmark-skip 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -124,9 +130,14 @@ jobs:
           sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
       - name: Test rust code
         run: cargo test --all --release
+        env:
+          CARGO_TERM_COLOR: always
+          RUSTC_WRAPPER: ""
+          SCCACHE_GHA_ENABLED: "0"
       - name: Test wheels
         run: |
-          python -m pip install "wavelet-matrix[dev]" --no-index --find-links dist
+          python -m pip install wavelet-matrix --no-index --find-links dist --only-binary=:all:
+          python -m pip install pytest pytest-benchmark
           pytest --benchmark-skip 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -156,9 +167,14 @@ jobs:
           sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
       - name: Test rust code
         run: cargo test --all --release
+        env:
+          CARGO_TERM_COLOR: always
+          RUSTC_WRAPPER: ""
+          SCCACHE_GHA_ENABLED: "0"
       - name: Test wheels
         run: |
-          python -m pip install "wavelet-matrix[dev]" --no-index --find-links dist
+          python -m pip install wavelet-matrix --no-index --find-links dist --only-binary=:all:
+          python -m pip install pytest pytest-benchmark
           pytest --benchmark-skip 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
