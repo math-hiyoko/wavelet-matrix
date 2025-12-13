@@ -153,7 +153,7 @@ jobs:
           name: wheels-sdist
           path: dist
 
-  lint-docs:
+  dev-test:
     needs: linux
     runs-on: ubuntu-22.04
     steps:
@@ -191,11 +191,14 @@ jobs:
         run: |
           cargo fmt --all -- --check
           ruff check
+      - name: Cargo test
+        run: cargo test --all --release
 
   test:
     needs: linux
     runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
       matrix:
         python:
           - "3.8"
@@ -205,7 +208,6 @@ jobs:
           - "3.12"
           - "3.13"
           - "3.14"
-          - "pypy3.9"
           - "pypy3.10"
           - "pypy3.11"
     steps:
@@ -213,7 +215,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-python@v5
         with:
-        python-version: ${{ matrix.python }}
+          python-version: ${{ matrix.python }}
       - name: Download linux wheels artifact
         uses: actions/download-artifact@v4
         with:
@@ -228,9 +230,7 @@ jobs:
             --only-binary=:all:
           python -m pip install pdoc pytest pytest-benchmark ruff
       - name: Run tests
-        run: |
-          cargo test --all --release
-          pytest --benchmark-skip
+        run: pytest --benchmark-skip
       - name: Run benchmarks
         run: pytest --benchmark-only
 
