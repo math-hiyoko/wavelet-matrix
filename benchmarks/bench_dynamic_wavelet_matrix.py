@@ -8,8 +8,8 @@ from wavelet_matrix import DynamicWaveletMatrix
 def random_data(size: int, max_bit: int):
     """Helper function to create random data"""
     random.seed(42)
-    base = [random.randint(0, (1 << max_bit) - 1) for _ in range(100)]
-    return base * (size // 100)
+    base = [random.randint(0, (1 << max_bit) - 1) for _ in range(size // 100)]
+    return base * 100
 
 
 @pytest.fixture
@@ -57,8 +57,8 @@ class BenchDynamicWaveletMatrix:
         """Benchmark DynamicWaveletMatrix range_freq"""
         start = size // 4
         end = size * 3 // 4
-        lower = 1 << (max_bit // 4)
-        upper = 1 << (max_bit * 3 // 4)
+        lower = (1 << max_bit) // 4
+        upper = (1 << max_bit) * 3 // 4
         benchmark(random_dynamic_wavelet_matrix.range_freq, start, end, lower, upper)
 
     def bench_dynamic_range_maxk(self, benchmark, random_dynamic_wavelet_matrix, size):
@@ -79,14 +79,14 @@ class BenchDynamicWaveletMatrix:
         """Benchmark DynamicWaveletMatrix prev_value"""
         start = size // 4
         end = size * 3 // 4
-        upper = (1 << (max_bit // 2))
+        upper = (1 << (max_bit - 1))
         benchmark(random_dynamic_wavelet_matrix.prev_value, start, end, upper)
 
     def bench_dynamic_next_value(self, benchmark, random_dynamic_wavelet_matrix, size, max_bit):
         """Benchmark DynamicWaveletMatrix next_value"""
         start = size // 4
         end = size * 3 // 4
-        lower = (1 << (max_bit // 2))
+        lower = (1 << (max_bit - 1))
         benchmark(random_dynamic_wavelet_matrix.next_value, start, end, lower)
 
     def bench_dynamic_insert(self, benchmark, random_dynamic_wavelet_matrix, size, max_bit):
