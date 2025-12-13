@@ -921,15 +921,9 @@ impl PyDynamicWaveletMatrix {
         macro_rules! prev_value_impl {
             ($wm:expr, $number_type:ty) => {{
                 let upper = upper.map(|value| value.extract::<$number_type>().ok());
-                return Ok(
-                    $wm
-                    .prev_value(
-                        start,
-                        end,
-                        upper.flatten().as_ref(),
-                    )?
-                    .map(|value| value.into_pyobject(py).unwrap().unbind())
-                );
+                return Ok($wm
+                    .prev_value(start, end, upper.flatten().as_ref())?
+                    .map(|value| value.into_pyobject(py).unwrap().unbind()));
             }};
         }
 
@@ -981,15 +975,9 @@ impl PyDynamicWaveletMatrix {
                 if lower.as_ref().is_some_and(|lower| lower.is_none()) {
                     return Ok(None);
                 } else {
-                    return Ok(
-                        $wm
-                        .next_value(
-                            start,
-                            end,
-                            lower.flatten().as_ref(),
-                        )?
-                        .map(|value| value.into_pyobject(py).unwrap().unbind())
-                    );
+                    return Ok($wm
+                        .next_value(start, end, lower.flatten().as_ref())?
+                        .map(|value| value.into_pyobject(py).unwrap().unbind()));
                 }
             }};
         }
