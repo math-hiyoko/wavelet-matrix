@@ -1,4 +1,5 @@
 import pytest
+
 from wavelet_matrix import WaveletMatrix
 
 

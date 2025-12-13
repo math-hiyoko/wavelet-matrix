@@ -1,6 +1,8 @@
 import copy
 import random
+
 import pytest
+
 from wavelet_matrix import DynamicWaveletMatrix
 
 
@@ -79,14 +81,14 @@ class BenchDynamicWaveletMatrix:
         """Benchmark DynamicWaveletMatrix prev_value"""
         start = size // 4
         end = size * 3 // 4
-        upper = (1 << (max_bit - 1))
+        upper = 1 << (max_bit - 1)
         benchmark(random_dynamic_wavelet_matrix.prev_value, start, end, upper)
 
     def bench_dynamic_next_value(self, benchmark, random_dynamic_wavelet_matrix, size, max_bit):
         """Benchmark DynamicWaveletMatrix next_value"""
         start = size // 4
         end = size * 3 // 4
-        lower = (1 << (max_bit - 1))
+        lower = 1 << (max_bit - 1)
         benchmark(random_dynamic_wavelet_matrix.next_value, start, end, lower)
 
     def bench_dynamic_insert(self, benchmark, random_dynamic_wavelet_matrix, size, max_bit):

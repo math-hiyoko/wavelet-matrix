@@ -1,5 +1,7 @@
 import random
+
 import pytest
+
 from wavelet_matrix import WaveletMatrix
 
 
@@ -78,12 +80,12 @@ class BenchWaveletMatrix:
         """Benchmark WaveletMatrix prev_value"""
         start = size // 4
         end = size * 3 // 4
-        upper = (1 << (max_bit - 1))
+        upper = 1 << (max_bit - 1)
         benchmark(random_wavelet_matrix.prev_value, start, end, upper)
 
     def bench_next_value(self, benchmark, random_wavelet_matrix, size, max_bit):
         """Benchmark WaveletMatrix next_value"""
         start = size // 4
         end = size * 3 // 4
-        lower = (1 << (max_bit - 1))
+        lower = 1 << (max_bit - 1)
         benchmark(random_wavelet_matrix.next_value, start, end, lower)
