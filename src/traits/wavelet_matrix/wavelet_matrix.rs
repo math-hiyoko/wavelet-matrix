@@ -51,8 +51,8 @@ where
     fn begin_index(&self, value: &NumberType) -> Option<usize> {
         let mut start = 0usize;
         let mut end = self.len();
-        for (i, (layer, zero)) in zip(self.get_layers(), self.get_zeros()).enumerate() {
-            let bit = (value >> (self.height() - i - 1) & NumberType::one()).is_one();
+        for (depth, (layer, zero)) in zip(self.get_layers(), self.get_zeros()).enumerate() {
+            let bit = (value >> (self.height() - depth - 1) & NumberType::one()).is_one();
             if bit {
                 start = zero + layer.rank(bit, start).ok()?;
                 end = zero + layer.rank(bit, end).ok()?;
@@ -71,7 +71,7 @@ where
     fn values(&self) -> PyResult<Vec<NumberType>> {
         let mut indices = (0..self.len()).collect::<Vec<usize>>();
         let mut values = vec![NumberType::zero(); self.len()];
-        for (i, (layer, zero)) in zip(self.get_layers(), self.get_zeros()).enumerate() {
+        for (depth, (layer, zero)) in zip(self.get_layers(), self.get_zeros()).enumerate() {
             let bits = layer.values()?;
             let rank = once([0usize; 2])
                 .chain(bits.iter().scan([0usize; 2], |acc, &bit| {
@@ -82,7 +82,7 @@ where
             for (index, value) in zip(indices.iter_mut(), values.iter_mut()) {
                 let bit = bits[*index];
                 if bit {
-                    *value |= NumberType::one() << (self.height() - i - 1);
+                    *value |= NumberType::one() << (self.height() - depth - 1);
                     *index = zero + rank[*index][bit as usize];
                 } else {
                     *index = rank[*index][bit as usize];
@@ -129,8 +129,8 @@ where
             None => return Ok(0usize),
         };
 
-        for (i, (layer, zero)) in zip(self.get_layers(), self.get_zeros()).enumerate() {
-            let bit = (value >> (self.height() - i - 1) & NumberType::one()).is_one();
+        for (depth, (layer, zero)) in zip(self.get_layers(), self.get_zeros()).enumerate() {
+            let bit = (value >> (self.height() - depth - 1) & NumberType::one()).is_one();
             if bit {
                 end = zero + layer.rank(bit, end)?;
             } else {
@@ -158,8 +158,8 @@ where
         };
 
         let mut index = begin_index + kth - 1;
-        for (i, (layer, zero)) in zip(self.get_layers(), self.get_zeros()).enumerate().rev() {
-            let bit = (value >> (self.height() - i - 1) & NumberType::one()).is_one();
+        for (depth, (layer, zero)) in zip(self.get_layers(), self.get_zeros()).enumerate().rev() {
+            let bit = (value >> (self.height() - depth - 1) & NumberType::one()).is_one();
             if bit {
                 index -= zero;
             }
@@ -415,6 +415,39 @@ where
         Ok(result)
     }
 
+    /// Get the total count of values c in the range [start, end) such that c < upper.
+    fn range_freq_upper(
+        &self,
+        mut start: usize,
+        mut end: usize,
+        upper: &NumberType,
+    ) -> PyResult<usize> {
+        if start >= end {
+            return Err(PyValueError::new_err("start must be less than end"));
+        }
+        if end > self.len() {
+            return Err(PyIndexError::new_err("index out of bounds"));
+        }
+        if upper.bit_width() > self.height() {
+            return Ok(end - start);
+        }
+
+        let mut count = 0usize;
+        for (depth, (layer, zero)) in zip(self.get_layers(), self.get_zeros()).enumerate() {
+            let bit = (upper >> (self.height() - depth - 1) & NumberType::one()).is_one();
+            if bit {
+                count += layer.rank(false, end)? - layer.rank(false, start)?;
+                start = zero + layer.rank(bit, start)?;
+                end = zero + layer.rank(bit, end)?;
+            } else {
+                start = layer.rank(bit, start)?;
+                end = layer.rank(bit, end)?;
+            }
+        }
+
+        Ok(count)
+    }
+
     /// Get the total count of values c in the range [start, end) such that lower <= c < upper.
     fn range_freq(
         &self,
@@ -436,69 +469,15 @@ where
             return Err(PyValueError::new_err("lower must be less than upper"));
         }
 
-        struct StackItem<T> {
-            start: usize,
-            end: usize,
-            value: T,
-        }
-        let mut stack = vec![StackItem {
-            start,
-            end,
-            value: NumberType::zero(),
-        }];
-
-        for (depth, (layer, zero)) in zip(self.get_layers(), self.get_zeros()).enumerate() {
-            let mut next_stack = Vec::new();
-
-            for StackItem { start, end, value } in stack {
-                let start_zero = layer.rank(false, start)?;
-                let end_zero = layer.rank(false, end)?;
-                debug_assert!(start_zero <= end_zero);
-                let next_value_zero = &value << 1;
-                if start_zero != end_zero
-                    && lower
-                        .is_none_or(|lower| lower >> (self.height() - depth - 1) <= next_value_zero)
-                    && upper
-                        .is_none_or(|upper| next_value_zero <= upper >> (self.height() - depth - 1))
-                {
-                    next_stack.push(StackItem {
-                        start: start_zero,
-                        end: end_zero,
-                        value: next_value_zero,
-                    });
-                }
-
-                let start_one = zero + layer.rank(true, start)?;
-                let end_one = zero + layer.rank(true, end)?;
-                debug_assert!(start_one <= end_one);
-                let next_value_one = (&value << 1) | NumberType::one();
-                if start_one != end_one
-                    && lower.is_none_or(|lower| {
-                        (lower >> (self.height() - depth - 1)) <= next_value_one
-                    })
-                    && upper.is_none_or(|upper| {
-                        next_value_one <= (upper >> (self.height() - depth - 1))
-                    })
-                {
-                    next_stack.push(StackItem {
-                        start: start_one,
-                        end: end_one,
-                        value: next_value_one,
-                    });
-                }
-            }
-
-            stack = next_stack;
-        }
-
-        let result = stack
-            .iter()
-            .filter(|StackItem { value, .. }| {
-                lower.is_none_or(|lower| lower <= value) && upper.is_none_or(|upper| value < upper)
-            })
-            .map(|StackItem { start, end, .. }| end - start)
-            .sum();
-        Ok(result)
+        let upper_count = match upper {
+            Some(upper) => self.range_freq_upper(start, end, upper)?,
+            None => end - start,
+        };
+        let lower_count = match lower {
+            Some(lower) => self.range_freq_upper(start, end, lower)?,
+            None => 0usize,
+        };
+        Ok(upper_count - lower_count)
     }
 
     /// Get a list of values c in the range [start, end) such that lower <= c < upper.

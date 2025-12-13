@@ -1029,6 +1029,7 @@ impl PyDynamicWaveletMatrix {
     }
 
     /// Inserts a value at the specified index.
+    /// The bit width of the new value must not exceed max_bit.
     ///
     /// # Complexity
     ///
@@ -1117,6 +1118,7 @@ impl PyDynamicWaveletMatrix {
     }
 
     /// Updates the value at the specified index and returns the old value.
+    /// The bit width of the new value must not exceed max_bit.
     ///
     /// # Complexity
     ///
