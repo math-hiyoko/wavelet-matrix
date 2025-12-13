@@ -886,15 +886,13 @@ impl PyDynamicWaveletMatrix {
         }
     }
 
-    /// Finds the maximum value c in the range [start, end) such that lower <= c < upper.
+    /// Finds the maximum value c in the range [start, end) such that c < upper.
     ///
     /// # Complexity
     ///
-    /// - Time: `O(L (log N) (log V))`  
+    /// - Time: `O((log N) (log V))`  
     ///
     /// where:
-    /// - `L` = the number of distinct values `c` in the range `[start, end)`
-    ///   that satisfy `lower <= c < upper`
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
     ///
@@ -902,16 +900,15 @@ impl PyDynamicWaveletMatrix {
     /// ```python
     /// >>> from wavelet_matrix import DynamicWaveletMatrix
     /// >>> dwm = DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
-    /// >>> dwm.prev_value(1, 9, 4, 7)
+    /// >>> dwm.prev_value(1, 9, 7)
     /// 6
     /// ```
-    #[pyo3(signature = (start, end, lower=None, upper=None))]
+    #[pyo3(signature = (start, end, upper=None))]
     pub fn prev_value(
         &self,
         py: Python<'_>,
         start: &Bound<'_, PyInt>,
         end: &Bound<'_, PyInt>,
-        lower: Option<Bound<'_, PyInt>>,
         upper: Option<Bound<'_, PyInt>>,
     ) -> PyResult<Option<Py<PyInt>>> {
         let start = start
@@ -923,20 +920,10 @@ impl PyDynamicWaveletMatrix {
 
         macro_rules! prev_value_impl {
             ($wm:expr, $number_type:ty) => {{
-                let lower = lower.map(|value| value.extract::<$number_type>().ok());
                 let upper = upper.map(|value| value.extract::<$number_type>().ok());
-                if lower.as_ref().is_some_and(|lower| lower.is_none()) {
-                    return Ok(None);
-                } else {
-                    return Ok($wm
-                        .prev_value(
-                            start,
-                            end,
-                            lower.flatten().as_ref(),
-                            upper.flatten().as_ref(),
-                        )?
-                        .map(|value| value.into_pyobject(py).unwrap().unbind()));
-                }
+                return Ok($wm
+                    .prev_value(start, end, upper.flatten().as_ref())?
+                    .map(|value| value.into_pyobject(py).unwrap().unbind()));
             }};
         }
 
@@ -950,15 +937,13 @@ impl PyDynamicWaveletMatrix {
         }
     }
 
-    /// Finds the minimum value c in the range [start, end) such that lower <= c < upper.
+    /// Finds the minimum value c in the range [start, end) such that lower <= c.
     ///
     /// # Complexity
     ///
-    /// - Time: `O(L (log N) (log V))`  
+    /// - Time: `O((log N) (log V))`  
     ///
     /// where:
-    /// - `L` = the number of distinct values `c` in the range `[start, end)`
-    ///   that satisfy `lower <= c < upper`
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
     ///
@@ -966,17 +951,16 @@ impl PyDynamicWaveletMatrix {
     /// ```python
     /// >>> from wavelet_matrix import DynamicWaveletMatrix
     /// >>> dwm = DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
-    /// >>> dwm.next_value(1, 9, 3, 5)
+    /// >>> dwm.next_value(1, 9, 3)
     /// 4
     /// ```
-    #[pyo3(signature = (start, end, lower=None, upper=None))]
+    #[pyo3(signature = (start, end, lower=None))]
     pub fn next_value(
         &self,
         py: Python<'_>,
         start: &Bound<'_, PyInt>,
         end: &Bound<'_, PyInt>,
         lower: Option<Bound<'_, PyInt>>,
-        upper: Option<Bound<'_, PyInt>>,
     ) -> PyResult<Option<Py<PyInt>>> {
         let start = start
             .extract::<usize>()
@@ -988,17 +972,11 @@ impl PyDynamicWaveletMatrix {
         macro_rules! next_value_impl {
             ($wm:expr, $number_type:ty) => {{
                 let lower = lower.map(|value| value.extract::<$number_type>().ok());
-                let upper = upper.map(|value| value.extract::<$number_type>().ok());
                 if lower.as_ref().is_some_and(|lower| lower.is_none()) {
                     return Ok(None);
                 } else {
                     return Ok($wm
-                        .next_value(
-                            start,
-                            end,
-                            lower.flatten().as_ref(),
-                            upper.flatten().as_ref(),
-                        )?
+                        .next_value(start, end, lower.flatten().as_ref())?
                         .map(|value| value.into_pyobject(py).unwrap().unbind()));
                 }
             }};
@@ -1039,6 +1017,7 @@ impl PyDynamicWaveletMatrix {
     }
 
     /// Inserts a value at the specified index.
+    /// The bit width of the new value must not exceed max_bit.
     ///
     /// # Complexity
     ///
@@ -1127,6 +1106,7 @@ impl PyDynamicWaveletMatrix {
     }
 
     /// Updates the value at the specified index and returns the old value.
+    /// The bit width of the new value must not exceed max_bit.
     ///
     /// # Complexity
     ///

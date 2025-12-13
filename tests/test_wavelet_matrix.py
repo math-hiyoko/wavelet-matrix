@@ -1,4 +1,5 @@
 import pytest
+
 from wavelet_matrix import WaveletMatrix
 
 
@@ -233,22 +234,22 @@ class TestWaveletMatrix:
 
     def test_prev_value(self):
         """Test prev_value method"""
-        assert self.wm_small.prev_value(1, 9, 4, 7) == 6
-        assert self.wm_small.prev_value(1, 10, upper=1) is None
+        assert self.wm_small.prev_value(1, 9, 7) == 6
+        assert self.wm_small.prev_value(1, 10, 1) is None
         with pytest.raises(IndexError):
             self.wm_small.prev_value(0, 13)
 
-        assert self.wm_large.prev_value(1, 9, 4 << 500, 7 << 500) == 6 << 500
-        assert self.wm_large.prev_value(1, 10, upper=1 << 500) is None
+        assert self.wm_large.prev_value(1, 9, 7 << 500) == 6 << 500
+        assert self.wm_large.prev_value(1, 10, 1 << 500) is None
         with pytest.raises(IndexError):
             self.wm_large.prev_value(0, 13)
 
     def test_next_value(self):
         """Test next_value method"""
-        assert self.wm_small.next_value(1, 9, 3, 5) == 4
+        assert self.wm_small.next_value(1, 9, 3) == 4
         with pytest.raises(IndexError):
             self.wm_small.next_value(0, 13)
 
-        assert self.wm_large.next_value(1, 9, 3 << 500, 5 << 500) == 4 << 500
+        assert self.wm_large.next_value(1, 9, 3 << 500) == 4 << 500
         with pytest.raises(IndexError):
             self.wm_large.next_value(0, 13)

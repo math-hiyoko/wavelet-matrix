@@ -91,15 +91,15 @@ WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
 
 #### Get the maximun value (prev_value)
 ```python
->>> # Get the maximum value c in the range [1, 9) such that 4 <= c < 7.
->>> wm.prev_value(start=1, end=9, lower=4, upper=7)
+>>> # Get the maximum value c in the range [1, 9) such that c < 7.
+>>> wm.prev_value(start=1, end=9, upper=7)
 6
 ```
 
 #### Get the minimun value (next_value)
 ```python
->>> # Get the minimum value c in the range [1, 9) such that 4 <= c < 7.
->>> wm.next_value(start=1, end=9, lower=4, upper=7)
+>>> # Get the minimum value c in the range [1, 9) such that 4 <= c.
+>>> wm.next_value(start=1, end=9, lower=4)
 4
 ```
 
@@ -119,6 +119,7 @@ DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0], max_bit=4)
 >>> dwm
 DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0], max_bit=4)
 >>> # Inserts 8 at index 4.
+>>> # The bit width of the new value must not exceed max_bit.
 >>> dwm.insert(index=4, value=8)
 >>> dwm
 DynamicWaveletMatrix([5, 4, 5, 5, 8, 2, 1, 5, 6, 1, 3, 5, 0], max_bit=4)
@@ -140,6 +141,7 @@ DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0], max_bit=4)
 >>> dwm
 DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0], max_bit=4)
 >>> # Update the value at index 4 to 5
+>>> # The bit width of the new value must not exceed max_bit.
 >>> dwm.update(index=4, value=5)
 2
 >>> dwm

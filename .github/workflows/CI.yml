@@ -174,7 +174,7 @@ jobs:
             --no-index \
             --find-links dist \
             --only-binary=:all:
-          python -m pip install pytest pytest-benchmark pdoc
+          python -m pip install pdoc pytest pytest-benchmark ruff
       - name: Docs check
         run: |
           pdoc wavelet_matrix \
@@ -187,13 +187,14 @@ jobs:
             echo "::error::Docs are out of date. Please run pdoc and commit generated docs."
             exit 1
           fi
-      - name: Run cargo tests
-        run: cargo test --all --release
-        env:
-          RUSTC_WRAPPER: ""
-          SCCACHE_GHA_ENABLED: "0"
-      - name: Run pytest
-        run: pytest --benchmark-skip
+      - name: Format check
+        run: |
+          cargo fmt --all -- --check
+          ruff check
+      - name: Run tests
+        run: |
+          cargo test --all --release
+          pytest --benchmark-skip
       - name: Run benchmarks
         run: pytest --benchmark-only
 

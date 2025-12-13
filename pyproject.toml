@@ -59,10 +59,11 @@ classifiers = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0",
-    "pytest-benchmark>=4.0",
     "maturin>=1.9,<2.0",
     "pdoc>=16.0",
+    "pytest>=7.0",
+    "pytest-benchmark>=4.0",
+    "ruff>=0.14",
 ]
 
 [project.urls]
