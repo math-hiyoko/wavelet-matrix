@@ -444,7 +444,6 @@ where
                 end = layer.rank(bit, end)?;
             }
         }
-
         Ok(count)
     }
 
