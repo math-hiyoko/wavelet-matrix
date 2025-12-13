@@ -194,7 +194,7 @@ the appropriate internal representation based on the input data.</p>
                                 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">values</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">) -> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>:</span></span>
+        <span class="name">values</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>:</span></span>
 
         
     </div>
@@ -380,7 +380,7 @@ the appropriate internal representation based on the input data.</p>
                                 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">topk</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">start</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">end</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>:</span></span>
+        <span class="name">topk</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">start</span><span class="p">:</span> <span class="nb">int</span>, </span><span class="param"><span class="n">end</span><span class="p">:</span> <span class="nb">int</span>, </span><span class="param"><span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>:</span></span>
 
         
     </div>
@@ -457,7 +457,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
                                 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">range_intersection</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">start1</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">end1</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">start2</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">end2</span><span class="p">:</span> <span class="nb">int</span></span><span class="return-annotation">) -> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>:</span></span>
+        <span class="name">range_intersection</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">start1</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">end1</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">start2</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">end2</span><span class="p">:</span> <span class="nb">int</span></span><span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>:</span></span>
 
         
     </div>
@@ -532,7 +532,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
                                 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">range_list</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">start</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">end</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">lower</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">upper</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>:</span></span>
+        <span class="name">range_list</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">start</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">end</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">lower</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">upper</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>:</span></span>
 
         
     </div>
@@ -571,7 +571,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
                                 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">range_maxk</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">start</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">end</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>:</span></span>
+        <span class="name">range_maxk</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">start</span><span class="p">:</span> <span class="nb">int</span>, </span><span class="param"><span class="n">end</span><span class="p">:</span> <span class="nb">int</span>, </span><span class="param"><span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>:</span></span>
 
         
     </div>
@@ -608,7 +608,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
                                 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">range_mink</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">start</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">end</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>:</span></span>
+        <span class="name">range_mink</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">start</span><span class="p">:</span> <span class="nb">int</span>, </span><span class="param"><span class="n">end</span><span class="p">:</span> <span class="nb">int</span>, </span><span class="param"><span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>:</span></span>
 
         
     </div>
@@ -751,7 +751,7 @@ the appropriate internal representation based on the input data.</p>
                                 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">values</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">) -> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>:</span></span>
+        <span class="name">values</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span></span><span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>:</span></span>
 
         
     </div>
@@ -940,7 +940,7 @@ the appropriate internal representation based on the input data.</p>
                                 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">topk</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">start</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">end</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>:</span></span>
+        <span class="name">topk</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">start</span><span class="p">:</span> <span class="nb">int</span>, </span><span class="param"><span class="n">end</span><span class="p">:</span> <span class="nb">int</span>, </span><span class="param"><span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>:</span></span>
 
         
     </div>
@@ -1019,7 +1019,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
                                 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">range_intersection</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">start1</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">end1</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">start2</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">end2</span><span class="p">:</span> <span class="nb">int</span></span><span class="return-annotation">) -> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>:</span></span>
+        <span class="name">range_intersection</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">start1</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">end1</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">start2</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">end2</span><span class="p">:</span> <span class="nb">int</span></span><span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>:</span></span>
 
         
     </div>
@@ -1096,7 +1096,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
                                 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">range_list</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">start</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">end</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">lower</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">upper</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>:</span></span>
+        <span class="name">range_list</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">start</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">end</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">lower</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">upper</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>:</span></span>
 
         
     </div>
@@ -1136,7 +1136,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
                                 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">range_maxk</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">start</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">end</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>:</span></span>
+        <span class="name">range_maxk</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">start</span><span class="p">:</span> <span class="nb">int</span>, </span><span class="param"><span class="n">end</span><span class="p">:</span> <span class="nb">int</span>, </span><span class="param"><span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>:</span></span>
 
         
     </div>
@@ -1174,7 +1174,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
                                 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">range_mink</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">start</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">end</span><span class="p">:</span> <span class="nb">int</span>,</span><span class="param">	<span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>:</span></span>
+        <span class="name">range_mink</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">start</span><span class="p">:</span> <span class="nb">int</span>, </span><span class="param"><span class="n">end</span><span class="p">:</span> <span class="nb">int</span>, </span><span class="param"><span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span>:</span></span>
 
         
     </div>
@@ -1325,7 +1325,8 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
     </div>
     <a class="headerlink" href="#DynamicWaveletMatrix.insert"></a>
     
-            <div class="docstring"><p>Inserts a value at the specified index.</p>
+            <div class="docstring"><p>Inserts a value at the specified index.
+The bit width of the new value must not exceed max_bit.</p>
 
 <h1 id="complexity">Complexity</h1>
 
@@ -1404,7 +1405,8 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
     </div>
     <a class="headerlink" href="#DynamicWaveletMatrix.update"></a>
     
-            <div class="docstring"><p>Updates the value at the specified index and returns the old value.</p>
+            <div class="docstring"><p>Updates the value at the specified index and returns the old value.
+The bit width of the new value must not exceed max_bit.</p>
 
 <h1 id="complexity">Complexity</h1>
 
