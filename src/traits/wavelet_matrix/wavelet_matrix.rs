@@ -736,202 +736,36 @@ where
         Ok(result)
     }
 
-    /// Get the maximum value c in the range [start, end) such that lower <= c < upper.
+    /// Get the maximum value c in the range [start, end) such that c < upper.
     fn prev_value(
         &self,
         start: usize,
         end: usize,
-        lower: Option<&NumberType>,
         upper: Option<&NumberType>,
     ) -> PyResult<Option<NumberType>> {
-        if start >= end {
-            return Err(PyValueError::new_err("start must be less than end"));
-        }
-        if end > self.len() {
-            return Err(PyIndexError::new_err("index out of bounds"));
-        }
-        if lower
-            .zip(upper)
-            .is_some_and(|(lower, upper)| lower >= upper)
-        {
-            return Err(PyValueError::new_err("lower must be less than upper"));
+        let count = self.range_freq(start, end, None, upper)?;
+        if count.is_zero() {
+            return Ok(None);
         }
 
-        if self.height().is_zero() {
-            if lower.is_none_or(|lower| lower <= &NumberType::zero())
-                && upper.is_none_or(|upper| &NumberType::zero() < upper)
-            {
-                return Ok(Some(NumberType::zero()));
-            } else {
-                return Ok(None);
-            }
-        }
-
-        struct StackItem<T> {
-            start: usize,
-            end: usize,
-            value: T,
-        }
-        let mut stack = vec![StackItem {
-            start,
-            end,
-            value: NumberType::zero(),
-        }];
-
-        for (depth, (layer, zero)) in zip(self.get_layers(), self.get_zeros()).enumerate() {
-            let mut next_stack = Vec::new();
-
-            for StackItem { start, end, value } in stack {
-                let start_one = zero + layer.rank(true, start)?;
-                let end_one = zero + layer.rank(true, end)?;
-                debug_assert!(start_one <= end_one);
-                let next_value_one = (&value << 1) | NumberType::one();
-                if start_one != end_one
-                    && lower
-                        .is_none_or(|lower| lower >> (self.height() - depth - 1) <= next_value_one)
-                    && upper
-                        .is_none_or(|upper| next_value_one <= upper >> (self.height() - depth - 1))
-                {
-                    next_stack.push(StackItem {
-                        start: start_one,
-                        end: end_one,
-                        value: next_value_one,
-                    });
-                }
-
-                let start_zero = layer.rank(false, start)?;
-                let end_zero = layer.rank(false, end)?;
-                debug_assert!(start_zero <= end_zero);
-                let next_value_zero = &value << 1;
-                if start_zero != end_zero
-                    && lower
-                        .is_none_or(|lower| lower >> (self.height() - depth - 1) <= next_value_zero)
-                    && upper
-                        .is_none_or(|upper| next_value_zero <= upper >> (self.height() - depth - 1))
-                {
-                    next_stack.push(StackItem {
-                        start: start_zero,
-                        end: end_zero,
-                        value: next_value_zero,
-                    });
-                }
-
-                if depth + 1 == self.height() && !next_stack.is_empty() {
-                    let max_value = next_stack.iter().find(|item| {
-                        lower.is_none_or(|lower| lower <= &item.value)
-                            && upper.is_none_or(|upper| &item.value < upper)
-                    });
-                    match max_value {
-                        Some(item) => return Ok(Some(item.value.clone())),
-                        None => continue,
-                    }
-                }
-            }
-
-            stack = next_stack;
-        }
-
-        Ok(None)
+        let value = self.quantile(start, end, count)?;
+        Ok(Some(value))
     }
 
-    /// Get the minimum value c in the range [start, end) such that lower <= c < upper.
+    /// Get the minimum value c in the range [start, end) such that lower <= c.
     fn next_value(
         &self,
         start: usize,
         end: usize,
         lower: Option<&NumberType>,
-        upper: Option<&NumberType>,
     ) -> PyResult<Option<NumberType>> {
-        if start >= end {
-            return Err(PyValueError::new_err("start must be less than end"));
-        }
-        if end > self.len() {
-            return Err(PyIndexError::new_err("index out of bounds"));
-        }
-        if lower
-            .zip(upper)
-            .is_some_and(|(lower, upper)| lower >= upper)
-        {
-            return Err(PyValueError::new_err("lower must be less than upper"));
+        let count = self.range_freq(start, end, lower, None)?;
+        if count.is_zero() {
+            return Ok(None);
         }
 
-        if self.height().is_zero() {
-            if lower.is_none_or(|lower| lower <= &NumberType::zero())
-                && upper.is_none_or(|upper| &NumberType::zero() < upper)
-            {
-                return Ok(Some(NumberType::zero()));
-            } else {
-                return Ok(None);
-            }
-        }
-
-        struct StackItem<T> {
-            start: usize,
-            end: usize,
-            value: T,
-        }
-        let mut stack = vec![StackItem {
-            start,
-            end,
-            value: NumberType::zero(),
-        }];
-
-        for (depth, (layer, zero)) in zip(self.get_layers(), self.get_zeros()).enumerate() {
-            let mut next_stack = Vec::new();
-
-            for StackItem { start, end, value } in stack {
-                let start_zero = layer.rank(false, start)?;
-                let end_zero = layer.rank(false, end)?;
-                debug_assert!(start_zero <= end_zero);
-                let next_value_zero = &value << 1;
-                if start_zero != end_zero
-                    && lower
-                        .is_none_or(|lower| lower >> (self.height() - depth - 1) <= next_value_zero)
-                    && upper
-                        .is_none_or(|upper| next_value_zero <= upper >> (self.height() - depth - 1))
-                {
-                    next_stack.push(StackItem {
-                        start: start_zero,
-                        end: end_zero,
-                        value: next_value_zero,
-                    });
-                }
-
-                let start_one = zero + layer.rank(true, start)?;
-                let end_one = zero + layer.rank(true, end)?;
-                debug_assert!(start_one <= end_one);
-                let next_value_one = (&value << 1) | NumberType::one();
-                if start_one != end_one
-                    && lower.is_none_or(|lower| {
-                        (lower >> (self.height() - depth - 1)) <= next_value_one
-                    })
-                    && upper.is_none_or(|upper| {
-                        next_value_one <= (upper >> (self.height() - depth - 1))
-                    })
-                {
-                    next_stack.push(StackItem {
-                        start: start_one,
-                        end: end_one,
-                        value: next_value_one,
-                    });
-                }
-
-                if depth + 1 == self.height() && !next_stack.is_empty() {
-                    let min_value = next_stack.iter().find(|item| {
-                        lower.is_none_or(|lower| lower <= &item.value)
-                            && upper.is_none_or(|upper| &item.value < upper)
-                    });
-                    match min_value {
-                        Some(item) => return Ok(Some(item.value.clone())),
-                        None => continue,
-                    }
-                }
-            }
-
-            stack = next_stack;
-        }
-
-        Ok(None)
+        let value = self.quantile(start, end, end - start - count + 1)?;
+        Ok(Some(value))
     }
 }
 
@@ -1088,11 +922,11 @@ mod tests {
             "ValueError: start must be less than end"
         );
         assert_eq!(
-            wv_u8.prev_value(0, 0, None, None).unwrap_err().to_string(),
+            wv_u8.prev_value(0, 0, None).unwrap_err().to_string(),
             "ValueError: start must be less than end"
         );
         assert_eq!(
-            wv_u8.next_value(0, 0, None, None).unwrap_err().to_string(),
+            wv_u8.next_value(0, 0, None).unwrap_err().to_string(),
             "ValueError: start must be less than end"
         );
 
@@ -1155,14 +989,14 @@ mod tests {
         );
         assert_eq!(
             wv_biguint
-                .prev_value(0, 0, None, None)
+                .prev_value(0, 0, None)
                 .unwrap_err()
                 .to_string(),
             "ValueError: start must be less than end"
         );
         assert_eq!(
             wv_biguint
-                .next_value(0, 0, None, None)
+                .next_value(0, 0, None)
                 .unwrap_err()
                 .to_string(),
             "ValueError: start must be less than end"
@@ -1187,8 +1021,8 @@ mod tests {
         assert_eq!(wv_u8.range_list(0, 64, None, None).unwrap().len(), 1);
         assert_eq!(wv_u8.range_maxk(0, 64, None).unwrap().len(), 1);
         assert_eq!(wv_u8.range_mink(0, 64, None).unwrap().len(), 1);
-        assert_eq!(wv_u8.prev_value(0, 64, None, None).unwrap(), Some(0u8));
-        assert_eq!(wv_u8.next_value(0, 64, None, None).unwrap(), Some(0u8));
+        assert_eq!(wv_u8.prev_value(0, 64, None).unwrap(), Some(0u8));
+        assert_eq!(wv_u8.next_value(0, 64, None).unwrap(), Some(0u8));
 
         let wv_biguint = SampleWaveletMatrix::<BigUint>::new(&vec![0u32.into(); 64]);
         assert_eq!(wv_biguint.len(), 64);
@@ -1205,11 +1039,11 @@ mod tests {
         assert_eq!(wv_biguint.range_maxk(0, 64, None).unwrap().len(), 1);
         assert_eq!(wv_biguint.range_mink(0, 64, None).unwrap().len(), 1);
         assert_eq!(
-            wv_biguint.prev_value(0, 64, None, None).unwrap(),
+            wv_biguint.prev_value(0, 64, None).unwrap(),
             Some(0u32.into())
         );
         assert_eq!(
-            wv_biguint.next_value(0, 64, None, None).unwrap(),
+            wv_biguint.next_value(0, 64, None).unwrap(),
             Some(0u32.into())
         );
     }
@@ -1235,8 +1069,8 @@ mod tests {
         assert_eq!(wv_u8.range_list(0, 64, None, None).unwrap().len(), 1);
         assert_eq!(wv_u8.range_maxk(0, 64, None).unwrap().len(), 1);
         assert_eq!(wv_u8.range_mink(0, 64, None).unwrap().len(), 1);
-        assert_eq!(wv_u8.prev_value(0, 64, None, None).unwrap(), Some(u8::MAX));
-        assert_eq!(wv_u8.next_value(0, 64, None, None).unwrap(), Some(u8::MAX));
+        assert_eq!(wv_u8.prev_value(0, 64, None).unwrap(), Some(u8::MAX));
+        assert_eq!(wv_u8.next_value(0, 64, None).unwrap(), Some(u8::MAX));
     }
 
     #[test]
@@ -1438,14 +1272,14 @@ mod tests {
 
         let wv_u8 = create_dummy_u8();
         assert_eq!(
-            wv_u8.prev_value(1, 9, Some(&4u8), Some(&7u8)).unwrap(),
+            wv_u8.prev_value(1, 9, Some(&7u8)).unwrap(),
             Some(6u8),
         );
 
         let wv_biguint = create_dummy_biguint();
         assert_eq!(
             wv_biguint
-                .prev_value(1, 9, Some(&4u32.into()), Some(&7u32.into()))
+                .prev_value(1, 9, Some(&7u32.into()))
                 .unwrap(),
             Some(6u32.into()),
         );
@@ -1457,14 +1291,14 @@ mod tests {
 
         let wv_u8 = create_dummy_u8();
         assert_eq!(
-            wv_u8.next_value(1, 9, Some(&3u8), Some(&5u8)).unwrap(),
+            wv_u8.next_value(1, 9, Some(&3u8)).unwrap(),
             Some(4u8),
         );
 
         let wv_biguint = create_dummy_biguint();
         assert_eq!(
             wv_biguint
-                .next_value(1, 9, Some(&3u32.into()), Some(&5u32.into()))
+                .next_value(1, 9, Some(&3u32.into()))
                 .unwrap(),
             Some(4u32.into()),
         );

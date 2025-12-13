@@ -180,11 +180,11 @@ mod tests {
             "ValueError: start must be less than end"
         );
         assert_eq!(
-            wv_u8.prev_value(0, 0, None, None).unwrap_err().to_string(),
+            wv_u8.prev_value(0, 0, None).unwrap_err().to_string(),
             "ValueError: start must be less than end"
         );
         assert_eq!(
-            wv_u8.next_value(0, 0, None, None).unwrap_err().to_string(),
+            wv_u8.next_value(0, 0, None).unwrap_err().to_string(),
             "ValueError: start must be less than end"
         );
 
@@ -250,14 +250,14 @@ mod tests {
         );
         assert_eq!(
             wv_biguint
-                .prev_value(0, 0, None, None)
+                .prev_value(0, 0, None)
                 .unwrap_err()
                 .to_string(),
             "ValueError: start must be less than end"
         );
         assert_eq!(
             wv_biguint
-                .next_value(0, 0, None, None)
+                .next_value(0, 0, None)
                 .unwrap_err()
                 .to_string(),
             "ValueError: start must be less than end"
@@ -282,8 +282,8 @@ mod tests {
         assert_eq!(wv_u8.range_list(0, 64, None, None).unwrap().len(), 1);
         assert_eq!(wv_u8.range_maxk(0, 64, None).unwrap().len(), 1);
         assert_eq!(wv_u8.range_mink(0, 64, None).unwrap().len(), 1);
-        assert_eq!(wv_u8.prev_value(0, 64, None, None).unwrap(), Some(0u8));
-        assert_eq!(wv_u8.next_value(0, 64, None, None).unwrap(), Some(0u8));
+        assert_eq!(wv_u8.prev_value(0, 64, None).unwrap(), Some(0u8));
+        assert_eq!(wv_u8.next_value(0, 64, None).unwrap(), Some(0u8));
 
         let wv_biguint = WaveletMatrix::<BigUint>::new(&vec![0u32.into(); 64]);
         assert_eq!(wv_biguint.len(), 64);
@@ -300,11 +300,11 @@ mod tests {
         assert_eq!(wv_biguint.range_maxk(0, 64, None).unwrap().len(), 1);
         assert_eq!(wv_biguint.range_mink(0, 64, None).unwrap().len(), 1);
         assert_eq!(
-            wv_biguint.prev_value(0, 64, None, None).unwrap(),
+            wv_biguint.prev_value(0, 64, None).unwrap(),
             Some(0u32.into())
         );
         assert_eq!(
-            wv_biguint.next_value(0, 64, None, None).unwrap(),
+            wv_biguint.next_value(0, 64, None).unwrap(),
             Some(0u32.into())
         );
     }
@@ -330,8 +330,8 @@ mod tests {
         assert_eq!(wv_u8.range_list(0, 64, None, None).unwrap().len(), 1);
         assert_eq!(wv_u8.range_maxk(0, 64, None).unwrap().len(), 1);
         assert_eq!(wv_u8.range_mink(0, 64, None).unwrap().len(), 1);
-        assert_eq!(wv_u8.prev_value(0, 64, None, None).unwrap(), Some(u8::MAX));
-        assert_eq!(wv_u8.next_value(0, 64, None, None).unwrap(), Some(u8::MAX));
+        assert_eq!(wv_u8.prev_value(0, 64, None).unwrap(), Some(u8::MAX));
+        assert_eq!(wv_u8.next_value(0, 64, None).unwrap(), Some(u8::MAX));
     }
 
     #[test]
@@ -533,14 +533,14 @@ mod tests {
 
         let wv_u8 = create_u8();
         assert_eq!(
-            wv_u8.prev_value(1, 9, Some(&4u8), Some(&7u8)).unwrap(),
+            wv_u8.prev_value(1, 9, Some(&7u8)).unwrap(),
             Some(6u8),
         );
 
         let wv_biguint = create_biguint();
         assert_eq!(
             wv_biguint
-                .prev_value(1, 9, Some(&4u32.into()), Some(&7u32.into()))
+                .prev_value(1, 9, Some(&7u32.into()))
                 .unwrap(),
             Some(6u32.into()),
         );
@@ -552,14 +552,14 @@ mod tests {
 
         let wv_u8 = create_u8();
         assert_eq!(
-            wv_u8.next_value(1, 9, Some(&3u8), Some(&5u8)).unwrap(),
+            wv_u8.next_value(1, 9, Some(&3u8)).unwrap(),
             Some(4u8),
         );
 
         let wv_biguint = create_biguint();
         assert_eq!(
             wv_biguint
-                .next_value(1, 9, Some(&3u32.into()), Some(&5u32.into()))
+                .next_value(1, 9, Some(&3u32.into()))
                 .unwrap(),
             Some(4u32.into()),
         );

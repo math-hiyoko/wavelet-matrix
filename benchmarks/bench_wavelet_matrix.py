@@ -73,3 +73,17 @@ class BenchWaveletMatrix:
         end = size * 3 // 4
         k = 10
         benchmark(random_wavelet_matrix.range_mink, start, end, k)
+
+    def bench_prev_value(self, benchmark, random_wavelet_matrix, size, max_bit):
+        """Benchmark WaveletMatrix prev_value"""
+        start = size // 4
+        end = size * 3 // 4
+        upper = (1 << (max_bit // 2))
+        benchmark(random_wavelet_matrix.prev_value, start, end, upper)
+
+    def bench_next_value(self, benchmark, random_wavelet_matrix, size, max_bit):
+        """Benchmark WaveletMatrix next_value"""
+        start = size // 4
+        end = size * 3 // 4
+        lower = (1 << (max_bit // 2))
+        benchmark(random_wavelet_matrix.next_value, start, end, lower)
