@@ -729,7 +729,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
             <div class="docstring"><p>A dynamic wavelet matrix supporting various integer types.</p>
 
 <p>This class provides efficient storage and querying of sequences of integers,
-with support for dynamic updates such as insertions and deletions.
+with support for dynamic updates such as insertions and deletions.<br />
 It can handle integers of varying bit widths, automatically selecting
 the appropriate internal representation based on the input data.</p>
 </div>
@@ -876,12 +876,13 @@ the appropriate internal representation based on the input data.</p>
 <h1 id="complexity">Complexity</h1>
 
 <ul>
-<li>Time: <code>O(log V)</code> (amortized)</li>
+<li>Time: <code>O((log N) (log V))</code>  </li>
 </ul>
 
 <p>where:</p>
 
 <ul>
+<li><code>N</code> = length of the sequence  </li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
 
@@ -996,8 +997,7 @@ the appropriate internal representation based on the input data.</p>
 <p>where:</p>
 
 <ul>
-<li><code>L</code> = the number of distinct values <code>c</code> in the range <code>[start, end)</code>
-that satisfy <code>lower &lt;= c &lt; upper</code></li>
+<li><code>L</code> = the number of distinct values <code>c</code> in the range <code>[start, end)</code></li>
 <li><code>N</code> = length of the sequence</li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>

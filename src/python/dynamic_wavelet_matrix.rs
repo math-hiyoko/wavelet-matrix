@@ -25,7 +25,7 @@ enum DynamicWaveletMatrixEnum {
 /// A dynamic wavelet matrix supporting various integer types.
 ///
 /// This class provides efficient storage and querying of sequences of integers,
-/// with support for dynamic updates such as insertions and deletions.
+/// with support for dynamic updates such as insertions and deletions.  
 /// It can handle integers of varying bit widths, automatically selecting
 /// the appropriate internal representation based on the input data.
 #[derive(Clone)]
