@@ -5,32 +5,26 @@ build-backend = "maturin"
 [project]
 name = "wavelet-matrix"
 dynamic = ["version"]
-description = "High-performance indexed sequence structure powered by Rust, providing fast rank/select, top-k, quantile, and range queries with optional dynamic updates."
+description = "High-performance indexed sequence data structure powered by Rust, supporting fast rank/select and range queries."
 authors = [
     {name = "Koki Watanabe"}
 ]
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = { file = "LICENSE" }
 keywords = [
-    "wavelet-matrix",
     "wavelet matrix",
-    "data-structure",
     "data structure",
     "algorithm",
     "sequence index",
-    "compressed data structure",
     "rank",
     "select",
     "quantile",
     "top-k",
     "range query",
-    "range search",
     "dynamic update",
     "indexing",
-    "fast lookup",
-    "rust extension",
-    "python extension",
+    "succinct",
 ]
 classifiers = [
     "Intended Audience :: Developers",
@@ -44,18 +38,11 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
-    "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
-    "Topic :: Software Development :: Libraries",
     "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Information Analysis",
     "Topic :: Scientific/Engineering :: Mathematics",
-    "Topic :: Database",
-    "Topic :: Database :: Database Engines/Servers",
-    "Topic :: Text Processing :: Indexing",
-    "Topic :: Utilities",
 ]
 
 [project.optional-dependencies]
