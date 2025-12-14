@@ -1,6 +1,6 @@
 # Wavelet Matrix
 
-High-performance indexed sequence structure powered by Rust, providing fast rank/select, top-k, quantile, and range queries with optional dynamic updates.
+High-performance indexed sequence data structure powered by Rust, supporting fast rank/select and range queries.
 
 - Document: https://math-hiyoko.github.io/wavelet-matrix
 - Repository: https://github.com/math-hiyoko/wavelet-matrix
@@ -108,6 +108,7 @@ WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
 >>> from wavelet_matrix import DynamicWaveletMatrix
 >>>
 >>> # Create a DynamicWaveletMatrix
+>>> # max_bit sets the maximum bit-width of stored values (auto-inferred if omitted).
 >>> data = [5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0]
 >>> dwm = DynamicWaveletMatrix(data, max_bit=4)
 >>> dwm

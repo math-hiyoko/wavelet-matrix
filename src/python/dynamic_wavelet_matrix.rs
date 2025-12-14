@@ -353,9 +353,10 @@ impl PyDynamicWaveletMatrix {
     ///
     /// # Complexity
     ///
-    /// - Time: `O(log V)` (amortized)
+    /// - Time: `O((log N) (log V))`  
     ///
     /// where:
+    /// - `N` = length of the sequence  
     /// - `V` = range of possible values (max value domain)
     ///
     /// # Examples
@@ -524,7 +525,6 @@ impl PyDynamicWaveletMatrix {
     ///
     /// where:
     /// - `L` = the number of distinct values `c` in the range `[start, end)`
-    ///   that satisfy `lower <= c < upper`
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
     ///
@@ -1016,7 +1016,7 @@ impl PyDynamicWaveletMatrix {
         }
     }
 
-    /// Inserts a value at the specified index.
+    /// Inserts a value at the specified index.  
     /// The bit width of the new value must not exceed max_bit.
     ///
     /// # Complexity
@@ -1105,7 +1105,7 @@ impl PyDynamicWaveletMatrix {
         }
     }
 
-    /// Updates the value at the specified index and returns the old value.
+    /// Updates the value at the specified index and returns the old value.  
     /// The bit width of the new value must not exceed max_bit.
     ///
     /// # Complexity

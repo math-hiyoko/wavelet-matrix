@@ -416,7 +416,8 @@ where
     }
 
     /// Get the total count of values c in the range [start, end) such that c < upper.
-    fn range_freq_upper(
+    #[inline]
+    fn range_freq_less(
         &self,
         mut start: usize,
         mut end: usize,
@@ -470,11 +471,11 @@ where
         }
 
         let upper_count = match upper {
-            Some(upper) => self.range_freq_upper(start, end, upper)?,
+            Some(upper) => self.range_freq_less(start, end, upper)?,
             None => end - start,
         };
         let lower_count = match lower {
-            Some(lower) => self.range_freq_upper(start, end, lower)?,
+            Some(lower) => self.range_freq_less(start, end, lower)?,
             None => 0usize,
         };
         Ok(upper_count - lower_count)
@@ -538,12 +539,10 @@ where
                 debug_assert!(start_one <= end_one);
                 let next_value_one = (&value << 1) | NumberType::one();
                 if start_one != end_one
-                    && lower.is_none_or(|lower| {
-                        (lower >> (self.height() - depth - 1)) <= next_value_one
-                    })
-                    && upper.is_none_or(|upper| {
-                        next_value_one <= (upper >> (self.height() - depth - 1))
-                    })
+                    && lower
+                        .is_none_or(|lower| lower >> (self.height() - depth - 1) <= next_value_one)
+                    && upper
+                        .is_none_or(|upper| next_value_one <= upper >> (self.height() - depth - 1))
                 {
                     next_stack.push(StackItem {
                         start: start_one,
@@ -612,6 +611,10 @@ where
                     });
                 }
 
+                if next_stack.len() >= k {
+                    break;
+                }
+
                 let start_zero = layer.rank(false, start)?;
                 let end_zero = layer.rank(false, end)?;
                 debug_assert!(start_zero <= end_zero);
@@ -624,7 +627,7 @@ where
                     });
                 }
 
-                if next_stack.len() > k {
+                if next_stack.len() >= k {
                     break;
                 }
             }
@@ -686,6 +689,10 @@ where
                     });
                 }
 
+                if next_stack.len() >= k {
+                    break;
+                }
+
                 let start_one = zero + layer.rank(true, start)?;
                 let end_one = zero + layer.rank(true, end)?;
                 debug_assert!(start_one <= end_one);
@@ -698,7 +705,7 @@ where
                     });
                 }
 
-                if next_stack.len() > k {
+                if next_stack.len() >= k {
                     break;
                 }
             }
