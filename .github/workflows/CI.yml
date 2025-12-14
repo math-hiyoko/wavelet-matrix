@@ -36,14 +36,11 @@ jobs:
             target: s390x
           - runner: ubuntu-22.04
             target: ppc64le
-        python:
-          - "3.x"
-          - "pypy3.x"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python }}
+          python-version: 3.x
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -70,14 +67,11 @@ jobs:
             target: aarch64
           - runner: ubuntu-22.04
             target: armv7
-        python:
-          - "3.x"
-          - "pypy3.x"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python }}
+          python-version: 3.x
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -100,14 +94,11 @@ jobs:
             target: x64
           - runner: windows-latest
             target: x86
-        python:
-          - "3.x"
-          - "pypy3.x"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python }}
+          python-version: 3.x
           architecture: ${{ matrix.platform.target }}
       - name: Build wheels
         uses: PyO3/maturin-action@v1
@@ -130,14 +121,11 @@ jobs:
             target: x86_64
           - runner: macos-14
             target: aarch64
-        python:
-          - "3.x"
-          - "pypy3.x"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python }}
+          python-version: 3.x
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -213,16 +201,16 @@ jobs:
       fail-fast: false
       matrix:
         python:
-          - "3.8"
           - "3.9"
           - "3.10"
           - "3.11"
           - "3.12"
           - "3.13"
           - "3.14"
-          - "pypy3.10"
           - "pypy3.11"
     steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
@@ -238,7 +226,7 @@ jobs:
             --no-index \
             --find-links dist \
             --only-binary=:all:
-          python -m pip install pytest pytest-benchmark
+          python -m pip install pdoc pytest pytest-benchmark ruff
       - name: Run tests
         run: pytest --benchmark-skip
       - name: Run benchmarks
