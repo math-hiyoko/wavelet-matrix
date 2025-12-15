@@ -1,6 +1,21 @@
 # Wavelet Matrix
 
-High-performance indexed sequence data structure powered by Rust, supporting fast rank/select and range queries.
+[![CI](https://github.com/math-hiyoko/wavelet-matrix/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/math-hiyoko/wavelet-matrix/actions/workflows/CI.yml)
+![PyPI - Version](https://img.shields.io/pypi/v/wavelet-matrix)
+
+![PyPI - PythonVersion](https://img.shields.io/pypi/pyversions/wavelet-matrix)
+![PyPI - Types](https://img.shields.io/pypi/types/wavelet-matrix)
+
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/wavelet-matrix?period=total&units=INTERNATIONAL_SYSTEM&left_color=GRAY&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/wavelet-matrix)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/wavelet-matrix)
+
+![PyPI - License](https://img.shields.io/pypi/l/wavelet-matrix)
+![PyPI - Format](https://img.shields.io/pypi/format/wavelet-matrix)
+
+![Rust](https://img.shields.io/badge/powered%20by-Rust-orange)
+
+
+High-performance indexed sequence structure powered by Rust, supporting fast rank/select and range queries with optional dynamic updates.
 
 - Document: https://math-hiyoko.github.io/wavelet-matrix
 - Repository: https://github.com/math-hiyoko/wavelet-matrix
