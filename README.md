@@ -2,16 +2,11 @@
 
 [![CI](https://github.com/math-hiyoko/wavelet-matrix/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/math-hiyoko/wavelet-matrix/actions/workflows/CI.yml)
 ![PyPI - Version](https://img.shields.io/pypi/v/wavelet-matrix)
-
 ![PyPI - PythonVersion](https://img.shields.io/pypi/pyversions/wavelet-matrix)
 ![PyPI - Types](https://img.shields.io/pypi/types/wavelet-matrix)
-
-[![PyPI Downloads](https://static.pepy.tech/personalized-badge/wavelet-matrix?period=total&units=INTERNATIONAL_SYSTEM&left_color=GRAY&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/wavelet-matrix)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/wavelet-matrix)
-
+![PyPI - Downloads](https://img.shields.io/pypi/dm/wavelet-matrix?label=PyPI%20downloads)
 ![PyPI - License](https://img.shields.io/pypi/l/wavelet-matrix)
 ![PyPI - Format](https://img.shields.io/pypi/format/wavelet-matrix)
-
 ![Rust](https://img.shields.io/badge/powered%20by-Rust-orange)
 
 
@@ -183,11 +178,11 @@ $ pytest --benchmark-only
 
 ## References
 
-- Francisco Claude, Gonzalo Navarro, Alberto Ordóñez,
-  The wavelet matrix: An efficient wavelet tree for large alphabets,
-  Information Systems,
-  Volume 47,
-  2015,
-  Pages 15-32,
-  ISSN 0306-4379,
-  https://doi.org/10.1016/j.is.2014.06.002.
+- Francisco Claude, Gonzalo Navarro, Alberto Ordóñez,  
+  The wavelet matrix: An efficient wavelet tree for large alphabets,  
+  Information Systems,  
+  Volume 47,  
+  2015,  
+  Pages 15-32,  
+  ISSN 0306-4379,  
+  https://doi.org/10.1016/j.is.2014.06.002.  
