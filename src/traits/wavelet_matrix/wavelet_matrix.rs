@@ -316,6 +316,7 @@ where
         let mut result = BigUint::zero();
         for (depth, (layer, zero)) in zip(self.get_layers(), self.get_zeros()).enumerate() {
             let mut next_stack = Vec::new();
+            let mut value_add = 0usize;
 
             for StackItem { start, end } in stack {
                 let start_zero = layer.rank(false, start)?;
@@ -332,8 +333,7 @@ where
                 let end_one = zero + layer.rank(true, end)?;
                 debug_assert!(start_one <= end_one);
                 if start_one != end_one {
-                    result += BigUint::from(end_one - start_one) << (self.height() - depth - 1);
-
+                    value_add += end_one - start_one;
                     next_stack.push(StackItem {
                         start: start_one,
                         end: end_one,
@@ -342,6 +342,7 @@ where
             }
 
             stack = next_stack;
+            result += BigUint::from(value_add) << (self.height() - depth - 1);
         }
 
         Ok(result)
