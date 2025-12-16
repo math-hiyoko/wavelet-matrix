@@ -1,6 +1,7 @@
 # Wavelet Matrix
 
 [![CI](https://github.com/math-hiyoko/wavelet-matrix/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/math-hiyoko/wavelet-matrix/actions/workflows/CI.yml)
+[![codecov](https://codecov.io/gh/math-hiyoko/wavelet-matrix/graph/badge.svg?token=TXBR7MF2CP)](https://codecov.io/gh/math-hiyoko/wavelet-matrix)
 ![PyPI - Version](https://img.shields.io/pypi/v/wavelet-matrix)
 ![PyPI - License](https://img.shields.io/pypi/l/wavelet-matrix)
 ![PyPI - PythonVersion](https://img.shields.io/pypi/pyversions/wavelet-matrix)
@@ -13,6 +14,7 @@
 
 High-performance indexed sequence structure powered by Rust, supporting fast rank/select and range queries with optional dynamic updates.
 
+- PyPI: https://pypi.org/project/wavelet-matrix
 - Document: https://math-hiyoko.github.io/wavelet-matrix
 - Repository: https://github.com/math-hiyoko/wavelet-matrix
 
@@ -175,6 +177,25 @@ $ pytest --benchmark-skip
 
 # Run benchmarks
 $ pytest --benchmark-only
+```
+
+### Formating Code
+```bash
+# Format Rust code
+$ cargo fmt
+
+# Format Python code
+$ ruff format
+```
+
+### Generating Docs
+```bash
+$ pdoc wavelet_matrix \
+      --output-directory docs \
+      --no-search \
+      --no-show-source \
+      --docformat markdown \
+      --footer-text "© 2025 Koki Watanabe"
 ```
 
 ## References
