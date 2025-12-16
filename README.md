@@ -2,10 +2,11 @@
 
 [![CI](https://github.com/math-hiyoko/wavelet-matrix/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/math-hiyoko/wavelet-matrix/actions/workflows/CI.yml)
 ![PyPI - Version](https://img.shields.io/pypi/v/wavelet-matrix)
+![PyPI - License](https://img.shields.io/pypi/l/wavelet-matrix)
 ![PyPI - PythonVersion](https://img.shields.io/pypi/pyversions/wavelet-matrix)
+![PyPI - Implementation](https://img.shields.io/pypi/implementation/wavelet-matrix)
 ![PyPI - Types](https://img.shields.io/pypi/types/wavelet-matrix)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/wavelet-matrix?label=PyPI%20downloads)
-![PyPI - License](https://img.shields.io/pypi/l/wavelet-matrix)
 ![PyPI - Format](https://img.shields.io/pypi/format/wavelet-matrix)
 ![Rust](https://img.shields.io/badge/powered%20by-Rust-orange)
 
