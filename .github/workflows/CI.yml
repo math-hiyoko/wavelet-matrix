@@ -192,7 +192,18 @@ jobs:
           cargo fmt --all -- --check
           ruff check
       - name: Cargo test
-        run: cargo test --all --release
+        run: |
+          cargo install cargo-llvm-cov --locked
+          cargo test --all --release
+          cargo llvm-cov \
+            --workspace \
+            --ignore-filename-regex '(src/lib\.rs|src/python/)' \
+            --codecov \
+            --output-path codecov.json
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   test:
     needs: linux
