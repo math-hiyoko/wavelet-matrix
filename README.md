@@ -21,6 +21,10 @@ High-performance indexed sequence structure powered by Rust, supporting fast ran
 
 ## Quick Start
 
+```bash
+$ pip install wavelet-matrix
+```
+
 ### WaveletMatrix
 ```python
 >>> from wavelet_matrix import WaveletMatrix
