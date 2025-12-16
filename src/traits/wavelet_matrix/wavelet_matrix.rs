@@ -3,7 +3,7 @@ use num_bigint::{BigUint, ToBigUint};
 use num_traits::{One, Zero};
 use pyo3::{
     PyResult,
-    exceptions::{PyIndexError, PyRuntimeError, PyValueError},
+    exceptions::{PyIndexError, PyValueError},
 };
 use std::{
     cmp::PartialEq,
@@ -300,19 +300,49 @@ where
 
     /// Get the sum of elements in the range [start, end).
     fn range_sum(&self, start: usize, end: usize) -> PyResult<BigUint> {
-        let result = self.range_list(start, end, None, None)?.iter().try_fold(
-            BigUint::zero(),
-            |acc, (value, count)| -> PyResult<BigUint> {
-                let value = value
-                    .to_biguint()
-                    .ok_or(PyRuntimeError::new_err("failed to convert to BigUint"))?;
-                let count = count
-                    .to_biguint()
-                    .ok_or(PyRuntimeError::new_err("failed to convert to BigUint"))?;
+        if start >= end {
+            return Err(PyValueError::new_err("start must be less than end"));
+        }
+        if end > self.len() {
+            return Err(PyIndexError::new_err("index out of bounds"));
+        }
 
-                Ok(acc + value * count)
-            },
-        )?;
+        struct StackItem {
+            start: usize,
+            end: usize,
+        }
+        let mut stack = vec![StackItem { start, end }];
+
+        let mut result = BigUint::zero();
+        for (depth, (layer, zero)) in zip(self.get_layers(), self.get_zeros()).enumerate() {
+            let mut next_stack = Vec::new();
+
+            for StackItem { start, end } in stack {
+                let start_zero = layer.rank(false, start)?;
+                let end_zero = layer.rank(false, end)?;
+                debug_assert!(start_zero <= end_zero);
+                if start_zero != end_zero {
+                    next_stack.push(StackItem {
+                        start: start_zero,
+                        end: end_zero,
+                    });
+                }
+
+                let start_one = zero + layer.rank(true, start)?;
+                let end_one = zero + layer.rank(true, end)?;
+                debug_assert!(start_one <= end_one);
+                if start_one != end_one {
+                    result += BigUint::from(end_one - start_one) << (self.height() - depth - 1);
+
+                    next_stack.push(StackItem {
+                        start: start_one,
+                        end: end_one,
+                    });
+                }
+            }
+
+            stack = next_stack;
+        }
 
         Ok(result)
     }
