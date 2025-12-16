@@ -1,7 +1,7 @@
 # Wavelet Matrix
 
 [![CI](https://github.com/math-hiyoko/wavelet-matrix/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/math-hiyoko/wavelet-matrix/actions/workflows/CI.yml)
-![PyPI - Version](https://img.shields.io/pypi/v/wavelet-matrix)
+[![PyPI - Version](https://img.shields.io/pypi/v/wavelet-matrix)](https://pypi.org/project/wavelet-matrix/)
 ![PyPI - License](https://img.shields.io/pypi/l/wavelet-matrix)
 ![PyPI - PythonVersion](https://img.shields.io/pypi/pyversions/wavelet-matrix)
 ![PyPI - Implementation](https://img.shields.io/pypi/implementation/wavelet-matrix)
