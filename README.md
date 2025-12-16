@@ -1,6 +1,17 @@
 # Wavelet Matrix
 
-High-performance indexed sequence data structure powered by Rust, supporting fast rank/select and range queries.
+[![CI](https://github.com/math-hiyoko/wavelet-matrix/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/math-hiyoko/wavelet-matrix/actions/workflows/CI.yml)
+![PyPI - Version](https://img.shields.io/pypi/v/wavelet-matrix)
+![PyPI - License](https://img.shields.io/pypi/l/wavelet-matrix)
+![PyPI - PythonVersion](https://img.shields.io/pypi/pyversions/wavelet-matrix)
+![PyPI - Implementation](https://img.shields.io/pypi/implementation/wavelet-matrix)
+![PyPI - Types](https://img.shields.io/pypi/types/wavelet-matrix)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/wavelet-matrix?label=PyPI%20downloads)
+![PyPI - Format](https://img.shields.io/pypi/format/wavelet-matrix)
+![Rust](https://img.shields.io/badge/powered%20by-Rust-orange)
+
+
+High-performance indexed sequence structure powered by Rust, supporting fast rank/select and range queries with optional dynamic updates.
 
 - Document: https://math-hiyoko.github.io/wavelet-matrix
 - Repository: https://github.com/math-hiyoko/wavelet-matrix
@@ -168,11 +179,11 @@ $ pytest --benchmark-only
 
 ## References
 
-- Francisco Claude, Gonzalo Navarro, Alberto Ordóñez,
-  The wavelet matrix: An efficient wavelet tree for large alphabets,
-  Information Systems,
-  Volume 47,
-  2015,
-  Pages 15-32,
-  ISSN 0306-4379,
-  https://doi.org/10.1016/j.is.2014.06.002.
+- Francisco Claude, Gonzalo Navarro, Alberto Ordóñez,  
+  The wavelet matrix: An efficient wavelet tree for large alphabets,  
+  Information Systems,  
+  Volume 47,  
+  2015,  
+  Pages 15-32,  
+  ISSN 0306-4379,  
+  https://doi.org/10.1016/j.is.2014.06.002.  
