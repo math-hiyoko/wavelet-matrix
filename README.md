@@ -7,7 +7,7 @@
 ![PyPI - PythonVersion](https://img.shields.io/pypi/pyversions/wavelet-matrix)
 ![PyPI - Implementation](https://img.shields.io/pypi/implementation/wavelet-matrix)
 ![PyPI - Types](https://img.shields.io/pypi/types/wavelet-matrix)
-[![PyPI - Downloads](https://img.shields.io/pypi/dm/wavelet-matrix?label=PyPI%20downloads)](https://pypistats.org/packages/wavelet-matrix)
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/wavelet-matrix?period=total&units=INTERNATIONAL_SYSTEM&left_color=GRAY&right_color=GREEN&left_text=PyPI%20downloads)](https://pepy.tech/projects/wavelet-matrix)
 ![PyPI - Format](https://img.shields.io/pypi/format/wavelet-matrix)
 ![Rust](https://img.shields.io/badge/powered%20by-Rust-orange)
 
