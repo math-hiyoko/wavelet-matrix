@@ -1,16 +1,15 @@
+use std::{fmt, marker, ops};
+
+use num_bigint::ToBigUint;
+use num_traits::{One, Zero};
+use pyo3::{PyResult, exceptions::PyValueError};
+
 use super::dynamic_bit_vector::DynamicBitVector;
 use crate::traits::{
     utils::bit_width::BitWidth,
     wavelet_matrix::{
         dynamic_wavelet_matrix::DynamicWaveletMatrixTrait, wavelet_matrix::WaveletMatrixTrait,
     },
-};
-use num_bigint::ToBigUint;
-use num_traits::{One, Zero};
-use pyo3::{PyResult, exceptions::PyValueError};
-use std::{
-    marker::PhantomData,
-    ops::{BitAnd, BitOr, BitOrAssign, Shl, ShlAssign, Shr},
 };
 
 #[derive(Clone)]
@@ -19,21 +18,23 @@ pub(crate) struct DynamicWaveletMatrix<NumberType> {
     zeros: Vec<usize>,
     height: usize,
     len: usize,
-    phantom: PhantomData<NumberType>,
+    phantom: marker::PhantomData<NumberType>,
 }
 
 impl<NumberType> DynamicWaveletMatrix<NumberType>
 where
-    NumberType: BitAnd<NumberType, Output = NumberType> + BitWidth + Clone + One + Ord,
-    for<'a> &'a NumberType: Shr<usize, Output = NumberType>,
+    NumberType: ops::BitAnd<NumberType, Output = NumberType> + BitWidth + Clone + One + Ord,
+    for<'a> &'a NumberType: ops::Shr<usize, Output = NumberType> + fmt::Display,
 {
     pub(crate) fn new(data: &[NumberType], max_bit: Option<usize>) -> PyResult<Self> {
         let mut values = data.to_owned();
         let max_width = values.iter().max().map_or(0usize, |max| max.bit_width());
         if max_bit.is_some_and(|max_bit| max_bit < max_width) {
-            return Err(PyValueError::new_err(
-                "max_bit is less than the maximum bit width of the data",
-            ));
+            return Err(PyValueError::new_err(format!(
+                "max_bit = {} is less than the maximum bit width of the data = {}",
+                max_bit.unwrap(),
+                max_width
+            )));
         }
         let height = max_bit.unwrap_or(max_width);
         let len = values.len();
@@ -63,7 +64,7 @@ where
             zeros,
             height,
             len,
-            phantom: PhantomData,
+            phantom: marker::PhantomData,
         })
     }
 }
@@ -71,20 +72,21 @@ where
 impl<NumberType> WaveletMatrixTrait<NumberType, DynamicBitVector>
     for DynamicWaveletMatrix<NumberType>
 where
-    NumberType: BitAnd<NumberType, Output = NumberType>
-        + BitOr<NumberType, Output = NumberType>
-        + BitOrAssign
+    NumberType: ops::BitAnd<NumberType, Output = NumberType>
+        + ops::BitOr<NumberType, Output = NumberType>
+        + ops::BitOrAssign
         + BitWidth
         + Clone
         + One
         + Ord
         + PartialEq
-        + Shl<usize, Output = NumberType>
-        + ShlAssign<usize>
+        + ops::Shl<usize, Output = NumberType>
+        + ops::ShlAssign<usize>
         + ToBigUint
         + Zero
         + 'static,
-    for<'a> &'a NumberType: Shl<usize, Output = NumberType> + Shr<usize, Output = NumberType>,
+    for<'a> &'a NumberType:
+        ops::Shl<usize, Output = NumberType> + ops::Shr<usize, Output = NumberType>,
 {
     fn get_layers(&self) -> &[DynamicBitVector] {
         &self.layers
@@ -106,20 +108,21 @@ where
 impl<NumberType> DynamicWaveletMatrixTrait<NumberType, DynamicBitVector>
     for DynamicWaveletMatrix<NumberType>
 where
-    NumberType: BitAnd<NumberType, Output = NumberType>
-        + BitOr<NumberType, Output = NumberType>
-        + BitOrAssign
+    NumberType: ops::BitAnd<NumberType, Output = NumberType>
+        + ops::BitOr<NumberType, Output = NumberType>
+        + ops::BitOrAssign
         + BitWidth
         + Clone
         + One
         + Ord
         + PartialEq
-        + Shl<usize, Output = NumberType>
-        + ShlAssign<usize>
+        + ops::Shl<usize, Output = NumberType>
+        + ops::ShlAssign<usize>
         + ToBigUint
         + Zero
         + 'static,
-    for<'a> &'a NumberType: Shl<usize, Output = NumberType> + Shr<usize, Output = NumberType>,
+    for<'a> &'a NumberType:
+        ops::Shl<usize, Output = NumberType> + ops::Shr<usize, Output = NumberType> + fmt::Display,
 {
     fn len(&mut self) -> &mut usize {
         &mut self.len
@@ -132,9 +135,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use num_bigint::BigUint;
     use pyo3::Python;
+
+    use super::*;
 
     fn create_dummy_u8() -> DynamicWaveletMatrix<u8> {
         let elements: Vec<u8> = vec![5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0];
@@ -574,7 +578,7 @@ mod tests {
         wv_u8.insert(4, &5u8).unwrap();
         assert_eq!(
             wv_u8.insert(4, &8u8).unwrap_err().to_string(),
-            "ValueError: value exceeds the maximum value"
+            "ValueError: value = 8 exceeds the maximum value = 7"
         );
         assert_eq!(wv_u8.access(4).unwrap(), 5u8);
         assert_eq!(wv_u8.len(), 13);
@@ -583,7 +587,7 @@ mod tests {
         wv_biguint.insert(4, &5u32.into()).unwrap();
         assert_eq!(
             wv_biguint.insert(4, &8u32.into()).unwrap_err().to_string(),
-            "ValueError: value exceeds the maximum value"
+            "ValueError: value = 8 exceeds the maximum value = 7"
         );
         assert_eq!(wv_biguint.access(4).unwrap(), 5u32.into());
         assert_eq!(wv_biguint.len(), 13);
@@ -612,7 +616,7 @@ mod tests {
         wv_u8.update(4, &5u8).unwrap();
         assert_eq!(
             wv_u8.update(4, &8u8).unwrap_err().to_string(),
-            "ValueError: value exceeds the maximum value"
+            "ValueError: value = 8 exceeds the maximum value = 7"
         );
         assert_eq!(wv_u8.access(4).unwrap(), 5u8);
         assert_eq!(wv_u8.len(), 12);
@@ -621,7 +625,7 @@ mod tests {
         wv_biguint.update(4, &5u32.into()).unwrap();
         assert_eq!(
             wv_biguint.update(4, &8u32.into()).unwrap_err().to_string(),
-            "ValueError: value exceeds the maximum value"
+            "ValueError: value = 8 exceeds the maximum value = 7"
         );
         assert_eq!(wv_biguint.access(4).unwrap(), 5u32.into());
         assert_eq!(wv_biguint.len(), 12);

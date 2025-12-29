@@ -1,13 +1,14 @@
-use crate::{
-    traits::wavelet_matrix::wavelet_matrix::WaveletMatrixTrait,
-    wavelet_matrix::wavelet_matrix::WaveletMatrix,
-};
 use num_bigint::BigUint;
 use num_traits::ToPrimitive;
 use pyo3::{
     exceptions::{PyIndexError, PyRuntimeError, PyTypeError, PyValueError},
     prelude::*,
     types::{PyDict, PyInt, PyList, PySequence, PySlice, PySliceIndices},
+};
+
+use crate::{
+    traits::wavelet_matrix::wavelet_matrix::WaveletMatrixTrait,
+    wavelet_matrix::wavelet_matrix::WaveletMatrix,
 };
 
 #[derive(Clone)]
@@ -35,7 +36,7 @@ pub(crate) struct PyWaveletMatrix {
 impl PyWaveletMatrix {
     /// Creates a new Wavelet Matrix from the given list or tuple of integers.
     #[new]
-    pub(crate) fn new(py: Python<'_>, data: &Bound<'_, PyAny>) -> PyResult<Self> {
+    fn new(py: Python<'_>, data: &Bound<'_, PyAny>) -> PyResult<Self> {
         let values: Vec<BigUint> = data
             .clone()
             .cast_into::<PySequence>()
@@ -98,7 +99,7 @@ impl PyWaveletMatrix {
     }
 
     /// Returns the length of the Wavelet Matrix.
-    pub(crate) fn __len__(&self, py: Python<'_>) -> PyResult<usize> {
+    fn __len__(&self, py: Python<'_>) -> PyResult<usize> {
         py.detach(move || match &self.inner {
             WaveletMatrixEnum::U8(wm) => Ok(wm.len()),
             WaveletMatrixEnum::U16(wm) => Ok(wm.len()),
@@ -110,11 +111,7 @@ impl PyWaveletMatrix {
     }
 
     /// Gets the value at the specified index.
-    pub(crate) fn __getitem__(
-        &self,
-        py: Python<'_>,
-        index: &Bound<'_, PyAny>,
-    ) -> PyResult<Py<PyAny>> {
+    fn __getitem__(&self, py: Python<'_>, index: &Bound<'_, PyAny>) -> PyResult<Py<PyAny>> {
         macro_rules! getitem_impl {
             ($wm:expr) => {
                 if let Ok(index) = index.extract::<usize>() {
@@ -156,7 +153,7 @@ impl PyWaveletMatrix {
         }
     }
 
-    pub(crate) fn __str__(&self, py: Python<'_>) -> PyResult<String> {
+    fn __str__(&self, py: Python<'_>) -> PyResult<String> {
         py.detach(move || match &self.inner {
             WaveletMatrixEnum::U8(wm) => Ok(format!("WaveletMatrix({:?})", wm.values()?)),
             WaveletMatrixEnum::U16(wm) => Ok(format!("WaveletMatrix({:?})", wm.values()?)),
@@ -167,7 +164,7 @@ impl PyWaveletMatrix {
         })
     }
 
-    pub(crate) fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
+    fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
         py.detach(move || match &self.inner {
             WaveletMatrixEnum::U8(wm) => Ok(format!("WaveletMatrix({:?})", wm.values()?)),
             WaveletMatrixEnum::U16(wm) => Ok(format!("WaveletMatrix({:?})", wm.values()?)),
@@ -203,7 +200,7 @@ impl PyWaveletMatrix {
     /// >>> wm.values()
     /// [5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0]
     /// ```
-    pub(crate) fn values(&self, py: Python<'_>) -> PyResult<Py<PyList>> {
+    fn values(&self, py: Python<'_>) -> PyResult<Py<PyList>> {
         match &self.inner {
             WaveletMatrixEnum::U8(wm) => {
                 Ok(PyList::new(py, &py.detach(move || wm.values())?)?.unbind())
@@ -242,7 +239,7 @@ impl PyWaveletMatrix {
     /// >>> wm.access(3)
     /// 5
     /// ```
-    pub(crate) fn access(&self, py: Python<'_>, index: &Bound<'_, PyInt>) -> PyResult<Py<PyInt>> {
+    fn access(&self, py: Python<'_>, index: &Bound<'_, PyInt>) -> PyResult<Py<PyInt>> {
         let index = index
             .extract::<usize>()
             .map_err(|_| PyIndexError::new_err("index must be a non-negative integer"))?;
@@ -285,7 +282,7 @@ impl PyWaveletMatrix {
     /// >>> wm.rank(5, 9)
     /// 4
     /// ```
-    pub(crate) fn rank(
+    fn rank(
         &self,
         py: Python<'_>,
         value: &Bound<'_, PyInt>,
@@ -331,7 +328,7 @@ impl PyWaveletMatrix {
     /// >>> wm.select(5, 4)
     /// 6
     /// ```
-    pub(crate) fn select(
+    fn select(
         &self,
         py: Python<'_>,
         value: &Bound<'_, PyInt>,
@@ -377,7 +374,7 @@ impl PyWaveletMatrix {
     /// >>> wm.quantile(2, 12, 8)
     /// 5
     /// ```
-    pub(crate) fn quantile(
+    fn quantile(
         &self,
         py: Python<'_>,
         start: &Bound<'_, PyInt>,
@@ -434,7 +431,7 @@ impl PyWaveletMatrix {
     /// [{'value': 5, 'count': 3}, {'value': 1, 'count': 2}]
     /// ```
     #[pyo3(signature = (start, end, k=None))]
-    pub(crate) fn topk(
+    fn topk(
         &self,
         py: Python<'_>,
         start: &Bound<'_, PyInt>,
@@ -499,7 +496,7 @@ impl PyWaveletMatrix {
     /// >>> wm.range_sum(2, 8)
     /// 24
     /// ```
-    pub(crate) fn range_sum(
+    fn range_sum(
         &self,
         py: Python<'_>,
         start: &Bound<'_, PyInt>,
@@ -540,7 +537,7 @@ impl PyWaveletMatrix {
     /// >>> wm.range_intersection(0, 6, 6, 11)
     /// [{'value': 1, 'count1': 1, 'count2': 1}, {'value': 5, 'count1': 3, 'count2': 2}]
     /// ```
-    pub(crate) fn range_intersection(
+    fn range_intersection(
         &self,
         py: Python<'_>,
         start1: &Bound<'_, PyInt>,
@@ -605,7 +602,7 @@ impl PyWaveletMatrix {
     /// 4
     /// ```
     #[pyo3(signature = (start, end, lower=None, upper=None))]
-    pub fn range_freq(
+    fn range_freq(
         &self,
         py: Python<'_>,
         start: &Bound<'_, PyInt>,
@@ -668,7 +665,7 @@ impl PyWaveletMatrix {
     /// [{'value': 4, 'count': 1}, {'value': 5, 'count': 3}]
     /// ```
     #[pyo3(signature = (start, end, lower=None, upper=None))]
-    pub fn range_list(
+    fn range_list(
         &self,
         py: Python<'_>,
         start: &Bound<'_, PyInt>,
@@ -803,7 +800,7 @@ impl PyWaveletMatrix {
     /// [{'value': 1, 'count': 2}, {'value': 2, 'count': 1}]
     /// ```
     #[pyo3(signature = (start, end, k=None))]
-    pub fn range_mink(
+    fn range_mink(
         &self,
         py: Python<'_>,
         start: &Bound<'_, PyInt>,
@@ -867,7 +864,7 @@ impl PyWaveletMatrix {
     /// 6
     /// ```
     #[pyo3(signature = (start, end, upper=None))]
-    pub fn prev_value(
+    fn prev_value(
         &self,
         py: Python<'_>,
         start: &Bound<'_, PyInt>,
@@ -917,7 +914,7 @@ impl PyWaveletMatrix {
     /// 4
     /// ```
     #[pyo3(signature = (start, end, lower=None))]
-    pub fn next_value(
+    fn next_value(
         &self,
         py: Python<'_>,
         start: &Bound<'_, PyInt>,

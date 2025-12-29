@@ -1,16 +1,13 @@
-use crate::traits::{bit_vector::bit_vector::BitVectorTrait, utils::bit_width::BitWidth};
+use std::{cmp, collections, iter, ops};
+
 use num_bigint::{BigUint, ToBigUint};
 use num_traits::{One, Zero};
 use pyo3::{
     PyResult,
     exceptions::{PyIndexError, PyRuntimeError, PyValueError},
 };
-use std::{
-    cmp::PartialEq,
-    collections::BinaryHeap,
-    iter::{once, zip},
-    ops::{BitAnd, BitOr, BitOrAssign, Shl, ShlAssign, Shr},
-};
+
+use crate::traits::{bit_vector::bit_vector::BitVectorTrait, utils::bit_width::BitWidth};
 
 /// A Wavelet Matrix data structure for efficient rank, select, and quantile queries.
 ///
@@ -18,20 +15,21 @@ use std::{
 /// one for each bit position. This allows for efficient queries on the sequence.
 pub(crate) trait WaveletMatrixTrait<NumberType, BitVectorType>
 where
-    NumberType: BitAnd<NumberType, Output = NumberType>
-        + BitOr<NumberType, Output = NumberType>
-        + BitOrAssign
+    NumberType: ops::BitAnd<NumberType, Output = NumberType>
+        + ops::BitOr<NumberType, Output = NumberType>
+        + ops::BitOrAssign
         + BitWidth
         + Clone
         + One
         + Ord
-        + PartialEq
-        + Shl<usize, Output = NumberType>
-        + ShlAssign<usize>
+        + cmp::PartialEq
+        + ops::Shl<usize, Output = NumberType>
+        + ops::ShlAssign<usize>
         + ToBigUint
         + Zero
         + 'static,
-    for<'a> &'a NumberType: Shl<usize, Output = NumberType> + Shr<usize, Output = NumberType>,
+    for<'a> &'a NumberType:
+        ops::Shl<usize, Output = NumberType> + ops::Shr<usize, Output = NumberType>,
     BitVectorType: BitVectorTrait,
 {
     /// Get the length of the Wavelet Matrix.
@@ -51,7 +49,7 @@ where
     fn begin_index(&self, value: &NumberType) -> Option<usize> {
         let mut start = 0usize;
         let mut end = self.len();
-        for (depth, (layer, zero)) in zip(self.get_layers(), self.get_zeros()).enumerate() {
+        for (depth, (layer, zero)) in iter::zip(self.get_layers(), self.get_zeros()).enumerate() {
             let bit = (value >> (self.height() - depth - 1) & NumberType::one()).is_one();
             if bit {
                 start = zero + layer.rank(bit, start).ok()?;
@@ -71,15 +69,15 @@ where
     fn values(&self) -> PyResult<Vec<NumberType>> {
         let mut indices = (0..self.len()).collect::<Vec<usize>>();
         let mut values = vec![NumberType::zero(); self.len()];
-        for (depth, (layer, zero)) in zip(self.get_layers(), self.get_zeros()).enumerate() {
+        for (depth, (layer, zero)) in iter::zip(self.get_layers(), self.get_zeros()).enumerate() {
             let bits = layer.values()?;
-            let rank = once([0usize; 2])
+            let rank = iter::once([0usize; 2])
                 .chain(bits.iter().scan([0usize; 2], |acc, &bit| {
                     acc[bit as usize] += 1;
                     Some(*acc)
                 }))
                 .collect::<Vec<_>>();
-            for (index, value) in zip(indices.iter_mut(), values.iter_mut()) {
+            for (index, value) in iter::zip(indices.iter_mut(), values.iter_mut()) {
                 let bit = bits[*index];
                 if bit {
                     *value |= NumberType::one() << (self.height() - depth - 1);
@@ -100,7 +98,7 @@ where
         }
 
         let mut result = NumberType::zero();
-        for (layer, zero) in zip(self.get_layers(), self.get_zeros()) {
+        for (layer, zero) in iter::zip(self.get_layers(), self.get_zeros()) {
             let bit = layer.access(index)?;
             result <<= 1;
             if bit {
@@ -129,7 +127,7 @@ where
             None => return Ok(0usize),
         };
 
-        for (depth, (layer, zero)) in zip(self.get_layers(), self.get_zeros()).enumerate() {
+        for (depth, (layer, zero)) in iter::zip(self.get_layers(), self.get_zeros()).enumerate() {
             let bit = (value >> (self.height() - depth - 1) & NumberType::one()).is_one();
             if bit {
                 end = zero + layer.rank(bit, end)?;
@@ -158,7 +156,10 @@ where
         };
 
         let mut index = begin_index + kth - 1;
-        for (depth, (layer, zero)) in zip(self.get_layers(), self.get_zeros()).enumerate().rev() {
+        for (depth, (layer, zero)) in iter::zip(self.get_layers(), self.get_zeros())
+            .enumerate()
+            .rev()
+        {
             let bit = (value >> (self.height() - depth - 1) & NumberType::one()).is_one();
             if bit {
                 index -= zero;
@@ -189,7 +190,7 @@ where
         }
 
         let mut result = NumberType::zero();
-        for (layer, zero) in zip(self.get_layers(), self.get_zeros()) {
+        for (layer, zero) in iter::zip(self.get_layers(), self.get_zeros()) {
             let count_zeros = layer.rank(false, end)? - layer.rank(false, start)?;
             let bit = if kth <= count_zeros {
                 false
@@ -231,7 +232,7 @@ where
         }
         let k = k.unwrap_or(end - start);
 
-        #[derive(PartialEq, Eq, PartialOrd, Ord)]
+        #[derive(cmp::PartialEq, Eq, PartialOrd, Ord)]
         struct QueueItem<T> {
             len: usize,
             depth: usize,
@@ -239,7 +240,7 @@ where
             end: usize,
             value: T,
         }
-        let mut heap = BinaryHeap::new();
+        let mut heap = collections::BinaryHeap::new();
         heap.push(QueueItem::<NumberType> {
             len: end - start,
             depth: 0,
@@ -353,7 +354,7 @@ where
             value: NumberType::zero(),
         }];
 
-        for (layer, zero) in zip(self.get_layers(), self.get_zeros()) {
+        for (layer, zero) in iter::zip(self.get_layers(), self.get_zeros()) {
             let mut next_stack = Vec::new();
 
             for StackItem {
@@ -434,7 +435,7 @@ where
         }
 
         let mut count = 0usize;
-        for (depth, (layer, zero)) in zip(self.get_layers(), self.get_zeros()).enumerate() {
+        for (depth, (layer, zero)) in iter::zip(self.get_layers(), self.get_zeros()).enumerate() {
             let bit = (upper >> (self.height() - depth - 1) & NumberType::one()).is_one();
             if bit {
                 count += layer.rank(false, end)? - layer.rank(false, start)?;
@@ -513,7 +514,7 @@ where
             value: NumberType::zero(),
         }];
 
-        for (depth, (layer, zero)) in zip(self.get_layers(), self.get_zeros()).enumerate() {
+        for (depth, (layer, zero)) in iter::zip(self.get_layers(), self.get_zeros()).enumerate() {
             let mut next_stack = Vec::new();
 
             for StackItem { start, end, value } in stack {
@@ -595,7 +596,7 @@ where
             value: NumberType::zero(),
         }];
 
-        for (layer, zero) in zip(self.get_layers(), self.get_zeros()) {
+        for (layer, zero) in iter::zip(self.get_layers(), self.get_zeros()) {
             let mut next_stack = Vec::new();
 
             for StackItem { start, end, value } in stack {
@@ -673,7 +674,7 @@ where
             value: NumberType::zero(),
         }];
 
-        for (layer, zero) in zip(self.get_layers(), self.get_zeros()) {
+        for (layer, zero) in iter::zip(self.get_layers(), self.get_zeros()) {
             let mut next_stack = Vec::new();
 
             for StackItem { start, end, value } in stack {
@@ -757,8 +758,9 @@ where
 
 #[cfg(test)]
 mod tests {
+    use std::marker;
+
     use pyo3::Python;
-    use std::marker::PhantomData;
 
     use super::*;
     use crate::traits::{bit_vector::bit_vector::SampleBitVector, utils::bit_width::BitWidth};
@@ -768,13 +770,13 @@ mod tests {
         zeros: Vec<usize>,
         height: usize,
         len: usize,
-        phantom: PhantomData<NumberType>,
+        phantom: marker::PhantomData<NumberType>,
     }
 
     impl<NumberType> SampleWaveletMatrix<NumberType>
     where
-        NumberType: BitAnd<NumberType, Output = NumberType> + BitWidth + Clone + One + Ord,
-        for<'a> &'a NumberType: Shr<usize, Output = NumberType>,
+        NumberType: ops::BitAnd<NumberType, Output = NumberType> + BitWidth + Clone + One + Ord,
+        for<'a> &'a NumberType: ops::Shr<usize, Output = NumberType>,
     {
         fn new(data: &Vec<NumberType>) -> Self {
             let mut values = data.clone();
@@ -806,27 +808,28 @@ mod tests {
                 zeros,
                 height,
                 len,
-                phantom: PhantomData,
+                phantom: marker::PhantomData,
             }
         }
     }
 
     impl<NumberType> WaveletMatrixTrait<NumberType, SampleBitVector> for SampleWaveletMatrix<NumberType>
     where
-        NumberType: BitAnd<NumberType, Output = NumberType>
-            + BitOr<NumberType, Output = NumberType>
-            + BitOrAssign
+        NumberType: ops::BitAnd<NumberType, Output = NumberType>
+            + ops::BitOr<NumberType, Output = NumberType>
+            + ops::BitOrAssign
             + BitWidth
             + Clone
             + One
             + Ord
-            + PartialEq
-            + Shl<usize, Output = NumberType>
-            + ShlAssign<usize>
+            + cmp::PartialEq
+            + ops::Shl<usize, Output = NumberType>
+            + ops::ShlAssign<usize>
             + ToBigUint
             + Zero
             + 'static,
-        for<'a> &'a NumberType: Shl<usize, Output = NumberType> + Shr<usize, Output = NumberType>,
+        for<'a> &'a NumberType:
+            ops::Shl<usize, Output = NumberType> + ops::Shr<usize, Output = NumberType>,
     {
         fn get_layers(&self) -> &[SampleBitVector] {
             &self.layers

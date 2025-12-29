@@ -1,15 +1,16 @@
-use crate::{
-    dynamic_wavelet_matrix::dynamic_wavelet_matrix::DynamicWaveletMatrix,
-    traits::wavelet_matrix::{
-        dynamic_wavelet_matrix::DynamicWaveletMatrixTrait, wavelet_matrix::WaveletMatrixTrait,
-    },
-};
 use num_bigint::BigUint;
 use num_traits::ToPrimitive;
 use pyo3::{
     exceptions::{PyIndexError, PyRuntimeError, PyTypeError, PyValueError},
     prelude::*,
     types::{PyDict, PyInt, PyList, PySequence, PySlice, PySliceIndices},
+};
+
+use crate::{
+    dynamic_wavelet_matrix::dynamic_wavelet_matrix::DynamicWaveletMatrix,
+    traits::wavelet_matrix::{
+        dynamic_wavelet_matrix::DynamicWaveletMatrixTrait, wavelet_matrix::WaveletMatrixTrait,
+    },
 };
 
 #[derive(Clone)]
@@ -39,11 +40,7 @@ impl PyDynamicWaveletMatrix {
     /// Creates a new Wavelet Matrix from the given list or tuple of integers.
     #[new]
     #[pyo3(signature = (data, max_bit=None))]
-    pub(crate) fn new(
-        py: Python<'_>,
-        data: &Bound<'_, PyAny>,
-        max_bit: Option<usize>,
-    ) -> PyResult<Self> {
+    fn new(py: Python<'_>, data: &Bound<'_, PyAny>, max_bit: Option<usize>) -> PyResult<Self> {
         let values: Vec<BigUint> = data
             .clone()
             .cast_into::<PySequence>()
@@ -116,7 +113,7 @@ impl PyDynamicWaveletMatrix {
     }
 
     /// Returns the length of the Wavelet Matrix.
-    pub(crate) fn __len__(&self, py: Python<'_>) -> PyResult<usize> {
+    fn __len__(&self, py: Python<'_>) -> PyResult<usize> {
         py.detach(move || match &self.inner {
             DynamicWaveletMatrixEnum::U8(wm) => Ok(wm.len()),
             DynamicWaveletMatrixEnum::U16(wm) => Ok(wm.len()),
@@ -128,11 +125,7 @@ impl PyDynamicWaveletMatrix {
     }
 
     /// Gets the value at the specified index.
-    pub(crate) fn __getitem__(
-        &self,
-        py: Python<'_>,
-        index: &Bound<'_, PyAny>,
-    ) -> PyResult<Py<PyAny>> {
+    fn __getitem__(&self, py: Python<'_>, index: &Bound<'_, PyAny>) -> PyResult<Py<PyAny>> {
         macro_rules! getitem_impl {
             ($wm:expr) => {
                 if let Ok(index) = index.extract::<usize>() {
@@ -174,7 +167,17 @@ impl PyDynamicWaveletMatrix {
         }
     }
 
-    pub(crate) fn __str__(&self, py: Python<'_>) -> PyResult<String> {
+    fn __setitem__(
+        &mut self,
+        py: Python<'_>,
+        index: &Bound<'_, PyInt>,
+        value: &Bound<'_, PyInt>,
+    ) -> PyResult<()> {
+        self.update(py, index, value)?;
+        Ok(())
+    }
+
+    fn __str__(&self, py: Python<'_>) -> PyResult<String> {
         py.detach(move || match &self.inner {
             DynamicWaveletMatrixEnum::U8(wm) => Ok(format!(
                 "DynamicWaveletMatrix({:?}, max_bit={})",
@@ -209,7 +212,7 @@ impl PyDynamicWaveletMatrix {
         })
     }
 
-    pub(crate) fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
+    fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
         py.detach(move || match &self.inner {
             DynamicWaveletMatrixEnum::U8(wm) => Ok(format!(
                 "DynamicWaveletMatrix({:?}, max_bit={})",
@@ -269,7 +272,7 @@ impl PyDynamicWaveletMatrix {
     /// >>> dwm.values()
     /// [5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0]
     /// ```
-    pub(crate) fn values(&self, py: Python<'_>) -> PyResult<Py<PyList>> {
+    fn values(&self, py: Python<'_>) -> PyResult<Py<PyList>> {
         match &self.inner {
             DynamicWaveletMatrixEnum::U8(wm) => {
                 Ok(PyList::new(py, &py.detach(move || wm.values())?)?.unbind())
@@ -309,7 +312,7 @@ impl PyDynamicWaveletMatrix {
     /// >>> dwm.access(3)
     /// 5
     /// ```
-    pub(crate) fn access(&self, py: Python<'_>, index: &Bound<'_, PyInt>) -> PyResult<Py<PyInt>> {
+    fn access(&self, py: Python<'_>, index: &Bound<'_, PyInt>) -> PyResult<Py<PyInt>> {
         let index = index
             .extract::<usize>()
             .map_err(|_| PyIndexError::new_err("index must be a non-negative integer"))?;
@@ -353,7 +356,7 @@ impl PyDynamicWaveletMatrix {
     /// >>> dwm.rank(5, 9)
     /// 4
     /// ```
-    pub(crate) fn rank(
+    fn rank(
         &self,
         py: Python<'_>,
         value: &Bound<'_, PyInt>,
@@ -400,7 +403,7 @@ impl PyDynamicWaveletMatrix {
     /// >>> dwm.select(5, 4)
     /// 6
     /// ```
-    pub(crate) fn select(
+    fn select(
         &self,
         py: Python<'_>,
         value: &Bound<'_, PyInt>,
@@ -447,7 +450,7 @@ impl PyDynamicWaveletMatrix {
     /// >>> dwm.quantile(2, 12, 8)
     /// 5
     /// ```
-    pub(crate) fn quantile(
+    fn quantile(
         &self,
         py: Python<'_>,
         start: &Bound<'_, PyInt>,
@@ -505,7 +508,7 @@ impl PyDynamicWaveletMatrix {
     /// [{'value': 5, 'count': 3}, {'value': 1, 'count': 2}]
     /// ```
     #[pyo3(signature = (start, end, k=None))]
-    pub(crate) fn topk(
+    fn topk(
         &self,
         py: Python<'_>,
         start: &Bound<'_, PyInt>,
@@ -570,7 +573,7 @@ impl PyDynamicWaveletMatrix {
     /// >>> dwm.range_sum(2, 8)
     /// 24
     /// ```
-    pub(crate) fn range_sum(
+    fn range_sum(
         &self,
         py: Python<'_>,
         start: &Bound<'_, PyInt>,
@@ -612,7 +615,7 @@ impl PyDynamicWaveletMatrix {
     /// >>> dwm.range_intersection(0, 6, 6, 11)
     /// [{'value': 1, 'count1': 1, 'count2': 1}, {'value': 5, 'count1': 3, 'count2': 2}]
     /// ```
-    pub(crate) fn range_intersection(
+    fn range_intersection(
         &self,
         py: Python<'_>,
         start1: &Bound<'_, PyInt>,
@@ -678,7 +681,7 @@ impl PyDynamicWaveletMatrix {
     /// 4
     /// ```
     #[pyo3(signature = (start, end, lower=None, upper=None))]
-    pub fn range_freq(
+    fn range_freq(
         &self,
         py: Python<'_>,
         start: &Bound<'_, PyInt>,
@@ -742,7 +745,7 @@ impl PyDynamicWaveletMatrix {
     /// [{'value': 4, 'count': 1}, {'value': 5, 'count': 3}]
     /// ```
     #[pyo3(signature = (start, end, lower=None, upper=None))]
-    pub fn range_list(
+    fn range_list(
         &self,
         py: Python<'_>,
         start: &Bound<'_, PyInt>,
@@ -879,7 +882,7 @@ impl PyDynamicWaveletMatrix {
     /// [{'value': 1, 'count': 2}, {'value': 2, 'count': 1}]
     /// ```
     #[pyo3(signature = (start, end, k=None))]
-    pub fn range_mink(
+    fn range_mink(
         &self,
         py: Python<'_>,
         start: &Bound<'_, PyInt>,
@@ -944,7 +947,7 @@ impl PyDynamicWaveletMatrix {
     /// 6
     /// ```
     #[pyo3(signature = (start, end, upper=None))]
-    pub fn prev_value(
+    fn prev_value(
         &self,
         py: Python<'_>,
         start: &Bound<'_, PyInt>,
@@ -995,7 +998,7 @@ impl PyDynamicWaveletMatrix {
     /// 4
     /// ```
     #[pyo3(signature = (start, end, lower=None))]
-    pub fn next_value(
+    fn next_value(
         &self,
         py: Python<'_>,
         start: &Bound<'_, PyInt>,
