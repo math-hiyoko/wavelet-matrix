@@ -1,28 +1,27 @@
+use std::{collections, hash, ops};
+
+use num_bigint::ToBigUint;
+use num_traits::{One, Zero};
+
 use super::bit_vector::BitVector;
 use crate::traits::{
     utils::bit_width::BitWidth, wavelet_matrix::wavelet_matrix::WaveletMatrixTrait,
-};
-use num_bigint::ToBigUint;
-use num_traits::{One, Zero};
-use std::{
-    collections::HashMap,
-    hash::Hash,
-    ops::{BitAnd, BitOr, BitOrAssign, Shl, ShlAssign, Shr},
 };
 
 #[derive(Clone)]
 pub(crate) struct WaveletMatrix<NumberType> {
     layers: Vec<BitVector>,
     zeros: Vec<usize>,
-    begin_index: HashMap<NumberType, usize>,
+    begin_index: collections::HashMap<NumberType, usize>,
     height: usize,
     len: usize,
 }
 
 impl<NumberType> WaveletMatrix<NumberType>
 where
-    NumberType: BitAnd<NumberType, Output = NumberType> + BitWidth + Clone + Hash + One + Ord,
-    for<'a> &'a NumberType: Shr<usize, Output = NumberType>,
+    NumberType:
+        ops::BitAnd<NumberType, Output = NumberType> + BitWidth + Clone + hash::Hash + One + Ord,
+    for<'a> &'a NumberType: ops::Shr<usize, Output = NumberType>,
 {
     pub(crate) fn new(data: &[NumberType]) -> Self {
         let mut values = data.to_owned();
@@ -49,7 +48,7 @@ where
             values = [zero_values, one_values].concat();
         }
 
-        let mut begin_index = HashMap::new();
+        let mut begin_index = collections::HashMap::new();
         values.iter().enumerate().for_each(|(i, v)| {
             begin_index.entry(v.clone()).or_insert(i);
         });
@@ -66,21 +65,22 @@ where
 
 impl<NumberType> WaveletMatrixTrait<NumberType, BitVector> for WaveletMatrix<NumberType>
 where
-    NumberType: BitAnd<NumberType, Output = NumberType>
-        + BitOr<NumberType, Output = NumberType>
-        + BitOrAssign
+    NumberType: ops::BitAnd<NumberType, Output = NumberType>
+        + ops::BitOr<NumberType, Output = NumberType>
+        + ops::BitOrAssign
         + BitWidth
         + Clone
-        + Hash
+        + hash::Hash
         + One
         + Ord
         + PartialEq
-        + Shl<usize, Output = NumberType>
-        + ShlAssign<usize>
+        + ops::Shl<usize, Output = NumberType>
+        + ops::ShlAssign<usize>
         + ToBigUint
         + Zero
         + 'static,
-    for<'a> &'a NumberType: Shl<usize, Output = NumberType> + Shr<usize, Output = NumberType>,
+    for<'a> &'a NumberType:
+        ops::Shl<usize, Output = NumberType> + ops::Shr<usize, Output = NumberType>,
 {
     #[inline]
     fn get_layers(&self) -> &[BitVector] {
@@ -110,9 +110,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use num_bigint::BigUint;
     use pyo3::Python;
+
+    use super::*;
 
     fn create_u8() -> WaveletMatrix<u8> {
         let elements: Vec<u8> = vec![5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0];

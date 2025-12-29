@@ -1,9 +1,10 @@
-use super::bit_vector::BitVectorTrait;
 use num_traits::Zero;
 use pyo3::{
     PyResult,
     exceptions::{PyIndexError, PyValueError},
 };
+
+use super::bit_vector::BitVectorTrait;
 
 pub(crate) trait DynamicBitVectorTrait: BitVectorTrait {
     /// Inserts a bit at the specified position.

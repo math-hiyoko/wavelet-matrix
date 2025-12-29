@@ -1,9 +1,10 @@
+use std::{cmp, mem};
+
 use num_traits::{One, Zero};
 use pyo3::{
     PyResult,
     exceptions::{PyIndexError, PyRuntimeError, PyValueError},
 };
-use std::{cmp::max, mem::replace};
 
 use crate::traits::{
     bit_vector::{bit_vector::BitVectorTrait, dynamic_bit_vector::DynamicBitVectorTrait},
@@ -39,7 +40,7 @@ impl DynamicBitVectorNode {
             node: Box<DynamicBitVectorNode>,
             total: usize,
             ones: usize,
-            height: usize,
+            height: isize,
         }
 
         let mut nodes = bits
@@ -59,7 +60,7 @@ impl DynamicBitVectorNode {
                 }),
                 total: chunk.len(),
                 ones: chunk.iter().filter(|&&b| b).count(),
-                height: 0usize,
+                height: 0isize,
             })
             .collect::<Vec<DynamicBitVectorNodeBuildItem>>();
 
@@ -67,7 +68,7 @@ impl DynamicBitVectorNode {
             left: &DynamicBitVectorNodeBuildItem,
             right: &DynamicBitVectorNodeBuildItem,
         ) -> DynamicBitVectorNodeBuildItem {
-            let balance = right.height as isize - left.height as isize;
+            let balance = right.height - left.height;
             debug_assert!(
                 (-1..=1).contains(&balance),
                 "unbalanced tree detected during build"
@@ -83,7 +84,7 @@ impl DynamicBitVectorNode {
                 node: internal,
                 total: left.total + right.total,
                 ones: left.ones + right.ones,
-                height: max(left.height, right.height) + 1,
+                height: cmp::max(left.height, right.height) + 1,
             }
         }
 
@@ -133,7 +134,7 @@ impl DynamicBitVectorNode {
     /// returns difference in height after rotation
     #[inline]
     fn rotate_right(&mut self) -> isize {
-        let d_node = replace(
+        let d_node = mem::replace(
             self,
             DynamicBitVectorNode::Leaf {
                 bits: BlockType::zero(),
@@ -162,9 +163,9 @@ impl DynamicBitVectorNode {
             DynamicBitVectorNode::Leaf { .. } => panic!("rotate_right: left child is Leaf"),
         };
 
-        let c_height = 2usize;
-        let a_height = (c_height as isize - b_balance) as usize;
-        let e_height = ((max(a_height, c_height) + 1) as isize + d_balance) as usize;
+        let c_height = 0isize;
+        let a_height = c_height - b_balance;
+        let e_height = cmp::max(a_height, c_height) + 1 + d_balance;
         let c_total = b_total - a_total;
         let c_ones = b_ones - a_ones;
 
@@ -173,7 +174,7 @@ impl DynamicBitVectorNode {
             right: e_node,
             left_total: c_total,
             left_ones: c_ones,
-            balance: e_height as isize - c_height as isize,
+            balance: e_height - c_height,
         });
 
         let new_b_node = Box::new(DynamicBitVectorNode::Internal {
@@ -181,14 +182,14 @@ impl DynamicBitVectorNode {
             right: new_d_node,
             left_total: a_total,
             left_ones: a_ones,
-            balance: (max(c_height, e_height) + 1) as isize - a_height as isize,
+            balance: cmp::max(c_height, e_height) + 1 - a_height,
         });
 
         *self = *new_b_node;
 
-        let old_height = max(max(a_height, c_height) + 1, e_height) + 1;
-        let new_height = max(a_height, max(c_height, e_height) + 1) + 1;
-        let height_diff = new_height as isize - old_height as isize;
+        let old_height = cmp::max(cmp::max(a_height, c_height) + 2, e_height + 1);
+        let new_height = cmp::max(a_height + 1, cmp::max(c_height, e_height) + 2);
+        let height_diff = new_height - old_height;
         debug_assert!(
             (-1..=1).contains(&height_diff),
             "rotate_right: invalid height difference"
@@ -205,7 +206,7 @@ impl DynamicBitVectorNode {
     /// returns difference in height after rotation
     #[inline]
     fn rotate_left(&mut self) -> isize {
-        let b_node = replace(
+        let b_node = mem::replace(
             self,
             DynamicBitVectorNode::Leaf {
                 bits: BlockType::zero(),
@@ -234,16 +235,16 @@ impl DynamicBitVectorNode {
             DynamicBitVectorNode::Leaf { .. } => panic!("rotate_left: right child is Leaf"),
         };
 
-        let c_height = 2usize;
-        let e_height = (c_height as isize + d_balance) as usize;
-        let a_height = ((max(c_height, e_height) + 1) as isize - b_balance) as usize;
+        let c_height = 0isize;
+        let e_height = c_height + d_balance;
+        let a_height = cmp::max(c_height, e_height) + 1 - b_balance;
 
         let new_b_node = Box::new(DynamicBitVectorNode::Internal {
             left: a_node,
             right: c_node,
             left_total: a_total,
             left_ones: a_ones,
-            balance: c_height as isize - a_height as isize,
+            balance: c_height - a_height,
         });
 
         let new_d_node = Box::new(DynamicBitVectorNode::Internal {
@@ -251,14 +252,14 @@ impl DynamicBitVectorNode {
             right: e_node,
             left_total: a_total + c_total,
             left_ones: a_ones + c_ones,
-            balance: e_height as isize - (max(a_height, c_height) + 1) as isize,
+            balance: e_height - (cmp::max(a_height, c_height) + 1),
         });
 
         *self = *new_d_node;
 
-        let old_height = max(a_height, max(c_height, e_height) + 1) + 1;
-        let new_height = max(max(a_height, c_height) + 1, e_height) + 1;
-        let height_diff = new_height as isize - old_height as isize;
+        let old_height = cmp::max(a_height + 1, cmp::max(c_height, e_height) + 2);
+        let new_height = cmp::max(cmp::max(a_height, c_height) + 2, e_height + 1);
+        let height_diff = new_height - old_height;
         debug_assert!(
             (-1..=1).contains(&height_diff),
             "rotate_right: invalid height difference"
@@ -514,7 +515,7 @@ impl DynamicBitVectorNode {
                                 _ => unreachable!("left child is not Leaf during merge"),
                             };
                             right.insert_batch(0, left_bits, len - *left_total, *left_total);
-                            *self = replace(
+                            *self = mem::replace(
                                 right,
                                 DynamicBitVectorNode::Leaf {
                                     bits: BlockType::zero(),
@@ -554,7 +555,7 @@ impl DynamicBitVectorNode {
                                 *left_total,
                                 len - *left_total,
                             );
-                            *self = replace(
+                            *self = mem::replace(
                                 left,
                                 DynamicBitVectorNode::Leaf {
                                     bits: BlockType::zero(),
@@ -780,7 +781,7 @@ mod tests {
                         "stored balance = {balance}, real balance = {real_balance}"
                     );
 
-                    max(left_height, right_height) + 1
+                    cmp::max(left_height, right_height) + 1
                 }
             }
         }

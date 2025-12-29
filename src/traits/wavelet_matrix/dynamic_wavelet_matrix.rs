@@ -1,36 +1,35 @@
-use super::wavelet_matrix::WaveletMatrixTrait;
-use crate::traits::{
-    bit_vector::dynamic_bit_vector::DynamicBitVectorTrait, utils::bit_width::BitWidth,
-};
+use std::{cmp, iter, ops};
+
 use num_bigint::ToBigUint;
 use num_traits::{One, Zero};
 use pyo3::{
     PyResult,
     exceptions::{PyIndexError, PyValueError},
 };
-use std::{
-    cmp::PartialEq,
-    iter::zip,
-    ops::{BitAnd, BitOr, BitOrAssign, Shl, ShlAssign, Shr},
+
+use super::wavelet_matrix::WaveletMatrixTrait;
+use crate::traits::{
+    bit_vector::dynamic_bit_vector::DynamicBitVectorTrait, utils::bit_width::BitWidth,
 };
 
 pub(crate) trait DynamicWaveletMatrixTrait<NumberType, BitVectorType>:
     WaveletMatrixTrait<NumberType, BitVectorType>
 where
-    NumberType: BitAnd<NumberType, Output = NumberType>
-        + BitOr<NumberType, Output = NumberType>
-        + BitOrAssign
+    NumberType: ops::BitAnd<NumberType, Output = NumberType>
+        + ops::BitOr<NumberType, Output = NumberType>
+        + ops::BitOrAssign
         + BitWidth
         + Clone
         + One
         + Ord
-        + PartialEq
-        + Shl<usize, Output = NumberType>
-        + ShlAssign<usize>
+        + cmp::PartialEq
+        + ops::Shl<usize, Output = NumberType>
+        + ops::ShlAssign<usize>
         + ToBigUint
         + Zero
         + 'static,
-    for<'a> &'a NumberType: Shl<usize, Output = NumberType> + Shr<usize, Output = NumberType>,
+    for<'a> &'a NumberType:
+        ops::Shl<usize, Output = NumberType> + ops::Shr<usize, Output = NumberType>,
     BitVectorType: DynamicBitVectorTrait,
 {
     fn len(&mut self) -> &mut usize;
@@ -49,7 +48,7 @@ where
 
         let height = self.height();
         let (layers, zeros) = self.get_layers_and_zeros();
-        for (i, (layer, zero)) in zip(layers, zeros).enumerate() {
+        for (i, (layer, zero)) in iter::zip(layers, zeros).enumerate() {
             let bit = (value >> (height - i - 1) & NumberType::one()).is_one();
             layer.insert(index, bit)?;
             if bit {
@@ -72,7 +71,7 @@ where
 
         let (layers, zeros) = self.get_layers_and_zeros();
         let mut result = NumberType::zero();
-        for (layer, zero) in zip(layers, zeros) {
+        for (layer, zero) in iter::zip(layers, zeros) {
             let bit = layer.remove(index)?;
             result <<= 1;
             if bit {
@@ -105,26 +104,28 @@ where
 
 #[cfg(test)]
 mod tests {
+    use std::marker;
+
+    use num_bigint::BigUint;
+    use pyo3::Python;
+
     use super::*;
     use crate::traits::{
         bit_vector::dynamic_bit_vector::SampleDynamicBitVector, utils::bit_width::BitWidth,
     };
-    use num_bigint::BigUint;
-    use pyo3::Python;
-    use std::marker::PhantomData;
 
     struct SampleDynamicWaveletMatrix<NumberType> {
         layers: Vec<SampleDynamicBitVector>,
         zeros: Vec<usize>,
         height: usize,
         len: usize,
-        phantom: PhantomData<NumberType>,
+        phantom: marker::PhantomData<NumberType>,
     }
 
     impl<NumberType> SampleDynamicWaveletMatrix<NumberType>
     where
-        NumberType: BitAnd<NumberType, Output = NumberType> + BitWidth + Clone + One + Ord,
-        for<'a> &'a NumberType: Shr<usize, Output = NumberType>,
+        NumberType: ops::BitAnd<NumberType, Output = NumberType> + BitWidth + Clone + One + Ord,
+        for<'a> &'a NumberType: ops::Shr<usize, Output = NumberType>,
     {
         fn new(data: &Vec<NumberType>, max_bit: Option<usize>) -> PyResult<Self> {
             let mut values = data.clone();
@@ -162,7 +163,7 @@ mod tests {
                 zeros,
                 height,
                 len,
-                phantom: PhantomData,
+                phantom: marker::PhantomData,
             })
         }
     }
@@ -170,20 +171,21 @@ mod tests {
     impl<NumberType> WaveletMatrixTrait<NumberType, SampleDynamicBitVector>
         for SampleDynamicWaveletMatrix<NumberType>
     where
-        NumberType: BitAnd<NumberType, Output = NumberType>
-            + BitOr<NumberType, Output = NumberType>
-            + BitOrAssign
+        NumberType: ops::BitAnd<NumberType, Output = NumberType>
+            + ops::BitOr<NumberType, Output = NumberType>
+            + ops::BitOrAssign
             + BitWidth
             + Clone
             + One
             + Ord
-            + PartialEq
-            + Shl<usize, Output = NumberType>
-            + ShlAssign<usize>
+            + cmp::PartialEq
+            + ops::Shl<usize, Output = NumberType>
+            + ops::ShlAssign<usize>
             + ToBigUint
             + Zero
             + 'static,
-        for<'a> &'a NumberType: Shl<usize, Output = NumberType> + Shr<usize, Output = NumberType>,
+        for<'a> &'a NumberType:
+            ops::Shl<usize, Output = NumberType> + ops::Shr<usize, Output = NumberType>,
     {
         fn get_layers(&self) -> &[SampleDynamicBitVector] {
             &self.layers
@@ -205,20 +207,21 @@ mod tests {
     impl<NumberType> DynamicWaveletMatrixTrait<NumberType, SampleDynamicBitVector>
         for SampleDynamicWaveletMatrix<NumberType>
     where
-        NumberType: BitAnd<NumberType, Output = NumberType>
-            + BitOr<NumberType, Output = NumberType>
-            + BitOrAssign
+        NumberType: ops::BitAnd<NumberType, Output = NumberType>
+            + ops::BitOr<NumberType, Output = NumberType>
+            + ops::BitOrAssign
             + BitWidth
             + Clone
             + One
             + Ord
-            + PartialEq
-            + Shl<usize, Output = NumberType>
-            + ShlAssign<usize>
+            + cmp::PartialEq
+            + ops::Shl<usize, Output = NumberType>
+            + ops::ShlAssign<usize>
             + ToBigUint
             + Zero
             + 'static,
-        for<'a> &'a NumberType: Shl<usize, Output = NumberType> + Shr<usize, Output = NumberType>,
+        for<'a> &'a NumberType:
+            ops::Shl<usize, Output = NumberType> + ops::Shr<usize, Output = NumberType>,
     {
         fn len(&mut self) -> &mut usize {
             &mut self.len

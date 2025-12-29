@@ -1,11 +1,13 @@
-use crate::traits::bit_vector::bit_vector::BitVectorTrait;
+use std::iter;
+
 use num_integer::Integer;
 use num_traits::{One, Zero};
 use pyo3::{
     PyResult,
     exceptions::{PyIndexError, PyValueError},
 };
-use std::iter::once;
+
+use crate::traits::bit_vector::bit_vector::BitVectorTrait;
 
 type BlockType = u64;
 const SELECT_INDEX_INTERBVAL: usize = 64;
@@ -38,7 +40,7 @@ impl BitVector {
             })
             .collect();
         // Build the rank index structure.
-        let ranks: Vec<usize> = once(0usize)
+        let ranks: Vec<usize> = iter::once(0usize)
             .chain(blocks.iter().scan(0usize, |acc, block| {
                 *acc += block.count_ones() as usize;
                 Some(*acc)
