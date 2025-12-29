@@ -254,7 +254,7 @@ impl PyDynamicWaveletMatrix {
 
     /// Get all values in the Wavelet Matrix as a list.
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O(N log V)`  
     ///
@@ -262,7 +262,7 @@ impl PyDynamicWaveletMatrix {
     /// - `N` = length of the sequence  
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import DynamicWaveletMatrix
     /// >>> dwm = DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -294,7 +294,7 @@ impl PyDynamicWaveletMatrix {
 
     /// Access the value at the specified index.
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O((log N) (log V))`  
     ///
@@ -302,7 +302,7 @@ impl PyDynamicWaveletMatrix {
     /// - `N` = length of the sequence  
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import DynamicWaveletMatrix
     /// >>> dwm = DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -338,7 +338,7 @@ impl PyDynamicWaveletMatrix {
 
     /// Counts the occurrences of the given value in the range [0, end).
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O((log N) (log V))`  
     ///
@@ -346,7 +346,7 @@ impl PyDynamicWaveletMatrix {
     /// - `N` = length of the sequence  
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import DynamicWaveletMatrix
     /// >>> dwm = DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -385,7 +385,7 @@ impl PyDynamicWaveletMatrix {
 
     /// Finds the position of the k-th occurrence of the given value.
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O((log N) (log V))`  
     ///
@@ -393,7 +393,7 @@ impl PyDynamicWaveletMatrix {
     /// - `N` = length of the sequence  
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import DynamicWaveletMatrix
     /// >>> dwm = DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -432,7 +432,7 @@ impl PyDynamicWaveletMatrix {
 
     /// Find the k-th smallest value in the range [start, end) (1-indexed).
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O((log N) (log V))`  
     ///
@@ -440,7 +440,7 @@ impl PyDynamicWaveletMatrix {
     /// - `N` = length of the sequence  
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import DynamicWaveletMatrix
     /// >>> dwm = DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -488,7 +488,7 @@ impl PyDynamicWaveletMatrix {
 
     /// Finds the top-k most frequent elements in the range [start, end).
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O(L (log L) (log N) (log V))`  
     ///
@@ -497,7 +497,7 @@ impl PyDynamicWaveletMatrix {
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import DynamicWaveletMatrix
     /// >>> dwm = DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -554,7 +554,7 @@ impl PyDynamicWaveletMatrix {
 
     /// Computes the sum of values in the range [start, end).
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O(L (log N) (log V))`  
     ///
@@ -563,7 +563,7 @@ impl PyDynamicWaveletMatrix {
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import DynamicWaveletMatrix
     /// >>> dwm = DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -596,7 +596,7 @@ impl PyDynamicWaveletMatrix {
 
     /// Finds the intersection of values in the two ranges [start1, end1) and [start2, end2).
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O(L (log N) (log V))`  
     ///
@@ -605,7 +605,7 @@ impl PyDynamicWaveletMatrix {
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import DynamicWaveletMatrix
     /// >>> dwm = DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -662,7 +662,7 @@ impl PyDynamicWaveletMatrix {
 
     /// Counts the number of elements c in the range [start, end) such that lower <= c < upper.
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O((log N) (log V))`  
     ///
@@ -670,7 +670,7 @@ impl PyDynamicWaveletMatrix {
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import DynamicWaveletMatrix
     /// >>> dwm = DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -724,7 +724,7 @@ impl PyDynamicWaveletMatrix {
 
     /// Lists all elements c in the range [start, end) such that lower <= c < upper.
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O(L (log N) (log V))`  
     ///
@@ -734,7 +734,7 @@ impl PyDynamicWaveletMatrix {
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import DynamicWaveletMatrix
     /// >>> dwm = DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -798,7 +798,7 @@ impl PyDynamicWaveletMatrix {
 
     /// Finds the k largest values in the range [start, end).
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O(k (log N) (log V))`  
     ///
@@ -806,7 +806,7 @@ impl PyDynamicWaveletMatrix {
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import DynamicWaveletMatrix
     /// >>> dwm = DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -863,7 +863,7 @@ impl PyDynamicWaveletMatrix {
 
     /// Finds the k smallest values in the range [start, end).
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O(k (log N) (log V))`  
     ///
@@ -871,7 +871,7 @@ impl PyDynamicWaveletMatrix {
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import DynamicWaveletMatrix
     /// >>> dwm = DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -928,7 +928,7 @@ impl PyDynamicWaveletMatrix {
 
     /// Finds the maximum value c in the range [start, end) such that c < upper.
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O((log N) (log V))`  
     ///
@@ -936,7 +936,7 @@ impl PyDynamicWaveletMatrix {
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import DynamicWaveletMatrix
     /// >>> dwm = DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -979,7 +979,7 @@ impl PyDynamicWaveletMatrix {
 
     /// Finds the minimum value c in the range [start, end) such that lower <= c.
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O((log N) (log V))`  
     ///
@@ -987,7 +987,7 @@ impl PyDynamicWaveletMatrix {
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import DynamicWaveletMatrix
     /// >>> dwm = DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -1034,11 +1034,11 @@ impl PyDynamicWaveletMatrix {
 
     /// Returns the maximum bit length of the values stored in the Wavelet Matrix.
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O(1)`  
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import DynamicWaveletMatrix
     /// >>> dwm = DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -1059,7 +1059,7 @@ impl PyDynamicWaveletMatrix {
     /// Inserts a value at the specified index.  
     /// The bit width of the new value must not exceed max_bit.
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O((log N) (log V))`  
     ///
@@ -1067,7 +1067,7 @@ impl PyDynamicWaveletMatrix {
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import DynamicWaveletMatrix
     /// >>> dwm = DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0], max_bit=4)
@@ -1106,7 +1106,7 @@ impl PyDynamicWaveletMatrix {
 
     /// Removes and returns the value at the specified index.
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O((log N) (log V))`  
     ///
@@ -1114,7 +1114,7 @@ impl PyDynamicWaveletMatrix {
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import DynamicWaveletMatrix
     /// >>> dwm = DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -1153,7 +1153,7 @@ impl PyDynamicWaveletMatrix {
     /// Updates the value at the specified index and returns the old value.  
     /// The bit width of the new value must not exceed max_bit.
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O((log N) (log V))`  
     ///
@@ -1161,7 +1161,7 @@ impl PyDynamicWaveletMatrix {
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import DynamicWaveletMatrix
     /// >>> dwm = DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0], max_bit=4)

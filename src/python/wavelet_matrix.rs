@@ -188,7 +188,7 @@ impl PyWaveletMatrix {
 
     /// Get all values in the Wavelet Matrix as a list.
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O(N log V)`  
     ///
@@ -196,7 +196,7 @@ impl PyWaveletMatrix {
     /// - `N` = length of the sequence  
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Exapmles
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import WaveletMatrix
     /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -228,14 +228,14 @@ impl PyWaveletMatrix {
 
     /// Access the value at the specified index.
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O(log V)`  
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import WaveletMatrix
     /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -271,14 +271,14 @@ impl PyWaveletMatrix {
 
     /// Counts the occurrences of the given value in the range [0, end).
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O(log V)`  
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import WaveletMatrix
     /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -317,14 +317,14 @@ impl PyWaveletMatrix {
 
     /// Finds the position of the k-th occurrence of the given value.
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O(log V)` (amortized)
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import WaveletMatrix
     /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -363,14 +363,14 @@ impl PyWaveletMatrix {
 
     /// Find the k-th smallest value in the range [start, end) (1-indexed).
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O(log V)`  
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import WaveletMatrix
     /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -418,7 +418,7 @@ impl PyWaveletMatrix {
 
     /// Finds the top-k most frequent elements in the range [start, end).
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O(L (log L) (log V))`  
     ///
@@ -426,7 +426,7 @@ impl PyWaveletMatrix {
     /// - `L` = the number of distinct values in the range `[start, end)`
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import WaveletMatrix
     /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -483,7 +483,7 @@ impl PyWaveletMatrix {
 
     /// Computes the sum of values in the range [start, end).
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O(L log V)`  
     ///
@@ -492,7 +492,7 @@ impl PyWaveletMatrix {
     ///   that satisfy `lower <= c < upper`
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import WaveletMatrix
     /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -525,7 +525,7 @@ impl PyWaveletMatrix {
 
     /// Finds the intersection of values in the two ranges [start1, end1) and [start2, end2).
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O(L log V)`  
     ///
@@ -533,7 +533,7 @@ impl PyWaveletMatrix {
     /// - `L` = the number of distinct values `c` in the intersection of the two ranges
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import WaveletMatrix
     /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -590,14 +590,14 @@ impl PyWaveletMatrix {
 
     /// Counts the number of elements c in the range [start, end) such that lower <= c < upper.
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O(log V)`  
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import WaveletMatrix
     /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -651,7 +651,7 @@ impl PyWaveletMatrix {
 
     /// Lists all elements c in the range [start, end) such that lower <= c < upper.
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O(L log V)`  
     ///
@@ -660,7 +660,7 @@ impl PyWaveletMatrix {
     ///   that satisfy `lower <= c < upper`
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import WaveletMatrix
     /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -724,14 +724,14 @@ impl PyWaveletMatrix {
 
     /// Finds the k largest values in the range [start, end).
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O(k log V)`  
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import WaveletMatrix
     /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -788,14 +788,14 @@ impl PyWaveletMatrix {
 
     /// Finds the k smallest values in the range [start, end).
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O(k log V)`  
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import WaveletMatrix
     /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -852,14 +852,14 @@ impl PyWaveletMatrix {
 
     /// Finds the maximum value c in the range [start, end) such that c < upper.
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O(log V)`  
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import WaveletMatrix
     /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
@@ -902,14 +902,14 @@ impl PyWaveletMatrix {
 
     /// Finds the minimum value c in the range [start, end) such that lower <= c.
     ///
-    /// # Complexity
+    /// #### Complexity
     ///
     /// - Time: `O(log V)`  
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
     ///
-    /// # Examples
+    /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import WaveletMatrix
     /// >>> wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
