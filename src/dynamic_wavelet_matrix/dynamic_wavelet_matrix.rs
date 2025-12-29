@@ -1,4 +1,4 @@
-use std::{marker, ops};
+use std::{fmt, marker, ops};
 
 use num_bigint::ToBigUint;
 use num_traits::{One, Zero};
@@ -24,15 +24,17 @@ pub(crate) struct DynamicWaveletMatrix<NumberType> {
 impl<NumberType> DynamicWaveletMatrix<NumberType>
 where
     NumberType: ops::BitAnd<NumberType, Output = NumberType> + BitWidth + Clone + One + Ord,
-    for<'a> &'a NumberType: ops::Shr<usize, Output = NumberType>,
+    for<'a> &'a NumberType: ops::Shr<usize, Output = NumberType> + fmt::Display,
 {
     pub(crate) fn new(data: &[NumberType], max_bit: Option<usize>) -> PyResult<Self> {
         let mut values = data.to_owned();
         let max_width = values.iter().max().map_or(0usize, |max| max.bit_width());
         if max_bit.is_some_and(|max_bit| max_bit < max_width) {
-            return Err(PyValueError::new_err(
-                "max_bit is less than the maximum bit width of the data",
-            ));
+            return Err(PyValueError::new_err(format!(
+                "max_bit = {} is less than the maximum bit width of the data = {}",
+                max_bit.unwrap(),
+                max_width
+            )));
         }
         let height = max_bit.unwrap_or(max_width);
         let len = values.len();
@@ -120,7 +122,7 @@ where
         + Zero
         + 'static,
     for<'a> &'a NumberType:
-        ops::Shl<usize, Output = NumberType> + ops::Shr<usize, Output = NumberType>,
+        ops::Shl<usize, Output = NumberType> + ops::Shr<usize, Output = NumberType> + fmt::Display,
 {
     fn len(&mut self) -> &mut usize {
         &mut self.len
@@ -576,7 +578,7 @@ mod tests {
         wv_u8.insert(4, &5u8).unwrap();
         assert_eq!(
             wv_u8.insert(4, &8u8).unwrap_err().to_string(),
-            "ValueError: value exceeds the maximum value"
+            "ValueError: value = 8 exceeds the maximum value = 7"
         );
         assert_eq!(wv_u8.access(4).unwrap(), 5u8);
         assert_eq!(wv_u8.len(), 13);
@@ -585,7 +587,7 @@ mod tests {
         wv_biguint.insert(4, &5u32.into()).unwrap();
         assert_eq!(
             wv_biguint.insert(4, &8u32.into()).unwrap_err().to_string(),
-            "ValueError: value exceeds the maximum value"
+            "ValueError: value = 8 exceeds the maximum value = 7"
         );
         assert_eq!(wv_biguint.access(4).unwrap(), 5u32.into());
         assert_eq!(wv_biguint.len(), 13);
@@ -614,7 +616,7 @@ mod tests {
         wv_u8.update(4, &5u8).unwrap();
         assert_eq!(
             wv_u8.update(4, &8u8).unwrap_err().to_string(),
-            "ValueError: value exceeds the maximum value"
+            "ValueError: value = 8 exceeds the maximum value = 7"
         );
         assert_eq!(wv_u8.access(4).unwrap(), 5u8);
         assert_eq!(wv_u8.len(), 12);
@@ -623,7 +625,7 @@ mod tests {
         wv_biguint.update(4, &5u32.into()).unwrap();
         assert_eq!(
             wv_biguint.update(4, &8u32.into()).unwrap_err().to_string(),
-            "ValueError: value exceeds the maximum value"
+            "ValueError: value = 8 exceeds the maximum value = 7"
         );
         assert_eq!(wv_biguint.access(4).unwrap(), 5u32.into());
         assert_eq!(wv_biguint.len(), 12);
