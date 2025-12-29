@@ -167,6 +167,16 @@ impl PyDynamicWaveletMatrix {
         }
     }
 
+    fn __setitem__(
+        &mut self,
+        py: Python<'_>,
+        index: &Bound<'_, PyInt>,
+        value: &Bound<'_, PyInt>,
+    ) -> PyResult<()> {
+        self.update(py, index, value)?;
+        Ok(())
+    }
+
     fn __str__(&self, py: Python<'_>) -> PyResult<String> {
         py.detach(move || match &self.inner {
             DynamicWaveletMatrixEnum::U8(wm) => Ok(format!(
