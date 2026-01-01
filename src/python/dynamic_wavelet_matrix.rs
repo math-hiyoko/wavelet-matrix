@@ -1204,3 +1204,1362 @@ impl PyDynamicWaveletMatrix {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pyo3::Python;
+
+    #[test]
+    fn test_wavelet_matrix_u8() {
+        Python::attach(|py| {
+            let elements = vec![5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0];
+            let pylist = PyList::new(py, &elements).unwrap();
+            let pysequence = pylist.cast::<PySequence>().unwrap();
+            let mut wm = PyDynamicWaveletMatrix::new(py, pysequence, None).unwrap();
+
+            assert_eq!(wm.__len__(py).unwrap(), elements.len());
+            assert_eq!(
+                wm.__getitem__(py, &PyInt::new(py, 4))
+                    .unwrap()
+                    .extract::<u8>(py)
+                    .unwrap(),
+                elements[4]
+            );
+            assert_eq!(
+                wm.__getitem__(py, &PySlice::new(py, 2, 6, 1))
+                    .unwrap()
+                    .extract::<Vec<u8>>(py)
+                    .unwrap(),
+                elements[2..6].to_vec()
+            );
+            assert_eq!(
+                wm.__str__(py).unwrap(),
+                format!(
+                    "DynamicWaveletMatrix({:?}, max_bit={})",
+                    elements,
+                    wm.max_bit(py).unwrap()
+                )
+            );
+            assert_eq!(
+                wm.__repr__(py).unwrap(),
+                format!(
+                    "DynamicWaveletMatrix({:?}, max_bit={})",
+                    elements,
+                    wm.max_bit(py).unwrap()
+                )
+            );
+            assert_eq!(
+                wm.__copy__(py).unwrap().__str__(py).unwrap(),
+                format!(
+                    "DynamicWaveletMatrix({:?}, max_bit={})",
+                    elements,
+                    wm.max_bit(py).unwrap()
+                )
+            );
+            assert_eq!(
+                wm.values(py).unwrap().extract::<Vec<u8>>(py).unwrap(),
+                elements
+            );
+            assert_eq!(
+                wm.access(py, &PyInt::new(py, 3))
+                    .unwrap()
+                    .extract::<u8>(py)
+                    .unwrap(),
+                elements[3]
+            );
+            assert_eq!(
+                wm.rank(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 9))
+                    .unwrap(),
+                4
+            );
+            assert_eq!(
+                wm.select(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 4))
+                    .unwrap(),
+                Some(6usize)
+            );
+            assert_eq!(
+                wm.quantile(
+                    py,
+                    &PyInt::new(py, 2),
+                    &PyInt::new(py, 12),
+                    &PyInt::new(py, 8)
+                )
+                .unwrap()
+                .extract::<u8>(py)
+                .unwrap(),
+                elements[2]
+            );
+            assert_eq!(
+                wm.topk(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 10),
+                    Some(PyInt::new(py, 2))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_sum(py, &PyInt::new(py, 2), &PyInt::new(py, 8))
+                    .unwrap()
+                    .extract::<u8>(py)
+                    .unwrap(),
+                24
+            );
+            assert_eq!(
+                wm.range_intersection(
+                    py,
+                    &PyInt::new(py, 0),
+                    &PyInt::new(py, 6),
+                    &PyInt::new(py, 6),
+                    &PyInt::new(py, 11)
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_freq(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, elements[1])),
+                    Some(PyInt::new(py, elements[7]))
+                )
+                .unwrap(),
+                4
+            );
+            assert_eq!(
+                wm.range_list(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, elements[1])),
+                    Some(PyInt::new(py, elements[7]))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_maxk(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, 2))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_mink(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, 2))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.prev_value(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, 7))
+                )
+                .unwrap()
+                .unwrap()
+                .extract::<u8>(py)
+                .unwrap(),
+                elements[7]
+            );
+            assert_eq!(
+                wm.next_value(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, 3))
+                )
+                .unwrap()
+                .unwrap()
+                .extract::<u8>(py)
+                .unwrap(),
+                elements[1]
+            );
+            assert!(
+                wm.insert(py, &PyInt::new(py, 4), &PyInt::new(py, 5))
+                    .is_ok()
+            );
+            assert_eq!(
+                wm.remove(py, &PyInt::new(py, 4))
+                    .unwrap()
+                    .extract::<u8>(py)
+                    .unwrap(),
+                5
+            );
+            assert_eq!(
+                wm.update(py, &PyInt::new(py, 4), &PyInt::new(py, 5))
+                    .unwrap()
+                    .extract::<u8>(py)
+                    .unwrap(),
+                elements[4]
+            );
+        });
+    }
+
+    #[test]
+    fn test_wavelet_matrix_u16() {
+        Python::attach(|py| {
+            let elements = vec![
+                5 << 8,
+                4 << 8,
+                5 << 8,
+                5 << 8,
+                2 << 8,
+                1 << 8,
+                5 << 8,
+                6 << 8,
+                1 << 8,
+                3 << 8,
+                5 << 8,
+                0 << 8,
+            ];
+            let pylist = PyList::new(py, &elements).unwrap();
+            let pysequence = pylist.cast::<PySequence>().unwrap();
+            let mut wm = PyDynamicWaveletMatrix::new(py, pysequence, None).unwrap();
+
+            assert_eq!(wm.__len__(py).unwrap(), elements.len());
+            assert_eq!(
+                wm.__getitem__(py, &PyInt::new(py, 4))
+                    .unwrap()
+                    .extract::<u16>(py)
+                    .unwrap(),
+                elements[4]
+            );
+            assert_eq!(
+                wm.__getitem__(py, &PySlice::new(py, 2, 6, 1))
+                    .unwrap()
+                    .extract::<Vec<u16>>(py)
+                    .unwrap(),
+                elements[2..6].to_vec()
+            );
+            assert_eq!(
+                wm.__str__(py).unwrap(),
+                format!(
+                    "DynamicWaveletMatrix({:?}, max_bit={})",
+                    elements,
+                    wm.max_bit(py).unwrap()
+                )
+            );
+            assert_eq!(
+                wm.__repr__(py).unwrap(),
+                format!(
+                    "DynamicWaveletMatrix({:?}, max_bit={})",
+                    elements,
+                    wm.max_bit(py).unwrap()
+                )
+            );
+            assert_eq!(
+                wm.__copy__(py).unwrap().__str__(py).unwrap(),
+                format!(
+                    "DynamicWaveletMatrix({:?}, max_bit={})",
+                    elements,
+                    wm.max_bit(py).unwrap()
+                )
+            );
+            assert_eq!(
+                wm.values(py).unwrap().extract::<Vec<u16>>(py).unwrap(),
+                elements
+            );
+            assert_eq!(
+                wm.access(py, &PyInt::new(py, 3))
+                    .unwrap()
+                    .extract::<u16>(py)
+                    .unwrap(),
+                elements[3]
+            );
+            assert_eq!(
+                wm.rank(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 9))
+                    .unwrap(),
+                4
+            );
+            assert_eq!(
+                wm.select(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 4))
+                    .unwrap(),
+                Some(6usize)
+            );
+            assert_eq!(
+                wm.quantile(
+                    py,
+                    &PyInt::new(py, 2),
+                    &PyInt::new(py, 12),
+                    &PyInt::new(py, 8)
+                )
+                .unwrap()
+                .extract::<u16>(py)
+                .unwrap(),
+                elements[2]
+            );
+            assert_eq!(
+                wm.topk(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 10),
+                    Some(PyInt::new(py, 2))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_sum(py, &PyInt::new(py, 2), &PyInt::new(py, 8))
+                    .unwrap()
+                    .extract::<u16>(py)
+                    .unwrap(),
+                24 << 8
+            );
+            assert_eq!(
+                wm.range_intersection(
+                    py,
+                    &PyInt::new(py, 0),
+                    &PyInt::new(py, 6),
+                    &PyInt::new(py, 6),
+                    &PyInt::new(py, 11)
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_freq(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, elements[1])),
+                    Some(PyInt::new(py, elements[7]))
+                )
+                .unwrap(),
+                4
+            );
+            assert_eq!(
+                wm.range_list(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, elements[1])),
+                    Some(PyInt::new(py, elements[7]))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_maxk(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, 2))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_mink(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, 2))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.prev_value(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, 7 << 8))
+                )
+                .unwrap()
+                .unwrap()
+                .extract::<u16>(py)
+                .unwrap(),
+                elements[7]
+            );
+            assert_eq!(
+                wm.next_value(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, 3 << 8))
+                )
+                .unwrap()
+                .unwrap()
+                .extract::<u16>(py)
+                .unwrap(),
+                elements[1]
+            );
+            assert!(
+                wm.insert(py, &PyInt::new(py, 4), &PyInt::new(py, 5))
+                    .is_ok()
+            );
+            assert_eq!(
+                wm.remove(py, &PyInt::new(py, 4))
+                    .unwrap()
+                    .extract::<u16>(py)
+                    .unwrap(),
+                5
+            );
+            assert_eq!(
+                wm.update(py, &PyInt::new(py, 4), &PyInt::new(py, 5))
+                    .unwrap()
+                    .extract::<u16>(py)
+                    .unwrap(),
+                elements[4]
+            );
+        });
+    }
+
+    #[test]
+    fn test_wavelet_matrix_u32() {
+        Python::attach(|py| {
+            let elements = vec![
+                5 << 16,
+                4 << 16,
+                5 << 16,
+                5 << 16,
+                2 << 16,
+                1 << 16,
+                5 << 16,
+                6 << 16,
+                1 << 16,
+                3 << 16,
+                5 << 16,
+                0 << 16,
+            ];
+            let pylist = PyList::new(py, &elements).unwrap();
+            let pysequence = pylist.cast::<PySequence>().unwrap();
+            let mut wm = PyDynamicWaveletMatrix::new(py, pysequence, None).unwrap();
+
+            assert_eq!(wm.__len__(py).unwrap(), elements.len());
+            assert_eq!(
+                wm.__getitem__(py, &PyInt::new(py, 4))
+                    .unwrap()
+                    .extract::<u32>(py)
+                    .unwrap(),
+                elements[4]
+            );
+            assert_eq!(
+                wm.__getitem__(py, &PySlice::new(py, 2, 6, 1))
+                    .unwrap()
+                    .extract::<Vec<u32>>(py)
+                    .unwrap(),
+                elements[2..6].to_vec()
+            );
+            assert_eq!(
+                wm.__str__(py).unwrap(),
+                format!(
+                    "DynamicWaveletMatrix({:?}, max_bit={})",
+                    elements,
+                    wm.max_bit(py).unwrap()
+                )
+            );
+            assert_eq!(
+                wm.__repr__(py).unwrap(),
+                format!(
+                    "DynamicWaveletMatrix({:?}, max_bit={})",
+                    elements,
+                    wm.max_bit(py).unwrap()
+                )
+            );
+            assert_eq!(
+                wm.__copy__(py).unwrap().__str__(py).unwrap(),
+                format!(
+                    "DynamicWaveletMatrix({:?}, max_bit={})",
+                    elements,
+                    wm.max_bit(py).unwrap()
+                )
+            );
+            assert_eq!(
+                wm.values(py).unwrap().extract::<Vec<u32>>(py).unwrap(),
+                elements
+            );
+            assert_eq!(
+                wm.access(py, &PyInt::new(py, 3))
+                    .unwrap()
+                    .extract::<u32>(py)
+                    .unwrap(),
+                elements[3]
+            );
+            assert_eq!(
+                wm.rank(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 9))
+                    .unwrap(),
+                4
+            );
+            assert_eq!(
+                wm.select(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 4))
+                    .unwrap(),
+                Some(6usize)
+            );
+            assert_eq!(
+                wm.quantile(
+                    py,
+                    &PyInt::new(py, 2),
+                    &PyInt::new(py, 12),
+                    &PyInt::new(py, 8)
+                )
+                .unwrap()
+                .extract::<u32>(py)
+                .unwrap(),
+                elements[2]
+            );
+            assert_eq!(
+                wm.topk(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 10),
+                    Some(PyInt::new(py, 2))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_sum(py, &PyInt::new(py, 2), &PyInt::new(py, 8))
+                    .unwrap()
+                    .extract::<u32>(py)
+                    .unwrap(),
+                24 << 16
+            );
+            assert_eq!(
+                wm.range_intersection(
+                    py,
+                    &PyInt::new(py, 0),
+                    &PyInt::new(py, 6),
+                    &PyInt::new(py, 6),
+                    &PyInt::new(py, 11)
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_freq(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, elements[1])),
+                    Some(PyInt::new(py, elements[7]))
+                )
+                .unwrap(),
+                4
+            );
+            assert_eq!(
+                wm.range_list(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, elements[1])),
+                    Some(PyInt::new(py, elements[7]))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_maxk(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, 2))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_mink(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, 2))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.prev_value(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, 7 << 16))
+                )
+                .unwrap()
+                .unwrap()
+                .extract::<u32>(py)
+                .unwrap(),
+                elements[7]
+            );
+            assert_eq!(
+                wm.next_value(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, 3 << 16))
+                )
+                .unwrap()
+                .unwrap()
+                .extract::<u32>(py)
+                .unwrap(),
+                elements[1]
+            );
+            assert!(
+                wm.insert(py, &PyInt::new(py, 4), &PyInt::new(py, 5))
+                    .is_ok()
+            );
+            assert_eq!(
+                wm.remove(py, &PyInt::new(py, 4))
+                    .unwrap()
+                    .extract::<u32>(py)
+                    .unwrap(),
+                5
+            );
+            assert_eq!(
+                wm.update(py, &PyInt::new(py, 4), &PyInt::new(py, 5))
+                    .unwrap()
+                    .extract::<u32>(py)
+                    .unwrap(),
+                elements[4]
+            );
+        });
+    }
+
+    #[test]
+    fn test_wavelet_matrix_u64() {
+        Python::attach(|py| {
+            let elements = vec![
+                5 << 32,
+                4 << 32,
+                5 << 32,
+                5 << 32,
+                2 << 32,
+                1 << 32,
+                5 << 32,
+                6 << 32,
+                1 << 32,
+                3 << 32,
+                5 << 32,
+                0 << 32,
+            ];
+            let pylist = PyList::new(py, &elements).unwrap();
+            let pysequence = pylist.cast::<PySequence>().unwrap();
+            let mut wm = PyDynamicWaveletMatrix::new(py, pysequence, None).unwrap();
+
+            assert_eq!(wm.__len__(py).unwrap(), elements.len());
+            assert_eq!(
+                wm.__getitem__(py, &PyInt::new(py, 4))
+                    .unwrap()
+                    .extract::<u64>(py)
+                    .unwrap(),
+                elements[4]
+            );
+            assert_eq!(
+                wm.__getitem__(py, &PySlice::new(py, 2, 6, 1))
+                    .unwrap()
+                    .extract::<Vec<u64>>(py)
+                    .unwrap(),
+                elements[2..6].to_vec()
+            );
+            assert_eq!(
+                wm.__str__(py).unwrap(),
+                format!(
+                    "DynamicWaveletMatrix({:?}, max_bit={})",
+                    elements,
+                    wm.max_bit(py).unwrap()
+                )
+            );
+            assert_eq!(
+                wm.__repr__(py).unwrap(),
+                format!(
+                    "DynamicWaveletMatrix({:?}, max_bit={})",
+                    elements,
+                    wm.max_bit(py).unwrap()
+                )
+            );
+            assert_eq!(
+                wm.__copy__(py).unwrap().__str__(py).unwrap(),
+                format!(
+                    "DynamicWaveletMatrix({:?}, max_bit={})",
+                    elements,
+                    wm.max_bit(py).unwrap()
+                )
+            );
+            assert_eq!(
+                wm.values(py).unwrap().extract::<Vec<u64>>(py).unwrap(),
+                elements
+            );
+            assert_eq!(
+                wm.access(py, &PyInt::new(py, 3))
+                    .unwrap()
+                    .extract::<u64>(py)
+                    .unwrap(),
+                elements[3]
+            );
+            assert_eq!(
+                wm.rank(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 9))
+                    .unwrap(),
+                4
+            );
+            assert_eq!(
+                wm.select(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 4))
+                    .unwrap(),
+                Some(6usize)
+            );
+            assert_eq!(
+                wm.quantile(
+                    py,
+                    &PyInt::new(py, 2),
+                    &PyInt::new(py, 12),
+                    &PyInt::new(py, 8)
+                )
+                .unwrap()
+                .extract::<u64>(py)
+                .unwrap(),
+                elements[2]
+            );
+            assert_eq!(
+                wm.topk(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 10),
+                    Some(PyInt::new(py, 2))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_sum(py, &PyInt::new(py, 2), &PyInt::new(py, 8))
+                    .unwrap()
+                    .extract::<u64>(py)
+                    .unwrap(),
+                24 << 32
+            );
+            assert_eq!(
+                wm.range_intersection(
+                    py,
+                    &PyInt::new(py, 0),
+                    &PyInt::new(py, 6),
+                    &PyInt::new(py, 6),
+                    &PyInt::new(py, 11)
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_freq(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, elements[1])),
+                    Some(PyInt::new(py, elements[7]))
+                )
+                .unwrap(),
+                4
+            );
+            assert_eq!(
+                wm.range_list(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, elements[1])),
+                    Some(PyInt::new(py, elements[7]))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_maxk(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, 2))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_mink(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, 2))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.prev_value(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, 7u64 << 32))
+                )
+                .unwrap()
+                .unwrap()
+                .extract::<u64>(py)
+                .unwrap(),
+                elements[7]
+            );
+            assert_eq!(
+                wm.next_value(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, 3u64 << 32))
+                )
+                .unwrap()
+                .unwrap()
+                .extract::<u64>(py)
+                .unwrap(),
+                elements[1]
+            );
+            assert!(
+                wm.insert(py, &PyInt::new(py, 4), &PyInt::new(py, 5))
+                    .is_ok()
+            );
+            assert_eq!(
+                wm.remove(py, &PyInt::new(py, 4))
+                    .unwrap()
+                    .extract::<u64>(py)
+                    .unwrap(),
+                5
+            );
+            assert_eq!(
+                wm.update(py, &PyInt::new(py, 4), &PyInt::new(py, 5))
+                    .unwrap()
+                    .extract::<u64>(py)
+                    .unwrap(),
+                elements[4]
+            );
+        });
+    }
+
+    #[test]
+    fn test_wavelet_matrix_u128() {
+        Python::attach(|py| {
+            let elements = vec![
+                5 << 64,
+                4 << 64,
+                5 << 64,
+                5 << 64,
+                2 << 64,
+                1 << 64,
+                5 << 64,
+                6 << 64,
+                1 << 64,
+                3 << 64,
+                5 << 64,
+                0 << 64,
+            ];
+            let pylist = PyList::new(py, &elements).unwrap();
+            let pysequence = pylist.cast::<PySequence>().unwrap();
+            let mut wm = PyDynamicWaveletMatrix::new(py, pysequence, None).unwrap();
+
+            assert_eq!(wm.__len__(py).unwrap(), elements.len());
+            assert_eq!(
+                wm.__getitem__(py, &PyInt::new(py, 4))
+                    .unwrap()
+                    .extract::<u128>(py)
+                    .unwrap(),
+                elements[4]
+            );
+            assert_eq!(
+                wm.__getitem__(py, &PySlice::new(py, 2, 6, 1))
+                    .unwrap()
+                    .extract::<Vec<u128>>(py)
+                    .unwrap(),
+                elements[2..6].to_vec()
+            );
+            assert_eq!(
+                wm.__str__(py).unwrap(),
+                format!(
+                    "DynamicWaveletMatrix({:?}, max_bit={})",
+                    elements,
+                    wm.max_bit(py).unwrap()
+                )
+            );
+            assert_eq!(
+                wm.__repr__(py).unwrap(),
+                format!(
+                    "DynamicWaveletMatrix({:?}, max_bit={})",
+                    elements,
+                    wm.max_bit(py).unwrap()
+                )
+            );
+            assert_eq!(
+                wm.__copy__(py).unwrap().__str__(py).unwrap(),
+                format!(
+                    "DynamicWaveletMatrix({:?}, max_bit={})",
+                    elements,
+                    wm.max_bit(py).unwrap()
+                )
+            );
+            assert_eq!(
+                wm.values(py).unwrap().extract::<Vec<u128>>(py).unwrap(),
+                elements
+            );
+            assert_eq!(
+                wm.access(py, &PyInt::new(py, 3))
+                    .unwrap()
+                    .extract::<u128>(py)
+                    .unwrap(),
+                elements[3]
+            );
+            assert_eq!(
+                wm.rank(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 9))
+                    .unwrap(),
+                4
+            );
+            assert_eq!(
+                wm.select(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 4))
+                    .unwrap(),
+                Some(6usize)
+            );
+            assert_eq!(
+                wm.quantile(
+                    py,
+                    &PyInt::new(py, 2),
+                    &PyInt::new(py, 12),
+                    &PyInt::new(py, 8)
+                )
+                .unwrap()
+                .extract::<u128>(py)
+                .unwrap(),
+                elements[2]
+            );
+            assert_eq!(
+                wm.topk(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 10),
+                    Some(PyInt::new(py, 2))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_sum(py, &PyInt::new(py, 2), &PyInt::new(py, 8))
+                    .unwrap()
+                    .extract::<u128>(py)
+                    .unwrap(),
+                24 << 64
+            );
+            assert_eq!(
+                wm.range_intersection(
+                    py,
+                    &PyInt::new(py, 0),
+                    &PyInt::new(py, 6),
+                    &PyInt::new(py, 6),
+                    &PyInt::new(py, 11)
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_freq(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, elements[1])),
+                    Some(PyInt::new(py, elements[7]))
+                )
+                .unwrap(),
+                4
+            );
+            assert_eq!(
+                wm.range_list(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, elements[1])),
+                    Some(PyInt::new(py, elements[7]))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_maxk(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, 2))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_mink(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, 2))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.prev_value(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, 7u128 << 64))
+                )
+                .unwrap()
+                .unwrap()
+                .extract::<u128>(py)
+                .unwrap(),
+                elements[7]
+            );
+            assert_eq!(
+                wm.next_value(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, 3u128 << 64))
+                )
+                .unwrap()
+                .unwrap()
+                .extract::<u128>(py)
+                .unwrap(),
+                elements[1]
+            );
+            assert!(
+                wm.insert(py, &PyInt::new(py, 4), &PyInt::new(py, 5))
+                    .is_ok()
+            );
+            assert_eq!(
+                wm.remove(py, &PyInt::new(py, 4))
+                    .unwrap()
+                    .extract::<u128>(py)
+                    .unwrap(),
+                5
+            );
+            assert_eq!(
+                wm.update(py, &PyInt::new(py, 4), &PyInt::new(py, 5))
+                    .unwrap()
+                    .extract::<u128>(py)
+                    .unwrap(),
+                elements[4]
+            );
+        });
+    }
+
+    #[test]
+    fn test_wavelet_matrix_biguint() {
+        Python::attach(|py| {
+            let elements = vec![
+                BigUint::from(5u32) << 128,
+                BigUint::from(4u32) << 128,
+                BigUint::from(5u32) << 128,
+                BigUint::from(5u32) << 128,
+                BigUint::from(2u32) << 128,
+                BigUint::from(1u32) << 128,
+                BigUint::from(5u32) << 128,
+                BigUint::from(6u32) << 128,
+                BigUint::from(1u32) << 128,
+                BigUint::from(3u32) << 128,
+                BigUint::from(5u32) << 128,
+                BigUint::from(0u32) << 128,
+            ];
+            let pylist = elements.clone().into_pyobject(py).unwrap();
+            let pysequence = pylist.cast::<PySequence>().unwrap();
+            let mut wm = PyDynamicWaveletMatrix::new(py, pysequence, None).unwrap();
+
+            assert_eq!(wm.__len__(py).unwrap(), elements.len());
+            assert_eq!(
+                wm.__getitem__(py, &PyInt::new(py, 4))
+                    .unwrap()
+                    .extract::<BigUint>(py)
+                    .unwrap(),
+                elements[4]
+            );
+            assert_eq!(
+                wm.__getitem__(py, &PySlice::new(py, 2, 6, 1))
+                    .unwrap()
+                    .extract::<Vec<BigUint>>(py)
+                    .unwrap(),
+                elements[2..6].to_vec()
+            );
+            assert_eq!(
+                wm.__str__(py).unwrap(),
+                format!(
+                    "DynamicWaveletMatrix({:?}, max_bit={})",
+                    elements,
+                    wm.max_bit(py).unwrap()
+                )
+            );
+            assert_eq!(
+                wm.__repr__(py).unwrap(),
+                format!(
+                    "DynamicWaveletMatrix({:?}, max_bit={})",
+                    elements,
+                    wm.max_bit(py).unwrap()
+                )
+            );
+            assert_eq!(
+                wm.__copy__(py).unwrap().__str__(py).unwrap(),
+                format!(
+                    "DynamicWaveletMatrix({:?}, max_bit={})",
+                    elements,
+                    wm.max_bit(py).unwrap()
+                )
+            );
+            assert_eq!(
+                wm.values(py).unwrap().extract::<Vec<BigUint>>(py).unwrap(),
+                elements
+            );
+            assert_eq!(
+                wm.access(py, &PyInt::new(py, 3))
+                    .unwrap()
+                    .extract::<BigUint>(py)
+                    .unwrap(),
+                elements[3]
+            );
+            assert_eq!(
+                wm.rank(
+                    py,
+                    &elements[0].clone().into_pyobject(py).unwrap(),
+                    &PyInt::new(py, 9)
+                )
+                .unwrap(),
+                4
+            );
+            assert_eq!(
+                wm.select(
+                    py,
+                    &elements[0].clone().into_pyobject(py).unwrap(),
+                    &PyInt::new(py, 4)
+                )
+                .unwrap(),
+                Some(6usize)
+            );
+            assert_eq!(
+                wm.quantile(
+                    py,
+                    &PyInt::new(py, 2),
+                    &PyInt::new(py, 12),
+                    &PyInt::new(py, 8)
+                )
+                .unwrap()
+                .extract::<BigUint>(py)
+                .unwrap(),
+                elements[2]
+            );
+            assert_eq!(
+                wm.topk(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 10),
+                    Some(PyInt::new(py, 2))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_sum(py, &PyInt::new(py, 2), &PyInt::new(py, 8))
+                    .unwrap()
+                    .extract::<BigUint>(py)
+                    .unwrap(),
+                BigUint::from(24u32) << 128
+            );
+            assert_eq!(
+                wm.range_intersection(
+                    py,
+                    &PyInt::new(py, 0),
+                    &PyInt::new(py, 6),
+                    &PyInt::new(py, 6),
+                    &PyInt::new(py, 11)
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_freq(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(elements[1].clone().into_pyobject(py).unwrap()),
+                    Some(elements[7].clone().into_pyobject(py).unwrap())
+                )
+                .unwrap(),
+                4
+            );
+            assert_eq!(
+                wm.range_list(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(elements[1].clone().into_pyobject(py).unwrap()),
+                    Some(elements[7].clone().into_pyobject(py).unwrap())
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_maxk(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, 2))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.range_mink(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(PyInt::new(py, 2))
+                )
+                .unwrap()
+                .extract::<Vec<Py<PyDict>>>(py)
+                .unwrap()
+                .len(),
+                2
+            );
+            assert_eq!(
+                wm.prev_value(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(
+                        (BigUint::from(7u128) << 128usize)
+                            .into_pyobject(py)
+                            .unwrap()
+                    )
+                )
+                .unwrap()
+                .unwrap()
+                .extract::<BigUint>(py)
+                .unwrap(),
+                elements[7]
+            );
+            assert_eq!(
+                wm.next_value(
+                    py,
+                    &PyInt::new(py, 1),
+                    &PyInt::new(py, 9),
+                    Some(
+                        (BigUint::from(3u128) << 128usize)
+                            .into_pyobject(py)
+                            .unwrap()
+                    )
+                )
+                .unwrap()
+                .unwrap()
+                .extract::<BigUint>(py)
+                .unwrap(),
+                elements[1]
+            );
+            assert!(
+                wm.insert(py, &PyInt::new(py, 4), &PyInt::new(py, 5))
+                    .is_ok()
+            );
+            assert_eq!(
+                wm.remove(py, &PyInt::new(py, 4))
+                    .unwrap()
+                    .extract::<BigUint>(py)
+                    .unwrap(),
+                BigUint::from(5u32)
+            );
+            assert_eq!(
+                wm.update(py, &PyInt::new(py, 4), &PyInt::new(py, 5))
+                    .unwrap()
+                    .extract::<BigUint>(py)
+                    .unwrap(),
+                elements[4]
+            );
+        });
+    }
+}

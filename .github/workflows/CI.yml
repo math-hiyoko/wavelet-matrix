@@ -197,7 +197,7 @@ jobs:
           cargo test --all --release
           cargo llvm-cov \
             --workspace \
-            --ignore-filename-regex '(src/lib\.rs|src/python/)' \
+            --ignore-filename-regex 'src/lib\.rs' \
             --codecov \
             --output-path codecov.json
       - name: Upload coverage reports to Codecov
