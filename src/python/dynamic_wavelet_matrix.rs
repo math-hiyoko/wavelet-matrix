@@ -30,7 +30,7 @@ enum DynamicWaveletMatrixEnum {
 /// It can handle integers of varying bit widths, automatically selecting
 /// the appropriate internal representation based on the input data.
 #[derive(Clone)]
-#[pyclass(unsendable, name = "DynamicWaveletMatrix")]
+#[pyclass(name = "DynamicWaveletMatrix")]
 pub(crate) struct PyDynamicWaveletMatrix {
     inner: DynamicWaveletMatrixEnum,
 }

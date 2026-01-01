@@ -27,7 +27,7 @@ enum WaveletMatrixEnum {
 /// This class supports various integer types, automatically selecting
 /// the appropriate internal representation based on the input data.  
 #[derive(Clone)]
-#[pyclass(unsendable, name = "WaveletMatrix")]
+#[pyclass(name = "WaveletMatrix")]
 pub(crate) struct PyWaveletMatrix {
     inner: WaveletMatrixEnum,
 }
