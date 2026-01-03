@@ -49,16 +49,6 @@ jobs:
           args: --release --out dist --find-interpreter
           sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
           manylinux: auto
-      - name: Install packages
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install wavelet-matrix \
-            --no-index \
-            --find-links dist \
-            --only-binary=:all:
-          python -m pip install pytest
-      - name: Run tests
-        run: pytest --benchmark-skip
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -91,16 +81,6 @@ jobs:
           args: --release --out dist --find-interpreter
           sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
           manylinux: musllinux_1_2
-      - name: Install packages
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install wavelet-matrix \
-            --no-index \
-            --find-links dist \
-            --only-binary=:all:
-          python -m pip install pytest
-      - name: Run tests
-        run: pytest --benchmark-skip
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -129,13 +109,6 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
-      - name: Install packages
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install wavelet-matrix --no-index --find-links dist --only-binary=:all:
-          python -m pip install pytest
-      - name: Run tests
-        run: pytest --benchmark-skip
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -163,16 +136,6 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: --release --out dist --find-interpreter
           sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
-      - name: Install packages
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install wavelet-matrix \
-            --no-index \
-            --find-links dist \
-            --only-binary=:all:
-          python -m pip install pytest
-      - name: Run tests
-        run: pytest --benchmark-skip
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -192,16 +155,6 @@ jobs:
         with:
           command: sdist
           args: --out dist
-      - name: Install packages
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install wavelet-matrix \
-            --no-index \
-            --find-links dist \
-            --only-binary=:all:
-          python -m pip install pytest
-      - name: Run tests
-        run: pytest --benchmark-skip
       - name: Upload sdist
         uses: actions/upload-artifact@v4
         with:
@@ -239,6 +192,8 @@ jobs:
           python-version: 3.x
       - name: Install packages
         run: python -m pip install -e .[dev]
+      - name: Run tests
+        run: pytest --benchmark-skip
       - name: Docs check
         run: |
           pdoc wavelet_matrix \
@@ -255,7 +210,6 @@ jobs:
         run: ruff check
 
   python-benchmark:
-    needs: linux
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
@@ -272,19 +226,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - name: Download linux wheels artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: wheels-linux-x86_64
-          path: dist
       - name: Install packages
         run: |
           python -m pip install --upgrade pip
-          python -m pip install wavelet-matrix \
-            --no-index \
-            --find-links dist \
-            --only-binary=:all:
-          python -m pip install pytest pytest-benchmark
+          python -m pip install -e .[dev]
       - name: Run benchmarks
         run: pytest --benchmark-only
 
