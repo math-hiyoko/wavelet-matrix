@@ -234,7 +234,6 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
   python-test:
-    needs: linux
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
