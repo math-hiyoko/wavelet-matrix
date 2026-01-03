@@ -282,7 +282,7 @@ mod tests {
     fn test_all_zero() {
         Python::initialize();
 
-        let wv_u8 = DynamicWaveletMatrix::<u8>::new(&vec![0u8; 64], None).unwrap();
+        let wv_u8 = DynamicWaveletMatrix::<u8>::new(&[0u8; 64], None).unwrap();
         assert_eq!(wv_u8.len(), 64);
         assert_eq!(wv_u8.height(), 0);
         assert_eq!(wv_u8.values().unwrap(), vec![0u8; 64]);
@@ -328,7 +328,7 @@ mod tests {
     fn test_max_value() {
         Python::initialize();
 
-        let wv_u8 = DynamicWaveletMatrix::<u8>::new(&vec![u8::MAX; 64], None).unwrap();
+        let wv_u8 = DynamicWaveletMatrix::<u8>::new(&[u8::MAX; 64], None).unwrap();
         assert_eq!(wv_u8.len(), 64);
         assert_eq!(wv_u8.height(), 8);
         assert_eq!(wv_u8.values().unwrap(), vec![u8::MAX; 64]);
@@ -635,8 +635,8 @@ mod tests {
     fn test_insert_remove_values() {
         Python::initialize();
 
-        let mut wv_u8 = DynamicWaveletMatrix::new(&vec![], Some(3)).unwrap();
-        let elements: Vec<u8> = vec![5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0].repeat(1000);
+        let mut wv_u8 = DynamicWaveletMatrix::new(&[], Some(3)).unwrap();
+        let elements: Vec<u8> = [5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0].repeat(1000);
 
         for (index, &element) in elements.iter().enumerate() {
             wv_u8.insert(index, &element).unwrap();

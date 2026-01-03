@@ -69,7 +69,7 @@ mod tests {
     use pyo3::Python;
 
     fn create_dummy() -> SampleBitVector {
-        let bits = vec![true, false, true, true, false, true, false, false].repeat(999);
+        let bits = [true, false, true, true, false, true, false, false].repeat(999);
         SampleBitVector::new(bits)
     }
 
@@ -97,7 +97,7 @@ mod tests {
         let bv = create_dummy();
         assert_eq!(
             bv.values().unwrap(),
-            vec![true, false, true, true, false, true, false, false].repeat(999)
+            [true, false, true, true, false, true, false, false].repeat(999)
         );
     }
 
@@ -107,14 +107,14 @@ mod tests {
 
         let bv = create_dummy();
 
-        assert_eq!(bv.access(0).unwrap(), true);
-        assert_eq!(bv.access(1001).unwrap(), false);
-        assert_eq!(bv.access(2002).unwrap(), true);
-        assert_eq!(bv.access(3003).unwrap(), true);
-        assert_eq!(bv.access(4004).unwrap(), false);
-        assert_eq!(bv.access(5005).unwrap(), true);
-        assert_eq!(bv.access(6006).unwrap(), false);
-        assert_eq!(bv.access(7007).unwrap(), false);
+        assert!(bv.access(0).unwrap());
+        assert!(!bv.access(1001).unwrap());
+        assert!(bv.access(2002).unwrap());
+        assert!(bv.access(3003).unwrap());
+        assert!(!bv.access(4004).unwrap());
+        assert!(bv.access(5005).unwrap());
+        assert!(!bv.access(6006).unwrap());
+        assert!(!bv.access(7007).unwrap());
         assert_eq!(
             bv.access(7992).unwrap_err().to_string(),
             "IndexError: index out of bounds"

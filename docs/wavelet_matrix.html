@@ -174,7 +174,23 @@ wavelet_matrix    </h1>
 <p>The Wavelet Matrix decomposes a sequence into multiple bit vectors,
 one for each bit position. This allows for efficient queries on the sequence.<br />
 This class supports various integer types, automatically selecting
-the appropriate internal representation based on the input data.</p>
+the appropriate internal representation based on the input data.  </p>
+
+<h4 id="construction-complexity">Construction Complexity</h4>
+
+<ul>
+<li>Time: <code>O(N log V)</code></li>
+<li>Space: <code>O(N log V)</code></li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>N</code> = length of the sequence</li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 </div>
 
 
@@ -206,6 +222,7 @@ the appropriate internal representation based on the input data.</p>
 
 <ul>
 <li>Time: <code>O(N log V)</code>  </li>
+<li>Space: <code>O(N)</code></li>
 </ul>
 
 <p>where:</p>
@@ -214,6 +231,8 @@ the appropriate internal representation based on the input data.</p>
 <li><code>N</code> = length of the sequence  </li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -244,6 +263,7 @@ the appropriate internal representation based on the input data.</p>
 
 <ul>
 <li>Time: <code>O(log V)</code>  </li>
+<li>Space: <code>O(1)</code></li>
 </ul>
 
 <p>where:</p>
@@ -251,6 +271,8 @@ the appropriate internal representation based on the input data.</p>
 <ul>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -281,6 +303,7 @@ the appropriate internal representation based on the input data.</p>
 
 <ul>
 <li>Time: <code>O(log V)</code>  </li>
+<li>Space: <code>O(1)</code></li>
 </ul>
 
 <p>where:</p>
@@ -288,6 +311,8 @@ the appropriate internal representation based on the input data.</p>
 <ul>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -318,6 +343,7 @@ the appropriate internal representation based on the input data.</p>
 
 <ul>
 <li>Time: <code>O(log V)</code> (amortized)</li>
+<li>Space: <code>O(1)</code></li>
 </ul>
 
 <p>where:</p>
@@ -325,6 +351,8 @@ the appropriate internal representation based on the input data.</p>
 <ul>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -355,6 +383,7 @@ the appropriate internal representation based on the input data.</p>
 
 <ul>
 <li>Time: <code>O(log V)</code>  </li>
+<li>Space: <code>O(1)</code></li>
 </ul>
 
 <p>where:</p>
@@ -362,6 +391,8 @@ the appropriate internal representation based on the input data.</p>
 <ul>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -392,6 +423,7 @@ the appropriate internal representation based on the input data.</p>
 
 <ul>
 <li>Time: <code>O(L (log L) (log V))</code>  </li>
+<li>Space: <code>O(L)</code>  </li>
 </ul>
 
 <p>where:</p>
@@ -400,6 +432,8 @@ the appropriate internal representation based on the input data.</p>
 <li><code>L</code> = the number of distinct values in the range <code>[start, end)</code></li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -430,6 +464,7 @@ the appropriate internal representation based on the input data.</p>
 
 <ul>
 <li>Time: <code>O(L log V)</code>  </li>
+<li>Space: <code>O(L)</code></li>
 </ul>
 
 <p>where:</p>
@@ -439,6 +474,8 @@ the appropriate internal representation based on the input data.</p>
 that satisfy <code>lower &lt;= c &lt; upper</code></li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -469,6 +506,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 
 <ul>
 <li>Time: <code>O(L log V)</code>  </li>
+<li>Space: <code>O(L)</code></li>
 </ul>
 
 <p>where:</p>
@@ -477,6 +515,8 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 <li><code>L</code> = the number of distinct values <code>c</code> in the intersection of the two ranges</li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -507,6 +547,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 
 <ul>
 <li>Time: <code>O(log V)</code>  </li>
+<li>Space: <code>O(1)</code></li>
 </ul>
 
 <p>where:</p>
@@ -514,6 +555,8 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 <ul>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -544,6 +587,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 
 <ul>
 <li>Time: <code>O(L log V)</code>  </li>
+<li>Space: <code>O(L)</code></li>
 </ul>
 
 <p>where:</p>
@@ -553,6 +597,8 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 that satisfy <code>lower &lt;= c &lt; upper</code></li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -583,6 +629,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 
 <ul>
 <li>Time: <code>O(k log V)</code>  </li>
+<li>Space: <code>O(k)</code></li>
 </ul>
 
 <p>where:</p>
@@ -590,6 +637,8 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 <ul>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -620,6 +669,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 
 <ul>
 <li>Time: <code>O(k log V)</code>  </li>
+<li>Space: <code>O(k)</code></li>
 </ul>
 
 <p>where:</p>
@@ -627,6 +677,8 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 <ul>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -657,6 +709,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 
 <ul>
 <li>Time: <code>O(log V)</code>  </li>
+<li>Space: <code>O(1)</code></li>
 </ul>
 
 <p>where:</p>
@@ -664,6 +717,8 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 <ul>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -694,6 +749,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 
 <ul>
 <li>Time: <code>O(log V)</code>  </li>
+<li>Space: <code>O(1)</code></li>
 </ul>
 
 <p>where:</p>
@@ -701,6 +757,8 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 <ul>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -732,6 +790,22 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 with support for dynamic updates such as insertions and deletions.<br />
 It can handle integers of varying bit widths, automatically selecting
 the appropriate internal representation based on the input data.</p>
+
+<h4 id="construction-complexity">Construction Complexity</h4>
+
+<ul>
+<li>Time: <code>O(N log V)</code></li>
+<li>Space: <code>O(N log V)</code></li>
+</ul>
+
+<p>where:</p>
+
+<ul>
+<li><code>N</code> = length of the sequence</li>
+<li><code>V</code> = range of possible values (max value domain)</li>
+</ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 </div>
 
 
@@ -763,6 +837,7 @@ the appropriate internal representation based on the input data.</p>
 
 <ul>
 <li>Time: <code>O(N log V)</code>  </li>
+<li>Space: <code>O(N)</code>  </li>
 </ul>
 
 <p>where:</p>
@@ -771,6 +846,8 @@ the appropriate internal representation based on the input data.</p>
 <li><code>N</code> = length of the sequence  </li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -801,6 +878,7 @@ the appropriate internal representation based on the input data.</p>
 
 <ul>
 <li>Time: <code>O((log N) (log V))</code>  </li>
+<li>Space: <code>O(1)</code>  </li>
 </ul>
 
 <p>where:</p>
@@ -809,6 +887,8 @@ the appropriate internal representation based on the input data.</p>
 <li><code>N</code> = length of the sequence  </li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -839,6 +919,7 @@ the appropriate internal representation based on the input data.</p>
 
 <ul>
 <li>Time: <code>O((log N) (log V))</code>  </li>
+<li>Space: <code>O(1)</code>  </li>
 </ul>
 
 <p>where:</p>
@@ -847,6 +928,8 @@ the appropriate internal representation based on the input data.</p>
 <li><code>N</code> = length of the sequence  </li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -877,6 +960,7 @@ the appropriate internal representation based on the input data.</p>
 
 <ul>
 <li>Time: <code>O((log N) (log V))</code>  </li>
+<li>Space: <code>O(1)</code></li>
 </ul>
 
 <p>where:</p>
@@ -885,6 +969,8 @@ the appropriate internal representation based on the input data.</p>
 <li><code>N</code> = length of the sequence  </li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -915,6 +1001,7 @@ the appropriate internal representation based on the input data.</p>
 
 <ul>
 <li>Time: <code>O((log N) (log V))</code>  </li>
+<li>Space: <code>O(1)</code>  </li>
 </ul>
 
 <p>where:</p>
@@ -923,6 +1010,8 @@ the appropriate internal representation based on the input data.</p>
 <li><code>N</code> = length of the sequence  </li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -953,6 +1042,7 @@ the appropriate internal representation based on the input data.</p>
 
 <ul>
 <li>Time: <code>O(L (log L) (log N) (log V))</code>  </li>
+<li>Space: <code>O(L)</code></li>
 </ul>
 
 <p>where:</p>
@@ -962,6 +1052,8 @@ the appropriate internal representation based on the input data.</p>
 <li><code>N</code> = length of the sequence</li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -992,6 +1084,7 @@ the appropriate internal representation based on the input data.</p>
 
 <ul>
 <li>Time: <code>O(L (log N) (log V))</code>  </li>
+<li>Space: <code>O(L)</code></li>
 </ul>
 
 <p>where:</p>
@@ -1001,6 +1094,8 @@ the appropriate internal representation based on the input data.</p>
 <li><code>N</code> = length of the sequence</li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -1031,6 +1126,7 @@ the appropriate internal representation based on the input data.</p>
 
 <ul>
 <li>Time: <code>O(L (log N) (log V))</code>  </li>
+<li>Space: <code>O(L)</code></li>
 </ul>
 
 <p>where:</p>
@@ -1040,6 +1136,8 @@ the appropriate internal representation based on the input data.</p>
 <li><code>N</code> = length of the sequence</li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -1070,6 +1168,7 @@ the appropriate internal representation based on the input data.</p>
 
 <ul>
 <li>Time: <code>O((log N) (log V))</code>  </li>
+<li>Space: <code>O(1)</code></li>
 </ul>
 
 <p>where:</p>
@@ -1078,6 +1177,8 @@ the appropriate internal representation based on the input data.</p>
 <li><code>N</code> = length of the sequence</li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -1108,6 +1209,7 @@ the appropriate internal representation based on the input data.</p>
 
 <ul>
 <li>Time: <code>O(L (log N) (log V))</code>  </li>
+<li>Space: <code>O(L)</code></li>
 </ul>
 
 <p>where:</p>
@@ -1118,6 +1220,8 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 <li><code>N</code> = length of the sequence</li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -1148,6 +1252,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 
 <ul>
 <li>Time: <code>O(k (log N) (log V))</code>  </li>
+<li>Space: <code>O(k)</code></li>
 </ul>
 
 <p>where:</p>
@@ -1156,6 +1261,8 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 <li><code>N</code> = length of the sequence</li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -1186,6 +1293,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 
 <ul>
 <li>Time: <code>O(k (log N) (log V))</code>  </li>
+<li>Space: <code>O(k)</code></li>
 </ul>
 
 <p>where:</p>
@@ -1194,6 +1302,8 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 <li><code>N</code> = length of the sequence</li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -1224,6 +1334,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 
 <ul>
 <li>Time: <code>O((log N) (log V))</code>  </li>
+<li>Space: <code>O(1)</code></li>
 </ul>
 
 <p>where:</p>
@@ -1232,6 +1343,8 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 <li><code>N</code> = length of the sequence</li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -1262,6 +1375,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 
 <ul>
 <li>Time: <code>O((log N) (log V))</code>  </li>
+<li>Space: <code>O(1)</code>  </li>
 </ul>
 
 <p>where:</p>
@@ -1270,6 +1384,8 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 <li><code>N</code> = length of the sequence</li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -1300,6 +1416,7 @@ that satisfy <code>lower &lt;= c &lt; upper</code></li>
 
 <ul>
 <li>Time: <code>O(1)</code>  </li>
+<li>Space: <code>O(1)</code>  </li>
 </ul>
 
 <h4 id="examples">Examples</h4>
@@ -1332,6 +1449,7 @@ The bit width of the new value must not exceed max_bit.</p>
 
 <ul>
 <li>Time: <code>O((log N) (log V))</code>  </li>
+<li>Space: <code>O(1)</code></li>
 </ul>
 
 <p>where:</p>
@@ -1340,6 +1458,8 @@ The bit width of the new value must not exceed max_bit.</p>
 <li><code>N</code> = length of the sequence</li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -1371,6 +1491,7 @@ The bit width of the new value must not exceed max_bit.</p>
 
 <ul>
 <li>Time: <code>O((log N) (log V))</code>  </li>
+<li>Space: <code>O(1)</code></li>
 </ul>
 
 <p>where:</p>
@@ -1379,6 +1500,8 @@ The bit width of the new value must not exceed max_bit.</p>
 <li><code>N</code> = length of the sequence</li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 
@@ -1412,6 +1535,7 @@ The bit width of the new value must not exceed max_bit.</p>
 
 <ul>
 <li>Time: <code>O((log N) (log V))</code>  </li>
+<li>Space: <code>O(1)</code></li>
 </ul>
 
 <p>where:</p>
@@ -1420,6 +1544,8 @@ The bit width of the new value must not exceed max_bit.</p>
 <li><code>N</code> = length of the sequence</li>
 <li><code>V</code> = range of possible values (max value domain)</li>
 </ul>
+
+<p>We assume that each value can be stored in <code>O(1)</code> space.</p>
 
 <h4 id="examples">Examples</h4>
 

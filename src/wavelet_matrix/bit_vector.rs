@@ -154,7 +154,7 @@ mod tests {
     use super::*;
 
     fn create_dummy() -> BitVector {
-        let bits = vec![true, false, true, true, false, true, false, false].repeat(999);
+        let bits = [true, false, true, true, false, true, false, false].repeat(999);
         BitVector::new(&bits)
     }
 
@@ -162,7 +162,7 @@ mod tests {
     fn test_empty() {
         Python::initialize();
 
-        let bv = BitVector::new(&vec![]);
+        let bv = BitVector::new(&[]);
 
         assert_eq!(bv.values().unwrap(), Vec::<bool>::new());
         assert_eq!(
@@ -183,7 +183,7 @@ mod tests {
         let bv = BitVector::new(&bits);
 
         for i in 0..1024 {
-            assert_eq!(bv.access(i).unwrap(), true);
+            assert!(bv.access(i).unwrap());
             assert_eq!(bv.rank(true, i + 1).unwrap(), i + 1);
             assert_eq!(bv.rank(false, i + 1).unwrap(), 0);
             assert_eq!(bv.select(true, i + 1).unwrap(), Some(i));
@@ -198,7 +198,7 @@ mod tests {
         let bv = create_dummy();
         assert_eq!(
             bv.values().unwrap(),
-            vec![true, false, true, true, false, true, false, false].repeat(999)
+            [true, false, true, true, false, true, false, false].repeat(999)
         );
     }
 
@@ -208,14 +208,14 @@ mod tests {
 
         let bv = create_dummy();
 
-        assert_eq!(bv.access(0).unwrap(), true);
-        assert_eq!(bv.access(1001).unwrap(), false);
-        assert_eq!(bv.access(2002).unwrap(), true);
-        assert_eq!(bv.access(3003).unwrap(), true);
-        assert_eq!(bv.access(4004).unwrap(), false);
-        assert_eq!(bv.access(5005).unwrap(), true);
-        assert_eq!(bv.access(6006).unwrap(), false);
-        assert_eq!(bv.access(7007).unwrap(), false);
+        assert!(bv.access(0).unwrap());
+        assert!(!bv.access(1001).unwrap());
+        assert!(bv.access(2002).unwrap());
+        assert!(bv.access(3003).unwrap());
+        assert!(!bv.access(4004).unwrap());
+        assert!(bv.access(5005).unwrap());
+        assert!(!bv.access(6006).unwrap());
+        assert!(!bv.access(7007).unwrap());
         assert_eq!(
             bv.access(7992).unwrap_err().to_string(),
             "IndexError: index out of bounds"

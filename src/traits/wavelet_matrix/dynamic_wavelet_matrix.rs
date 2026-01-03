@@ -135,8 +135,8 @@ mod tests {
         NumberType: ops::BitAnd<NumberType, Output = NumberType> + BitWidth + Clone + One + Ord,
         for<'a> &'a NumberType: ops::Shr<usize, Output = NumberType>,
     {
-        fn new(data: &Vec<NumberType>, max_bit: Option<usize>) -> PyResult<Self> {
-            let mut values = data.clone();
+        fn new(data: &[NumberType], max_bit: Option<usize>) -> PyResult<Self> {
+            let mut values = data.to_owned();
             let max_width = values.iter().max().map_or(0usize, |max| max.bit_width());
             if max_bit.is_some_and(|max_bit| max_bit < max_width) {
                 return Err(PyValueError::new_err(format!(
@@ -385,7 +385,7 @@ mod tests {
     fn test_all_zero() {
         Python::initialize();
 
-        let wv_u8 = SampleDynamicWaveletMatrix::<u8>::new(&vec![0u8; 64], None).unwrap();
+        let wv_u8 = SampleDynamicWaveletMatrix::<u8>::new(&[0u8; 64], None).unwrap();
         assert_eq!(wv_u8.len(), 64);
         assert_eq!(wv_u8.height(), 0);
         assert_eq!(wv_u8.values().unwrap(), vec![0u8; 64]);
@@ -431,7 +431,7 @@ mod tests {
     fn test_max_value() {
         Python::initialize();
 
-        let wv_u8 = SampleDynamicWaveletMatrix::<u8>::new(&vec![u8::MAX; 64], None).unwrap();
+        let wv_u8 = SampleDynamicWaveletMatrix::<u8>::new(&[u8::MAX; 64], None).unwrap();
         assert_eq!(wv_u8.len(), 64);
         assert_eq!(wv_u8.height(), 8);
         assert_eq!(wv_u8.values().unwrap(), vec![u8::MAX; 64]);
@@ -738,7 +738,7 @@ mod tests {
     fn test_insert_remove_values() {
         Python::initialize();
 
-        let mut wv_u8 = SampleDynamicWaveletMatrix::new(&vec![], Some(3)).unwrap();
+        let mut wv_u8 = SampleDynamicWaveletMatrix::new(&[], Some(3)).unwrap();
         let elements: Vec<u8> = vec![5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0];
 
         for (index, &element) in elements.iter().enumerate() {

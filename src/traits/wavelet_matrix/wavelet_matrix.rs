@@ -778,8 +778,8 @@ mod tests {
         NumberType: ops::BitAnd<NumberType, Output = NumberType> + BitWidth + Clone + One + Ord,
         for<'a> &'a NumberType: ops::Shr<usize, Output = NumberType>,
     {
-        fn new(data: &Vec<NumberType>) -> Self {
-            let mut values = data.clone();
+        fn new(data: &[NumberType]) -> Self {
+            let mut values = data.to_owned();
             let height = values.iter().max().map_or(0usize, |max| max.bit_width());
             let len = values.len();
             let mut layers: Vec<SampleBitVector> = Vec::with_capacity(height);
@@ -990,7 +990,7 @@ mod tests {
     fn test_all_zero() {
         Python::initialize();
 
-        let wv_u8 = SampleWaveletMatrix::<u8>::new(&vec![0u8; 64]);
+        let wv_u8 = SampleWaveletMatrix::<u8>::new(&[0u8; 64]);
         assert_eq!(wv_u8.len(), 64);
         assert_eq!(wv_u8.height(), 0);
         assert_eq!(wv_u8.values().unwrap(), vec![0u8; 64]);
@@ -1035,7 +1035,7 @@ mod tests {
     fn test_max_value() {
         Python::initialize();
 
-        let wv_u8 = SampleWaveletMatrix::<u8>::new(&vec![u8::MAX; 64]);
+        let wv_u8 = SampleWaveletMatrix::<u8>::new(&[u8::MAX; 64]);
         assert_eq!(wv_u8.len(), 64);
         assert_eq!(wv_u8.height(), 8);
         assert_eq!(wv_u8.values().unwrap(), vec![u8::MAX; 64]);

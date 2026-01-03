@@ -20,6 +20,7 @@ permissions:
 
 jobs:
   linux:
+    needs: [cargo-test, python-test]
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       matrix:
@@ -55,6 +56,7 @@ jobs:
           path: dist
 
   musllinux:
+    needs: [cargo-test, python-test]
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       matrix:
@@ -86,6 +88,7 @@ jobs:
           path: dist
 
   windows:
+    needs: [cargo-test, python-test]
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       matrix:
@@ -113,6 +116,7 @@ jobs:
           path: dist
 
   macos:
+    needs: [cargo-test, python-test]
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       matrix:
@@ -139,9 +143,13 @@ jobs:
           path: dist
 
   sdist:
+    needs: [cargo-test, python-test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
       - name: Build sdist
         uses: PyO3/maturin-action@v1
         with:
@@ -153,28 +161,43 @@ jobs:
           name: wheels-sdist
           path: dist
 
-  dev-test:
-    needs: linux
+  cargo-test:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - name: Cargo test
+        run: |
+          cargo install cargo-llvm-cov --locked
+          cargo test --all --release
+          cargo llvm-cov \
+            --workspace \
+            --ignore-filename-regex 'src/lib\.rs' \
+            --codecov \
+            --output-path codecov.json
+      - name: Format check
+        run: cargo fmt --all -- --check
+      - name: Clippy check
+        run: cargo clippy --all-targets --all-features -- -D warnings
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  python-test:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: 3.x
-      - name: Download linux wheels artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: wheels-linux-x86_64
-          path: dist
       - name: Install packages
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install wavelet-matrix \
-            --no-index \
-            --find-links dist \
-            --only-binary=:all:
-          python -m pip install pdoc ruff
+        run: python -m pip install -e .[dev]
+      - name: Run tests
+        run: pytest --benchmark-skip
       - name: Docs check
         run: |
           pdoc wavelet_matrix \
@@ -188,26 +211,9 @@ jobs:
             exit 1
           fi
       - name: Format check
-        run: |
-          cargo fmt --all -- --check
-          ruff check
-      - name: Cargo test
-        run: |
-          cargo install cargo-llvm-cov --locked
-          cargo test --all --release
-          cargo llvm-cov \
-            --workspace \
-            --ignore-filename-regex 'src/lib\.rs' \
-            --codecov \
-            --output-path codecov.json
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          fail_ci_if_error: true
-          token: ${{ secrets.CODECOV_TOKEN }}
+        run: ruff check
 
-  test:
-    needs: linux
+  python-benchmark:
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
@@ -222,25 +228,13 @@ jobs:
           - "pypy3.11"
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - name: Download linux wheels artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: wheels-linux-x86_64
-          path: dist
       - name: Install packages
         run: |
           python -m pip install --upgrade pip
-          python -m pip install wavelet-matrix \
-            --no-index \
-            --find-links dist \
-            --only-binary=:all:
-          python -m pip install pdoc pytest pytest-benchmark ruff
-      - name: Run tests
-        run: pytest --benchmark-skip
+          python -m pip install -e .[test]
       - name: Run benchmarks
         run: pytest --benchmark-only
 
@@ -248,7 +242,7 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
-    needs: [linux, musllinux, windows, macos, sdist, dev-test, test]
+    needs: [linux, musllinux, windows, macos, sdist, cargo-test, python-test, python-benchmark]
     permissions:
       # Use to sign the release artifacts
       id-token: write

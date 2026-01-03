@@ -26,6 +26,17 @@ enum WaveletMatrixEnum {
 /// one for each bit position. This allows for efficient queries on the sequence.  
 /// This class supports various integer types, automatically selecting
 /// the appropriate internal representation based on the input data.  
+///
+/// #### Construction Complexity
+///
+/// - Time: `O(N log V)`
+/// - Space: `O(N log V)`
+///
+/// where:
+/// - `N` = length of the sequence
+/// - `V` = range of possible values (max value domain)
+///
+/// We assume that each value can be stored in `O(1)` space.
 #[derive(Clone)]
 #[pyclass(name = "WaveletMatrix")]
 pub(crate) struct PyWaveletMatrix {
@@ -185,10 +196,13 @@ impl PyWaveletMatrix {
     /// #### Complexity
     ///
     /// - Time: `O(N log V)`  
+    /// - Space: `O(N)`
     ///
     /// where:
     /// - `N` = length of the sequence  
     /// - `V` = range of possible values (max value domain)
+    ///
+    /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
     /// ```python
@@ -225,9 +239,12 @@ impl PyWaveletMatrix {
     /// #### Complexity
     ///
     /// - Time: `O(log V)`  
+    /// - Space: `O(1)`
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
+    ///
+    /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
     /// ```python
@@ -268,9 +285,12 @@ impl PyWaveletMatrix {
     /// #### Complexity
     ///
     /// - Time: `O(log V)`  
+    /// - Space: `O(1)`
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
+    ///
+    /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
     /// ```python
@@ -314,9 +334,12 @@ impl PyWaveletMatrix {
     /// #### Complexity
     ///
     /// - Time: `O(log V)` (amortized)
+    /// - Space: `O(1)`
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
+    ///
+    /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
     /// ```python
@@ -360,9 +383,12 @@ impl PyWaveletMatrix {
     /// #### Complexity
     ///
     /// - Time: `O(log V)`  
+    /// - Space: `O(1)`
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
+    ///
+    /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
     /// ```python
@@ -415,10 +441,13 @@ impl PyWaveletMatrix {
     /// #### Complexity
     ///
     /// - Time: `O(L (log L) (log V))`  
+    /// - Space: `O(L)`  
     ///
     /// where:
     /// - `L` = the number of distinct values in the range `[start, end)`
     /// - `V` = range of possible values (max value domain)
+    ///
+    /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
     /// ```python
@@ -480,11 +509,14 @@ impl PyWaveletMatrix {
     /// #### Complexity
     ///
     /// - Time: `O(L log V)`  
+    /// - Space: `O(L)`
     ///
     /// where:
     /// - `L` = the number of distinct values `c` in the range `[start, end)`
     ///   that satisfy `lower <= c < upper`
     /// - `V` = range of possible values (max value domain)
+    ///
+    /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
     /// ```python
@@ -522,10 +554,13 @@ impl PyWaveletMatrix {
     /// #### Complexity
     ///
     /// - Time: `O(L log V)`  
+    /// - Space: `O(L)`
     ///
     /// where:
     /// - `L` = the number of distinct values `c` in the intersection of the two ranges
     /// - `V` = range of possible values (max value domain)
+    ///
+    /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
     /// ```python
@@ -587,9 +622,12 @@ impl PyWaveletMatrix {
     /// #### Complexity
     ///
     /// - Time: `O(log V)`  
+    /// - Space: `O(1)`
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
+    ///
+    /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
     /// ```python
@@ -648,11 +686,14 @@ impl PyWaveletMatrix {
     /// #### Complexity
     ///
     /// - Time: `O(L log V)`  
+    /// - Space: `O(L)`
     ///
     /// where:
     /// - `L` = the number of distinct values `c` in the range `[start, end)`
     ///   that satisfy `lower <= c < upper`
     /// - `V` = range of possible values (max value domain)
+    ///
+    /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
     /// ```python
@@ -721,9 +762,12 @@ impl PyWaveletMatrix {
     /// #### Complexity
     ///
     /// - Time: `O(k log V)`  
+    /// - Space: `O(k)`
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
+    ///
+    /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
     /// ```python
@@ -785,9 +829,12 @@ impl PyWaveletMatrix {
     /// #### Complexity
     ///
     /// - Time: `O(k log V)`  
+    /// - Space: `O(k)`
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
+    ///
+    /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
     /// ```python
@@ -849,9 +896,12 @@ impl PyWaveletMatrix {
     /// #### Complexity
     ///
     /// - Time: `O(log V)`  
+    /// - Space: `O(1)`
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
+    ///
+    /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
     /// ```python
@@ -899,9 +949,12 @@ impl PyWaveletMatrix {
     /// #### Complexity
     ///
     /// - Time: `O(log V)`  
+    /// - Space: `O(1)`
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
+    ///
+    /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
     /// ```python
