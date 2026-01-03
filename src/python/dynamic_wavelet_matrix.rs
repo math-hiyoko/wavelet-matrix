@@ -29,16 +29,16 @@ enum DynamicWaveletMatrixEnum {
 /// with support for dynamic updates such as insertions and deletions.  
 /// It can handle integers of varying bit widths, automatically selecting
 /// the appropriate internal representation based on the input data.
-/// 
+///
 /// #### Construction Complexity
-/// 
+///
 /// - Time: `O(N log V)`
 /// - Space: `O(N log V)`
-/// 
+///
 /// where:
 /// - `N` = length of the sequence
 /// - `V` = range of possible values (max value domain)
-/// 
+///
 /// We assume that each value can be stored in `O(1)` space.
 #[derive(Clone)]
 #[pyclass(name = "DynamicWaveletMatrix")]
@@ -273,9 +273,9 @@ impl PyDynamicWaveletMatrix {
     /// where:
     /// - `N` = length of the sequence  
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     ///  We assume that each value can be stored in `O(1)` space.
-    /// 
+    ///
     /// #### Examples
     /// ```python
     /// >>> from wavelet_matrix import DynamicWaveletMatrix
@@ -316,7 +316,7 @@ impl PyDynamicWaveletMatrix {
     /// where:
     /// - `N` = length of the sequence  
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -363,7 +363,7 @@ impl PyDynamicWaveletMatrix {
     /// where:
     /// - `N` = length of the sequence  
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -413,7 +413,7 @@ impl PyDynamicWaveletMatrix {
     /// where:
     /// - `N` = length of the sequence  
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -463,7 +463,7 @@ impl PyDynamicWaveletMatrix {
     /// where:
     /// - `N` = length of the sequence  
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -523,7 +523,7 @@ impl PyDynamicWaveletMatrix {
     /// - `L` = the number of distinct values in the range `[start, end)`
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -592,7 +592,7 @@ impl PyDynamicWaveletMatrix {
     /// - `L` = the number of distinct values `c` in the range `[start, end)`
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -637,7 +637,7 @@ impl PyDynamicWaveletMatrix {
     /// - `L` = the number of distinct values `c` in the intersection of the two ranges
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -705,7 +705,7 @@ impl PyDynamicWaveletMatrix {
     /// where:
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -772,7 +772,7 @@ impl PyDynamicWaveletMatrix {
     ///   that satisfy `lower <= c < upper`
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -847,7 +847,7 @@ impl PyDynamicWaveletMatrix {
     /// where:
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -915,7 +915,7 @@ impl PyDynamicWaveletMatrix {
     /// where:
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -983,7 +983,7 @@ impl PyDynamicWaveletMatrix {
     /// where:
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -1037,7 +1037,7 @@ impl PyDynamicWaveletMatrix {
     /// where:
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -1121,7 +1121,7 @@ impl PyDynamicWaveletMatrix {
     /// where:
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -1171,7 +1171,7 @@ impl PyDynamicWaveletMatrix {
     /// where:
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -1221,7 +1221,7 @@ impl PyDynamicWaveletMatrix {
     /// where:
     /// - `N` = length of the sequence
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples

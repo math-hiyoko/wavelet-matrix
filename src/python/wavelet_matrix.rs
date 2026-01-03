@@ -26,16 +26,16 @@ enum WaveletMatrixEnum {
 /// one for each bit position. This allows for efficient queries on the sequence.  
 /// This class supports various integer types, automatically selecting
 /// the appropriate internal representation based on the input data.  
-/// 
+///
 /// #### Construction Complexity
-/// 
+///
 /// - Time: `O(N log V)`
 /// - Space: `O(N log V)`
-/// 
+///
 /// where:
 /// - `N` = length of the sequence
 /// - `V` = range of possible values (max value domain)
-/// 
+///
 /// We assume that each value can be stored in `O(1)` space.
 #[derive(Clone)]
 #[pyclass(name = "WaveletMatrix")]
@@ -201,7 +201,7 @@ impl PyWaveletMatrix {
     /// where:
     /// - `N` = length of the sequence  
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -243,7 +243,7 @@ impl PyWaveletMatrix {
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -289,7 +289,7 @@ impl PyWaveletMatrix {
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -338,7 +338,7 @@ impl PyWaveletMatrix {
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -387,7 +387,7 @@ impl PyWaveletMatrix {
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -446,7 +446,7 @@ impl PyWaveletMatrix {
     /// where:
     /// - `L` = the number of distinct values in the range `[start, end)`
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -515,7 +515,7 @@ impl PyWaveletMatrix {
     /// - `L` = the number of distinct values `c` in the range `[start, end)`
     ///   that satisfy `lower <= c < upper`
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -559,7 +559,7 @@ impl PyWaveletMatrix {
     /// where:
     /// - `L` = the number of distinct values `c` in the intersection of the two ranges
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -626,7 +626,7 @@ impl PyWaveletMatrix {
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -692,7 +692,7 @@ impl PyWaveletMatrix {
     /// - `L` = the number of distinct values `c` in the range `[start, end)`
     ///   that satisfy `lower <= c < upper`
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -766,7 +766,7 @@ impl PyWaveletMatrix {
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -833,7 +833,7 @@ impl PyWaveletMatrix {
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -900,7 +900,7 @@ impl PyWaveletMatrix {
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
@@ -953,7 +953,7 @@ impl PyWaveletMatrix {
     ///
     /// where:
     /// - `V` = range of possible values (max value domain)
-    /// 
+    ///
     /// We assume that each value can be stored in `O(1)` space.
     ///
     /// #### Examples
