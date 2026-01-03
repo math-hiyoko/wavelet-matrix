@@ -180,7 +180,7 @@ jobs:
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
-  dev-test:
+  python-test:
     needs: linux
     runs-on: ubuntu-22.04
     steps:
@@ -258,7 +258,7 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
-    needs: [linux, musllinux, windows, macos, sdist, dev-test, test]
+    needs: [linux, musllinux, windows, macos, sdist, python-test, test]
     permissions:
       # Use to sign the release artifacts
       id-token: write
