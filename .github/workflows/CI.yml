@@ -166,6 +166,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
       - name: Cargo test
         run: |
           cargo install cargo-llvm-cov --locked
@@ -177,6 +179,8 @@ jobs:
             --output-path codecov.json
       - name: Format check
         run: cargo fmt --all -- --check
+      - name: Clippy check
+        run: cargo clippy --all-targets --all-features -- -D warnings
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
