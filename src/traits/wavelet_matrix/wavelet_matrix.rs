@@ -58,7 +58,11 @@ where
                 start = layer.rank(bit, start).ok()?;
                 end = layer.rank(bit, end).ok()?;
             }
+
             debug_assert!(end <= self.len());
+            if start == end {
+                break;
+            }
         }
 
         debug_assert!(start <= end);
@@ -190,7 +194,7 @@ where
         }
 
         let mut result = NumberType::zero();
-        for (layer, zero) in iter::zip(self.get_layers(), self.get_zeros()) {
+        for (depth, (layer, zero)) in iter::zip(self.get_layers(), self.get_zeros()).enumerate() {
             let count_zeros = layer.rank(false, end)? - layer.rank(false, start)?;
             let bit = if kth <= count_zeros {
                 false
@@ -199,16 +203,19 @@ where
                 true
             };
 
-            result <<= 1;
             if bit {
-                result |= NumberType::one();
+                result |= NumberType::one() << (self.height() - depth - 1);
                 start = zero + layer.rank(bit, start)?;
                 end = zero + layer.rank(bit, end)?;
             } else {
                 start = layer.rank(bit, start)?;
                 end = layer.rank(bit, end)?;
             }
+
             debug_assert!(start < end && end <= self.len());
+            if start == end {
+                break;
+            }
         }
 
         Ok(result)
@@ -444,6 +451,11 @@ where
             } else {
                 start = layer.rank(bit, start)?;
                 end = layer.rank(bit, end)?;
+            }
+
+            debug_assert!(start <= end);
+            if start == end {
+                break;
             }
         }
 
