@@ -10,6 +10,7 @@
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/wavelet-matrix?period=total&units=INTERNATIONAL_SYSTEM&left_color=GRAY&right_color=GREEN&left_text=PyPI%20downloads)](https://pepy.tech/projects/wavelet-matrix)
 ![PyPI - Format](https://img.shields.io/pypi/format/wavelet-matrix)
 ![Rust](https://img.shields.io/badge/powered%20by-Rust-orange)
+![Unsafe](https://img.shields.io/badge/unsafe-0-success)
 
 
 High-performance indexed sequence structure powered by Rust, supporting fast rank/select and range queries with optional dynamic updates.
@@ -165,6 +166,11 @@ DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0], max_bit=4)
 >>> dwm
 DynamicWaveletMatrix([5, 4, 5, 5, 5, 1, 5, 6, 1, 3, 5, 0], max_bit=4)
 ```
+
+## Safety
+
+This Python package is powered by safe Rust.  
+The Rust implementation forbids `unsafe` code.  
 
 ## Development
 

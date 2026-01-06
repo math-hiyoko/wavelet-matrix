@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 mod dynamic_wavelet_matrix;
 mod python;
 mod traits;
