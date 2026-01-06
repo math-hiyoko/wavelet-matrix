@@ -171,7 +171,7 @@ DynamicWaveletMatrix([5, 4, 5, 5, 5, 1, 5, 6, 1, 3, 5, 0], max_bit=4)
 ### Running Tests
 
 ```bash
-$ pip install -e ".[dev]"
+$ pip install -e ".[test]"
 
 # Cargo test
 $ cargo test --all --release
@@ -185,6 +185,8 @@ $ pytest --benchmark-only
 
 ### Formating Code
 ```bash
+$ pip install -e ".[dev]"
+
 # Format Rust code
 $ cargo fmt
 
