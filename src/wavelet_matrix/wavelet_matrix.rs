@@ -1,4 +1,3 @@
-use core::num;
 use std::{collections, hash, iter, ops};
 
 use num_bigint::ToBigUint;
