@@ -1,4 +1,5 @@
-use std::{collections, hash, ops};
+use core::num;
+use std::{collections, hash, iter, ops};
 
 use num_bigint::ToBigUint;
 use num_traits::{One, Zero};
@@ -31,21 +32,27 @@ where
         let mut zeros: Vec<usize> = Vec::with_capacity(height);
 
         for i in 0..height {
-            let mut bits = Vec::with_capacity(len);
-            let mut zero_values = Vec::new();
-            let mut one_values = Vec::new();
-            for value in values.iter() {
-                let bit = (value >> (height - i - 1) & NumberType::one()).is_one();
-                bits.push(bit);
+            let bits = values
+                .iter()
+                .map(|value| (value >> (height - i - 1) & NumberType::one()).is_one())
+                .collect::<Vec<_>>();
+            let num_zeros = bits.iter().filter(|&&bit| !bit).count();
+            layers.push(BitVector::new(&bits));
+            zeros.push(num_zeros);
+
+            let mut next_values = vec![NumberType::one(); len];
+            let mut zero_index = 0usize;
+            let mut one_index = num_zeros;
+            for (bit, value) in iter::zip(bits, values) {
                 if bit {
-                    one_values.push(value.clone());
+                    next_values[one_index] = value;
+                    one_index += 1;
                 } else {
-                    zero_values.push(value.clone());
+                    next_values[zero_index] = value;
+                    zero_index += 1;
                 }
             }
-            layers.push(BitVector::new(&bits));
-            zeros.push(zero_values.len());
-            values = [zero_values, one_values].concat();
+            values = next_values;
         }
 
         let mut begin_index = collections::HashMap::new();
