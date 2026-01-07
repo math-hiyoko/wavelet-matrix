@@ -204,7 +204,7 @@ jobs:
             --no-search \
             --no-show-source \
             --docformat markdown \
-            --footer-text "© 2025 Koki Watanabe"
+            --footer-text "© 2026 Koki Watanabe"
           if ! git diff --exit-code -- docs; then
             echo "::error::Docs are out of date. Please run pdoc and commit generated docs."
             exit 1

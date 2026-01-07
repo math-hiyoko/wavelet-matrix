@@ -676,11 +676,11 @@ impl BitVectorTrait for DynamicBitVector {
             }
         }
 
-        let bits = match node {
+        let &bits = match node {
             DynamicBitVectorNode::Leaf { bits } => bits,
             _ => unreachable!("access: reached non-leaf node"),
         };
-        rank += (*bits & ((1 << end) - BlockType::one())).count_ones() as usize;
+        rank += (bits & ((1 << end) - BlockType::one())).count_ones() as usize;
         Ok(rank)
     }
 
