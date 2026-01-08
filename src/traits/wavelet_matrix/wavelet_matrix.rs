@@ -256,7 +256,7 @@ where
             value: NumberType::zero(),
         });
 
-        let mut result = Vec::new();
+        let mut result = Vec::with_capacity(k);
         while let Some(QueueItem {
             len,
             depth,
@@ -362,7 +362,7 @@ where
         }];
 
         for (layer, zero) in iter::zip(self.get_layers(), self.get_zeros()) {
-            let mut next_stack = Vec::new();
+            let mut next_stack = Vec::with_capacity(stack.len());
 
             for StackItem {
                 start1,
@@ -527,7 +527,7 @@ where
         }];
 
         for (depth, (layer, zero)) in iter::zip(self.get_layers(), self.get_zeros()).enumerate() {
-            let mut next_stack = Vec::new();
+            let mut next_stack = Vec::with_capacity(stack.len());
 
             for StackItem { start, end, value } in stack {
                 let start_zero = layer.rank(false, start)?;
@@ -609,7 +609,7 @@ where
         }];
 
         for (layer, zero) in iter::zip(self.get_layers(), self.get_zeros()) {
-            let mut next_stack = Vec::new();
+            let mut next_stack = Vec::with_capacity(k);
 
             for StackItem { start, end, value } in stack {
                 let start_one = zero + layer.rank(true, start)?;
@@ -687,7 +687,7 @@ where
         }];
 
         for (layer, zero) in iter::zip(self.get_layers(), self.get_zeros()) {
-            let mut next_stack = Vec::new();
+            let mut next_stack = Vec::with_capacity(k);
 
             for StackItem { start, end, value } in stack {
                 let start_zero = layer.rank(false, start)?;
