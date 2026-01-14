@@ -284,17 +284,14 @@ where
             let layer = &self.get_layers()[depth];
             let zero = self.get_zeros()[depth];
 
-            let ((start_zero, end_zero), (start_one, end_one)) = rayon::join(
-                || rayon::join(|| layer.rank(false, start), || layer.rank(false, end)),
-                || {
-                    rayon::join(
-                        || layer.rank(true, start).map(|value| value + zero),
-                        || layer.rank(true, end).map(|value| value + zero),
-                    )
-                },
-            );
+            let start_zero = layer.rank(false, start)?;
+            let end_zero = layer.rank(false, end)?;
+            debug_assert!(start_zero <= end_zero);
 
-            let (start_zero, end_zero) = (start_zero?, end_zero?);
+            let start_one = zero + layer.rank(true, start)?;
+            let end_one = zero + layer.rank(true, end)?;
+            debug_assert!(start_one <= end_one);
+
             if start_zero != end_zero {
                 heap.push(QueueItem {
                     len: end_zero - start_zero,
@@ -305,7 +302,6 @@ where
                 });
             }
 
-            let (start_one, end_one) = (start_one?, end_one?);
             if end_one != start_one {
                 heap.push(QueueItem {
                     len: end_one - start_one,
@@ -322,10 +318,9 @@ where
 
     /// Get the sum of elements in the range [start, end).
     fn range_sum(&self, start: usize, end: usize) -> PyResult<BigUint> {
-        let result = self
-            .range_list(start, end, None, None)?
-            .par_iter()
-            .try_fold(BigUint::zero, |acc, (value, count)| -> PyResult<BigUint> {
+        let result = self.range_list(start, end, None, None)?.iter().try_fold(
+            BigUint::zero(),
+            |acc, (value, count)| -> PyResult<BigUint> {
                 let value = value
                     .to_biguint()
                     .ok_or(PyRuntimeError::new_err("failed to convert to BigUint"))?;
@@ -334,8 +329,8 @@ where
                     .ok_or(PyRuntimeError::new_err("failed to convert to BigUint"))?;
 
                 Ok(acc + value * count)
-            })
-            .try_reduce(BigUint::zero, |a, b| Ok(a + b))?;
+            },
+        )?;
 
         Ok(result)
     }
@@ -377,64 +372,55 @@ where
         }];
 
         for (layer, zero) in iter::zip(self.get_layers(), self.get_zeros()) {
-            stack = stack
-                .into_par_iter()
-                .try_fold(
-                    Vec::new,
-                    |mut acc, item| -> PyResult<Vec<StackItem<NumberType>>> {
-                        let StackItem {
-                            start1,
-                            end1,
-                            start2,
-                            end2,
-                            value,
-                        } = item;
-                        let start1_zero = layer.rank(false, start1)?;
-                        let end1_zero = layer.rank(false, end1)?;
-                        debug_assert!(start1_zero <= end1_zero);
+            stack = stack.into_iter().try_fold(
+                Vec::new(),
+                |mut acc, item| -> PyResult<Vec<StackItem<NumberType>>> {
+                    let StackItem {
+                        start1,
+                        end1,
+                        start2,
+                        end2,
+                        value,
+                    } = item;
+                    let start1_zero = layer.rank(false, start1)?;
+                    let end1_zero = layer.rank(false, end1)?;
+                    debug_assert!(start1_zero <= end1_zero);
 
-                        let start2_zero = layer.rank(false, start2)?;
-                        let end2_zero = layer.rank(false, end2)?;
-                        debug_assert!(start2_zero <= end2_zero);
+                    let start2_zero = layer.rank(false, start2)?;
+                    let end2_zero = layer.rank(false, end2)?;
+                    debug_assert!(start2_zero <= end2_zero);
 
-                        let start1_one = zero + layer.rank(true, start1)?;
-                        let end1_one = zero + layer.rank(true, end1)?;
-                        debug_assert!(start1_one <= end1_one);
+                    let start1_one = zero + layer.rank(true, start1)?;
+                    let end1_one = zero + layer.rank(true, end1)?;
+                    debug_assert!(start1_one <= end1_one);
 
-                        let start2_one = zero + layer.rank(true, start2)?;
-                        let end2_one = zero + layer.rank(true, end2)?;
-                        debug_assert!(start2_one <= end2_one);
+                    let start2_one = zero + layer.rank(true, start2)?;
+                    let end2_one = zero + layer.rank(true, end2)?;
+                    debug_assert!(start2_one <= end2_one);
 
-                        if start1_zero != end1_zero && start2_zero != end2_zero {
-                            acc.push(StackItem {
-                                start1: start1_zero,
-                                end1: end1_zero,
-                                start2: start2_zero,
-                                end2: end2_zero,
-                                value: &value << 1usize,
-                            });
-                        }
+                    if start1_zero != end1_zero && start2_zero != end2_zero {
+                        acc.push(StackItem {
+                            start1: start1_zero,
+                            end1: end1_zero,
+                            start2: start2_zero,
+                            end2: end2_zero,
+                            value: &value << 1usize,
+                        });
+                    }
 
-                        if start1_one != end1_one && start2_one != end2_one {
-                            acc.push(StackItem {
-                                start1: start1_one,
-                                end1: end1_one,
-                                start2: start2_one,
-                                end2: end2_one,
-                                value: (&value << 1usize) | NumberType::one(),
-                            });
-                        }
+                    if start1_one != end1_one && start2_one != end2_one {
+                        acc.push(StackItem {
+                            start1: start1_one,
+                            end1: end1_one,
+                            start2: start2_one,
+                            end2: end2_one,
+                            value: (&value << 1usize) | NumberType::one(),
+                        });
+                    }
 
-                        Ok(acc)
-                    },
-                )
-                .try_reduce(
-                    Vec::new,
-                    |mut a, mut b| -> PyResult<Vec<StackItem<NumberType>>> {
-                        a.append(&mut b);
-                        Ok(a)
-                    },
-                )?;
+                    Ok(acc)
+                },
+            )?;
         }
 
         let result = stack
@@ -512,17 +498,15 @@ where
             return Err(PyValueError::new_err("lower must be less than upper"));
         }
 
-        let (upper_count, lower_count) = rayon::join(
-            || match upper {
-                Some(upper) => self.range_freq_less(start, end, upper),
-                None => Ok(end - start),
-            },
-            || match lower {
-                Some(lower) => self.range_freq_less(start, end, lower),
-                None => Ok(0usize),
-            },
-        );
-        Ok(upper_count? - lower_count?)
+        let upper_count = match upper {
+            Some(upper) => self.range_freq_less(start, end, upper)?,
+            None => end - start,
+        };
+        let lower_count = match lower {
+            Some(lower) => self.range_freq_less(start, end, lower)?,
+            None => 0usize,
+        };
+        Ok(upper_count - lower_count)
     }
 
     /// Get a list of values c in the range [start, end) such that lower <= c < upper.
@@ -560,55 +544,46 @@ where
         for (depth, (layer, zero)) in iter::zip(self.get_layers(), self.get_zeros()).enumerate() {
             let shift = self.height() - depth - 1;
 
-            stack = stack
-                .into_par_iter()
-                .try_fold(
-                    Vec::new,
-                    |mut acc, item| -> PyResult<Vec<StackItem<NumberType>>> {
-                        let StackItem { start, end, value } = item;
+            stack = stack.into_iter().try_fold(
+                Vec::new(),
+                |mut acc, item| -> PyResult<Vec<StackItem<NumberType>>> {
+                    let StackItem { start, end, value } = item;
 
-                        let start_zero = layer.rank(false, start)?;
-                        let end_zero = layer.rank(false, end)?;
-                        debug_assert!(start_zero <= end_zero);
+                    let start_zero = layer.rank(false, start)?;
+                    let end_zero = layer.rank(false, end)?;
+                    debug_assert!(start_zero <= end_zero);
 
-                        let start_one = zero + layer.rank(true, start)?;
-                        let end_one = zero + layer.rank(true, end)?;
-                        debug_assert!(start_one <= end_one);
+                    let start_one = zero + layer.rank(true, start)?;
+                    let end_one = zero + layer.rank(true, end)?;
+                    debug_assert!(start_one <= end_one);
 
-                        let next_value_zero = &value << 1;
-                        if start_zero != end_zero
-                            && lower.is_none_or(|lower| (lower >> shift) <= next_value_zero)
-                            && upper.is_none_or(|upper| next_value_zero <= (upper >> shift))
-                        {
-                            acc.push(StackItem {
-                                start: start_zero,
-                                end: end_zero,
-                                value: next_value_zero,
-                            });
-                        }
+                    let next_value_zero = &value << 1;
+                    if start_zero != end_zero
+                        && lower.is_none_or(|lower| (lower >> shift) <= next_value_zero)
+                        && upper.is_none_or(|upper| next_value_zero <= (upper >> shift))
+                    {
+                        acc.push(StackItem {
+                            start: start_zero,
+                            end: end_zero,
+                            value: next_value_zero,
+                        });
+                    }
 
-                        let next_value_one = (&value << 1) | NumberType::one();
-                        if start_one != end_one
-                            && lower.is_none_or(|lower| (lower >> shift) <= next_value_one)
-                            && upper.is_none_or(|upper| next_value_one <= (upper >> shift))
-                        {
-                            acc.push(StackItem {
-                                start: start_one,
-                                end: end_one,
-                                value: next_value_one,
-                            });
-                        }
+                    let next_value_one = (&value << 1) | NumberType::one();
+                    if start_one != end_one
+                        && lower.is_none_or(|lower| (lower >> shift) <= next_value_one)
+                        && upper.is_none_or(|upper| next_value_one <= (upper >> shift))
+                    {
+                        acc.push(StackItem {
+                            start: start_one,
+                            end: end_one,
+                            value: next_value_one,
+                        });
+                    }
 
-                        Ok(acc)
-                    },
-                )
-                .try_reduce(
-                    Vec::new,
-                    |mut a, mut b| -> PyResult<Vec<StackItem<NumberType>>> {
-                        a.append(&mut b);
-                        Ok(a)
-                    },
-                )?;
+                    Ok(acc)
+                },
+            )?;
         }
 
         let result = stack
@@ -652,48 +627,38 @@ where
         }];
 
         for (layer, zero) in iter::zip(self.get_layers(), self.get_zeros()) {
-            stack = stack
-                .into_par_iter()
-                .take(k)
-                .try_fold(
-                    Vec::new,
-                    |mut acc, item| -> PyResult<Vec<StackItem<NumberType>>> {
-                        let StackItem { start, end, value } = item;
+            stack = stack.into_iter().take(k).try_fold(
+                Vec::new(),
+                |mut acc, item| -> PyResult<Vec<StackItem<NumberType>>> {
+                    let StackItem { start, end, value } = item;
 
-                        let start_one = zero + layer.rank(true, start)?;
-                        let end_one = zero + layer.rank(true, end)?;
-                        debug_assert!(start_one <= end_one);
+                    let start_one = zero + layer.rank(true, start)?;
+                    let end_one = zero + layer.rank(true, end)?;
+                    debug_assert!(start_one <= end_one);
 
-                        let start_zero = layer.rank(false, start)?;
-                        let end_zero = layer.rank(false, end)?;
-                        debug_assert!(start_zero <= end_zero);
+                    let start_zero = layer.rank(false, start)?;
+                    let end_zero = layer.rank(false, end)?;
+                    debug_assert!(start_zero <= end_zero);
 
-                        if start_one != end_one {
-                            acc.push(StackItem {
-                                start: start_one,
-                                end: end_one,
-                                value: (&value << 1) | NumberType::one(),
-                            });
-                        }
+                    if start_one != end_one {
+                        acc.push(StackItem {
+                            start: start_one,
+                            end: end_one,
+                            value: (&value << 1) | NumberType::one(),
+                        });
+                    }
 
-                        if start_zero != end_zero {
-                            acc.push(StackItem {
-                                start: start_zero,
-                                end: end_zero,
-                                value: &value << 1,
-                            });
-                        }
+                    if start_zero != end_zero {
+                        acc.push(StackItem {
+                            start: start_zero,
+                            end: end_zero,
+                            value: &value << 1,
+                        });
+                    }
 
-                        Ok(acc)
-                    },
-                )
-                .try_reduce(
-                    Vec::new,
-                    |mut a, mut b| -> PyResult<Vec<StackItem<NumberType>>> {
-                        a.append(&mut b);
-                        Ok(a)
-                    },
-                )?;
+                    Ok(acc)
+                },
+            )?;
         }
 
         let result = stack
@@ -735,48 +700,38 @@ where
         }];
 
         for (layer, zero) in iter::zip(self.get_layers(), self.get_zeros()) {
-            stack = stack
-                .into_par_iter()
-                .take(k)
-                .try_fold(
-                    Vec::new,
-                    |mut acc, item| -> PyResult<Vec<StackItem<NumberType>>> {
-                        let StackItem { start, end, value } = item;
+            stack = stack.into_iter().take(k).try_fold(
+                Vec::new(),
+                |mut acc, item| -> PyResult<Vec<StackItem<NumberType>>> {
+                    let StackItem { start, end, value } = item;
 
-                        let start_zero = layer.rank(false, start)?;
-                        let end_zero = layer.rank(false, end)?;
-                        debug_assert!(start_zero <= end_zero);
+                    let start_zero = layer.rank(false, start)?;
+                    let end_zero = layer.rank(false, end)?;
+                    debug_assert!(start_zero <= end_zero);
 
-                        let start_one = zero + layer.rank(true, start)?;
-                        let end_one = zero + layer.rank(true, end)?;
-                        debug_assert!(start_one <= end_one);
+                    let start_one = zero + layer.rank(true, start)?;
+                    let end_one = zero + layer.rank(true, end)?;
+                    debug_assert!(start_one <= end_one);
 
-                        if start_zero != end_zero {
-                            acc.push(StackItem {
-                                start: start_zero,
-                                end: end_zero,
-                                value: &value << 1,
-                            });
-                        }
+                    if start_zero != end_zero {
+                        acc.push(StackItem {
+                            start: start_zero,
+                            end: end_zero,
+                            value: &value << 1,
+                        });
+                    }
 
-                        if start_one != end_one {
-                            acc.push(StackItem {
-                                start: start_one,
-                                end: end_one,
-                                value: (&value << 1) | NumberType::one(),
-                            });
-                        }
+                    if start_one != end_one {
+                        acc.push(StackItem {
+                            start: start_one,
+                            end: end_one,
+                            value: (&value << 1) | NumberType::one(),
+                        });
+                    }
 
-                        Ok(acc)
-                    },
-                )
-                .try_reduce(
-                    Vec::new,
-                    |mut a, mut b| -> PyResult<Vec<StackItem<NumberType>>> {
-                        a.append(&mut b);
-                        Ok(a)
-                    },
-                )?;
+                    Ok(acc)
+                },
+            )?;
         }
 
         let result = stack
