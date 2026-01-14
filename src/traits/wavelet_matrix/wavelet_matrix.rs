@@ -78,6 +78,7 @@ where
         let mut indices = (0..self.len()).collect::<Vec<usize>>();
         let mut values = vec![NumberType::zero(); self.len()];
         for (depth, (layer, zero)) in iter::zip(self.get_layers(), self.get_zeros()).enumerate() {
+            let shift = self.height() - depth - 1;
             let bits = layer.values()?;
             let rank = iter::once([0usize; 2])
                 .chain(bits.iter().scan([0usize; 2], |acc, &bit| {
@@ -91,7 +92,7 @@ where
                 .for_each(|(index, value)| {
                     let bit = bits[*index];
                     if bit {
-                        *value |= NumberType::one() << (self.height() - depth - 1);
+                        *value |= NumberType::one() << shift;
                         *index = zero + rank[*index][bit as usize];
                     } else {
                         *index = rank[*index][bit as usize];
