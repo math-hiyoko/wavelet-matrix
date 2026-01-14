@@ -627,38 +627,45 @@ where
         }];
 
         for (layer, zero) in iter::zip(self.get_layers(), self.get_zeros()) {
-            stack = stack.into_iter().take(k).try_fold(
-                Vec::new(),
-                |mut acc, item| -> PyResult<Vec<StackItem<NumberType>>> {
-                    let StackItem { start, end, value } = item;
+            let mut next_stack = Vec::with_capacity(k);
 
-                    let start_one = zero + layer.rank(true, start)?;
-                    let end_one = zero + layer.rank(true, end)?;
-                    debug_assert!(start_one <= end_one);
+            for StackItem { start, end, value } in stack {
+                let start_one = zero + layer.rank(true, start)?;
+                let end_one = zero + layer.rank(true, end)?;
+                debug_assert!(start_one <= end_one);
 
-                    let start_zero = layer.rank(false, start)?;
-                    let end_zero = layer.rank(false, end)?;
-                    debug_assert!(start_zero <= end_zero);
+                let next_value_one = (&value << 1) | NumberType::one();
+                if start_one != end_one {
+                    next_stack.push(StackItem {
+                        start: start_one,
+                        end: end_one,
+                        value: next_value_one,
+                    });
+                }
 
-                    if start_one != end_one {
-                        acc.push(StackItem {
-                            start: start_one,
-                            end: end_one,
-                            value: (&value << 1) | NumberType::one(),
-                        });
-                    }
+                if next_stack.len() >= k {
+                    break;
+                }
 
-                    if start_zero != end_zero {
-                        acc.push(StackItem {
-                            start: start_zero,
-                            end: end_zero,
-                            value: &value << 1,
-                        });
-                    }
+                let start_zero = layer.rank(false, start)?;
+                let end_zero = layer.rank(false, end)?;
+                debug_assert!(start_zero <= end_zero);
 
-                    Ok(acc)
-                },
-            )?;
+                let next_value_zero = &value << 1;
+                if start_zero != end_zero {
+                    next_stack.push(StackItem {
+                        start: start_zero,
+                        end: end_zero,
+                        value: next_value_zero,
+                    });
+                }
+
+                if next_stack.len() >= k {
+                    break;
+                }
+            }
+
+            stack = next_stack;
         }
 
         let result = stack
@@ -700,38 +707,45 @@ where
         }];
 
         for (layer, zero) in iter::zip(self.get_layers(), self.get_zeros()) {
-            stack = stack.into_iter().take(k).try_fold(
-                Vec::new(),
-                |mut acc, item| -> PyResult<Vec<StackItem<NumberType>>> {
-                    let StackItem { start, end, value } = item;
+            let mut next_stack = Vec::with_capacity(k);
 
-                    let start_zero = layer.rank(false, start)?;
-                    let end_zero = layer.rank(false, end)?;
-                    debug_assert!(start_zero <= end_zero);
+            for StackItem { start, end, value } in stack {
+                let start_zero = layer.rank(false, start)?;
+                let end_zero = layer.rank(false, end)?;
+                debug_assert!(start_zero <= end_zero);
 
-                    let start_one = zero + layer.rank(true, start)?;
-                    let end_one = zero + layer.rank(true, end)?;
-                    debug_assert!(start_one <= end_one);
+                let next_value_zero = &value << 1;
+                if start_zero != end_zero {
+                    next_stack.push(StackItem {
+                        start: start_zero,
+                        end: end_zero,
+                        value: next_value_zero,
+                    });
+                }
 
-                    if start_zero != end_zero {
-                        acc.push(StackItem {
-                            start: start_zero,
-                            end: end_zero,
-                            value: &value << 1,
-                        });
-                    }
+                if next_stack.len() >= k {
+                    break;
+                }
 
-                    if start_one != end_one {
-                        acc.push(StackItem {
-                            start: start_one,
-                            end: end_one,
-                            value: (&value << 1) | NumberType::one(),
-                        });
-                    }
+                let start_one = zero + layer.rank(true, start)?;
+                let end_one = zero + layer.rank(true, end)?;
+                debug_assert!(start_one <= end_one);
 
-                    Ok(acc)
-                },
-            )?;
+                let next_value_one = (&value << 1) | NumberType::one();
+                if start_one != end_one {
+                    next_stack.push(StackItem {
+                        start: start_one,
+                        end: end_one,
+                        value: next_value_one,
+                    });
+                }
+
+                if next_stack.len() >= k {
+                    break;
+                }
+            }
+
+            stack = next_stack;
         }
 
         let result = stack
