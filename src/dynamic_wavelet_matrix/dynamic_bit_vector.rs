@@ -621,7 +621,7 @@ impl BitVectorTrait for DynamicBitVector {
             return Err(PyIndexError::new_err("index out of bounds"));
         }
 
-        let mut node = &*self.root;
+        let mut node = self.root.as_ref();
         while let DynamicBitVectorNode::Internal {
             left,
             right,
@@ -657,7 +657,7 @@ impl BitVectorTrait for DynamicBitVector {
             return Ok(end - self.rank(true, end)?);
         }
 
-        let mut node = &*self.root;
+        let mut node = self.root.as_ref();
         let mut rank = 0usize;
         while let DynamicBitVectorNode::Internal {
             left,
@@ -693,7 +693,7 @@ impl BitVectorTrait for DynamicBitVector {
             return Ok(None);
         }
 
-        let mut node = &*self.root;
+        let mut node = self.root.as_ref();
         let mut index = 0usize;
         while let DynamicBitVectorNode::Internal {
             left,

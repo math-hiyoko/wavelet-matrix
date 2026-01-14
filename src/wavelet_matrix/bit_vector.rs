@@ -6,6 +6,7 @@ use pyo3::{
     PyResult,
     exceptions::{PyIndexError, PyValueError},
 };
+use rayon::prelude::*;
 
 use crate::traits::{bit_vector::bit_vector::BitVectorTrait, utils::bit_select::BitSelect};
 
@@ -78,15 +79,16 @@ impl BitVector {
 impl BitVectorTrait for BitVector {
     #[inline]
     fn values(&self) -> PyResult<Vec<bool>> {
-        Ok(self
+        let mut result: Vec<bool> = self
             .blocks
-            .iter()
-            .flat_map(|&block| {
+            .par_iter()
+            .flat_map_iter(|&block| {
                 (0..BlockType::BITS as usize)
                     .map(move |i| ((block >> i) & BlockType::one()).is_one())
             })
-            .take(self.len)
-            .collect())
+            .collect();
+        result.truncate(self.len);
+        Ok(result)
     }
 
     #[inline]

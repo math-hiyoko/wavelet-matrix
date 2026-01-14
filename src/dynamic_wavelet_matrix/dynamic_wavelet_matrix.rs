@@ -3,6 +3,7 @@ use std::{fmt, iter, marker, ops};
 use num_bigint::ToBigUint;
 use num_traits::{One, Zero};
 use pyo3::{PyResult, exceptions::PyValueError};
+use rayon::prelude::*;
 
 use super::dynamic_bit_vector::DynamicBitVector;
 use crate::traits::{
@@ -23,12 +24,17 @@ pub(crate) struct DynamicWaveletMatrix<NumberType> {
 
 impl<NumberType> DynamicWaveletMatrix<NumberType>
 where
-    NumberType: ops::BitAnd<NumberType, Output = NumberType> + BitWidth + Clone + One + Ord,
+    NumberType: ops::BitAnd<NumberType, Output = NumberType> + BitWidth + Clone + One + Ord + Sync,
     for<'a> &'a NumberType: ops::Shr<usize, Output = NumberType> + fmt::Display,
 {
     pub(crate) fn new(data: &[NumberType], max_bit: Option<usize>) -> PyResult<Self> {
+        let len = data.len();
+
         let mut values = data.to_owned();
-        let max_width = values.iter().max().map_or(0usize, |max| max.bit_width());
+        let max_width = values
+            .par_iter()
+            .max()
+            .map_or(0usize, |max| max.bit_width());
         if max_bit.is_some_and(|max_bit| max_bit < max_width) {
             return Err(PyValueError::new_err(format!(
                 "max_bit = {} is less than the maximum bit width of the data = {}",
@@ -37,23 +43,20 @@ where
             )));
         }
         let height = max_bit.unwrap_or(max_width);
-        let len = values.len();
-        let mut layers: Vec<DynamicBitVector> = Vec::with_capacity(height);
-        let mut zeros: Vec<usize> = Vec::with_capacity(height);
 
+        let mut zeros = Vec::with_capacity(height);
+        let mut bits = Vec::with_capacity(height);
         for i in 0..height {
-            let bits = values
-                .iter()
+            let layer_bits = values
+                .par_iter()
                 .map(|value| (value >> (height - i - 1) & NumberType::one()).is_one())
                 .collect::<Vec<_>>();
-            let num_zeros = bits.iter().filter(|&&bit| !bit).count();
-            layers.push(DynamicBitVector::new(&bits));
-            zeros.push(num_zeros);
+            let num_zeros = layer_bits.par_iter().filter(|&&bit| !bit).count();
 
             let mut next_values = vec![NumberType::one(); len];
             let mut zero_index = 0usize;
             let mut one_index = num_zeros;
-            for (bit, value) in iter::zip(bits, values) {
+            for (&bit, value) in iter::zip(&layer_bits, values) {
                 if bit {
                     next_values[one_index] = value;
                     one_index += 1;
@@ -62,8 +65,16 @@ where
                     zero_index += 1;
                 }
             }
+
+            zeros.push(num_zeros);
+            bits.push(layer_bits);
             values = next_values;
         }
+
+        let layers = bits
+            .into_par_iter()
+            .map(|layer_bits| DynamicBitVector::new(&layer_bits))
+            .collect::<Vec<_>>();
 
         Ok(DynamicWaveletMatrix {
             layers,
@@ -90,6 +101,8 @@ where
         + ops::ShlAssign<usize>
         + ToBigUint
         + Zero
+        + Send
+        + Sync
         + 'static,
     for<'a> &'a NumberType:
         ops::Shl<usize, Output = NumberType> + ops::Shr<usize, Output = NumberType>,
@@ -126,6 +139,8 @@ where
         + ops::ShlAssign<usize>
         + ToBigUint
         + Zero
+        + Send
+        + Sync
         + 'static,
     for<'a> &'a NumberType:
         ops::Shl<usize, Output = NumberType> + ops::Shr<usize, Output = NumberType> + fmt::Display,
