@@ -184,73 +184,23 @@ impl PyDynamicWaveletMatrix {
     }
 
     fn __str__(&self, py: Python<'_>) -> PyResult<String> {
-        py.detach(move || match &self.inner {
-            DynamicWaveletMatrixEnum::U8(wm) => Ok(format!(
-                "DynamicWaveletMatrix({:?}, max_bit={})",
-                wm.values()?,
-                wm.height()
-            )),
-            DynamicWaveletMatrixEnum::U16(wm) => Ok(format!(
-                "DynamicWaveletMatrix({:?}, max_bit={})",
-                wm.values()?,
-                wm.height()
-            )),
-            DynamicWaveletMatrixEnum::U32(wm) => Ok(format!(
-                "DynamicWaveletMatrix({:?}, max_bit={})",
-                wm.values()?,
-                wm.height()
-            )),
-            DynamicWaveletMatrixEnum::U64(wm) => Ok(format!(
-                "DynamicWaveletMatrix({:?}, max_bit={})",
-                wm.values()?,
-                wm.height()
-            )),
-            DynamicWaveletMatrixEnum::U128(wm) => Ok(format!(
-                "DynamicWaveletMatrix({:?}, max_bit={})",
-                wm.values()?,
-                wm.height()
-            )),
-            DynamicWaveletMatrixEnum::BigUint(wm) => Ok(format!(
-                "DynamicWaveletMatrix({:?}, max_bit={})",
-                wm.values()?,
-                wm.height()
-            )),
-        })
+        let (len, uint_type, max_bit) = py.detach(move || match &self.inner {
+            DynamicWaveletMatrixEnum::U8(wm) => (wm.len(), "u8", wm.height()),
+            DynamicWaveletMatrixEnum::U16(wm) => (wm.len(), "u16", wm.height()),
+            DynamicWaveletMatrixEnum::U32(wm) => (wm.len(), "u32", wm.height()),
+            DynamicWaveletMatrixEnum::U64(wm) => (wm.len(), "u64", wm.height()),
+            DynamicWaveletMatrixEnum::U128(wm) => (wm.len(), "u128", wm.height()),
+            DynamicWaveletMatrixEnum::BigUint(wm) => (wm.len(), "BigUint", wm.height()),
+        });
+        let result = format!(
+            "DynamicWaveletMatrix(len={}, type={}, max_bit={})",
+            len, uint_type, max_bit
+        );
+        Ok(result)
     }
 
     fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
-        py.detach(move || match &self.inner {
-            DynamicWaveletMatrixEnum::U8(wm) => Ok(format!(
-                "DynamicWaveletMatrix({:?}, max_bit={})",
-                wm.values()?,
-                wm.height()
-            )),
-            DynamicWaveletMatrixEnum::U16(wm) => Ok(format!(
-                "DynamicWaveletMatrix({:?}, max_bit={})",
-                wm.values()?,
-                wm.height()
-            )),
-            DynamicWaveletMatrixEnum::U32(wm) => Ok(format!(
-                "DynamicWaveletMatrix({:?}, max_bit={})",
-                wm.values()?,
-                wm.height()
-            )),
-            DynamicWaveletMatrixEnum::U64(wm) => Ok(format!(
-                "DynamicWaveletMatrix({:?}, max_bit={})",
-                wm.values()?,
-                wm.height()
-            )),
-            DynamicWaveletMatrixEnum::U128(wm) => Ok(format!(
-                "DynamicWaveletMatrix({:?}, max_bit={})",
-                wm.values()?,
-                wm.height()
-            )),
-            DynamicWaveletMatrixEnum::BigUint(wm) => Ok(format!(
-                "DynamicWaveletMatrix({:?}, max_bit={})",
-                wm.values()?,
-                wm.height()
-            )),
-        })
+        self.__str__(py)
     }
 
     fn __copy__(&self, py: Python<'_>) -> PyResult<Self> {
@@ -1149,27 +1099,15 @@ mod tests {
             );
             assert_eq!(
                 wm.__str__(py).unwrap(),
-                format!(
-                    "DynamicWaveletMatrix({:?}, max_bit={})",
-                    elements,
-                    wm.max_bit(py).unwrap()
-                )
+                "DynamicWaveletMatrix(len=12, type=u8, max_bit=3)",
             );
             assert_eq!(
                 wm.__repr__(py).unwrap(),
-                format!(
-                    "DynamicWaveletMatrix({:?}, max_bit={})",
-                    elements,
-                    wm.max_bit(py).unwrap()
-                )
+                "DynamicWaveletMatrix(len=12, type=u8, max_bit=3)",
             );
             assert_eq!(
                 wm.__copy__(py).unwrap().__str__(py).unwrap(),
-                format!(
-                    "DynamicWaveletMatrix({:?}, max_bit={})",
-                    elements,
-                    wm.max_bit(py).unwrap()
-                )
+                "DynamicWaveletMatrix(len=12, type=u8, max_bit=3)",
             );
             assert_eq!(
                 wm.values(py).unwrap().extract::<Vec<u8>>(py).unwrap(),
@@ -1374,27 +1312,15 @@ mod tests {
             );
             assert_eq!(
                 wm.__str__(py).unwrap(),
-                format!(
-                    "DynamicWaveletMatrix({:?}, max_bit={})",
-                    elements,
-                    wm.max_bit(py).unwrap()
-                )
+                "DynamicWaveletMatrix(len=12, type=u16, max_bit=11)",
             );
             assert_eq!(
                 wm.__repr__(py).unwrap(),
-                format!(
-                    "DynamicWaveletMatrix({:?}, max_bit={})",
-                    elements,
-                    wm.max_bit(py).unwrap()
-                )
+                "DynamicWaveletMatrix(len=12, type=u16, max_bit=11)",
             );
             assert_eq!(
                 wm.__copy__(py).unwrap().__str__(py).unwrap(),
-                format!(
-                    "DynamicWaveletMatrix({:?}, max_bit={})",
-                    elements,
-                    wm.max_bit(py).unwrap()
-                )
+                "DynamicWaveletMatrix(len=12, type=u16, max_bit=11)",
             );
             assert_eq!(
                 wm.values(py).unwrap().extract::<Vec<u16>>(py).unwrap(),
@@ -1599,27 +1525,15 @@ mod tests {
             );
             assert_eq!(
                 wm.__str__(py).unwrap(),
-                format!(
-                    "DynamicWaveletMatrix({:?}, max_bit={})",
-                    elements,
-                    wm.max_bit(py).unwrap()
-                )
+                "DynamicWaveletMatrix(len=12, type=u32, max_bit=19)",
             );
             assert_eq!(
                 wm.__repr__(py).unwrap(),
-                format!(
-                    "DynamicWaveletMatrix({:?}, max_bit={})",
-                    elements,
-                    wm.max_bit(py).unwrap()
-                )
+                "DynamicWaveletMatrix(len=12, type=u32, max_bit=19)",
             );
             assert_eq!(
                 wm.__copy__(py).unwrap().__str__(py).unwrap(),
-                format!(
-                    "DynamicWaveletMatrix({:?}, max_bit={})",
-                    elements,
-                    wm.max_bit(py).unwrap()
-                )
+                "DynamicWaveletMatrix(len=12, type=u32, max_bit=19)",
             );
             assert_eq!(
                 wm.values(py).unwrap().extract::<Vec<u32>>(py).unwrap(),
@@ -1824,27 +1738,15 @@ mod tests {
             );
             assert_eq!(
                 wm.__str__(py).unwrap(),
-                format!(
-                    "DynamicWaveletMatrix({:?}, max_bit={})",
-                    elements,
-                    wm.max_bit(py).unwrap()
-                )
+                "DynamicWaveletMatrix(len=12, type=u64, max_bit=35)",
             );
             assert_eq!(
                 wm.__repr__(py).unwrap(),
-                format!(
-                    "DynamicWaveletMatrix({:?}, max_bit={})",
-                    elements,
-                    wm.max_bit(py).unwrap()
-                )
+                "DynamicWaveletMatrix(len=12, type=u64, max_bit=35)",
             );
             assert_eq!(
                 wm.__copy__(py).unwrap().__str__(py).unwrap(),
-                format!(
-                    "DynamicWaveletMatrix({:?}, max_bit={})",
-                    elements,
-                    wm.max_bit(py).unwrap()
-                )
+                "DynamicWaveletMatrix(len=12, type=u64, max_bit=35)",
             );
             assert_eq!(
                 wm.values(py).unwrap().extract::<Vec<u64>>(py).unwrap(),
@@ -2049,27 +1951,15 @@ mod tests {
             );
             assert_eq!(
                 wm.__str__(py).unwrap(),
-                format!(
-                    "DynamicWaveletMatrix({:?}, max_bit={})",
-                    elements,
-                    wm.max_bit(py).unwrap()
-                )
+                "DynamicWaveletMatrix(len=12, type=u128, max_bit=67)",
             );
             assert_eq!(
                 wm.__repr__(py).unwrap(),
-                format!(
-                    "DynamicWaveletMatrix({:?}, max_bit={})",
-                    elements,
-                    wm.max_bit(py).unwrap()
-                )
+                "DynamicWaveletMatrix(len=12, type=u128, max_bit=67)",
             );
             assert_eq!(
                 wm.__copy__(py).unwrap().__str__(py).unwrap(),
-                format!(
-                    "DynamicWaveletMatrix({:?}, max_bit={})",
-                    elements,
-                    wm.max_bit(py).unwrap()
-                )
+                "DynamicWaveletMatrix(len=12, type=u128, max_bit=67)",
             );
             assert_eq!(
                 wm.values(py).unwrap().extract::<Vec<u128>>(py).unwrap(),
@@ -2274,27 +2164,15 @@ mod tests {
             );
             assert_eq!(
                 wm.__str__(py).unwrap(),
-                format!(
-                    "DynamicWaveletMatrix({:?}, max_bit={})",
-                    elements,
-                    wm.max_bit(py).unwrap()
-                )
+                "DynamicWaveletMatrix(len=12, type=BigUint, max_bit=131)",
             );
             assert_eq!(
                 wm.__repr__(py).unwrap(),
-                format!(
-                    "DynamicWaveletMatrix({:?}, max_bit={})",
-                    elements,
-                    wm.max_bit(py).unwrap()
-                )
+                "DynamicWaveletMatrix(len=12, type=BigUint, max_bit=131)",
             );
             assert_eq!(
                 wm.__copy__(py).unwrap().__str__(py).unwrap(),
-                format!(
-                    "DynamicWaveletMatrix({:?}, max_bit={})",
-                    elements,
-                    wm.max_bit(py).unwrap()
-                )
+                "DynamicWaveletMatrix(len=12, type=BigUint, max_bit=131)",
             );
             assert_eq!(
                 wm.values(py).unwrap().extract::<Vec<BigUint>>(py).unwrap(),
