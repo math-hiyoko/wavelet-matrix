@@ -2,6 +2,7 @@ use std::{collections, hash, iter, ops};
 
 use num_bigint::ToBigUint;
 use num_traits::{One, Zero};
+use rayon::prelude::*;
 
 use super::bit_vector::BitVector;
 use crate::traits::{
@@ -19,30 +20,37 @@ pub(crate) struct WaveletMatrix<NumberType> {
 
 impl<NumberType> WaveletMatrix<NumberType>
 where
-    NumberType:
-        ops::BitAnd<NumberType, Output = NumberType> + BitWidth + Clone + hash::Hash + One + Ord,
+    NumberType: ops::BitAnd<NumberType, Output = NumberType>
+        + BitWidth
+        + Clone
+        + hash::Hash
+        + One
+        + Ord
+        + Sync,
     for<'a> &'a NumberType: ops::Shr<usize, Output = NumberType>,
 {
     pub(crate) fn new(data: &[NumberType]) -> Self {
-        let mut values = data.to_owned();
-        let height = values.iter().max().map_or(0usize, |max| max.bit_width());
-        let len = values.len();
-        let mut layers: Vec<BitVector> = Vec::with_capacity(height);
-        let mut zeros: Vec<usize> = Vec::with_capacity(height);
+        let len = data.len();
 
+        let mut values = data.to_owned();
+        let height = values
+            .par_iter()
+            .max()
+            .map_or(0usize, |max| max.bit_width());
+
+        let mut zeros = Vec::with_capacity(height);
+        let mut bits = Vec::with_capacity(height);
         for i in 0..height {
-            let bits = values
-                .iter()
+            let layer_bits = values
+                .par_iter()
                 .map(|value| (value >> (height - i - 1) & NumberType::one()).is_one())
                 .collect::<Vec<_>>();
-            let num_zeros = bits.iter().filter(|&&bit| !bit).count();
-            layers.push(BitVector::new(&bits));
-            zeros.push(num_zeros);
+            let num_zeros = layer_bits.par_iter().filter(|&&bit| !bit).count();
 
             let mut next_values = vec![NumberType::one(); len];
             let mut zero_index = 0usize;
             let mut one_index = num_zeros;
-            for (bit, value) in iter::zip(bits, values) {
+            for (&bit, value) in iter::zip(&layer_bits, values) {
                 if bit {
                     next_values[one_index] = value;
                     one_index += 1;
@@ -51,12 +59,20 @@ where
                     zero_index += 1;
                 }
             }
+
+            zeros.push(num_zeros);
+            bits.push(layer_bits);
             values = next_values;
         }
 
+        let layers = bits
+            .into_par_iter()
+            .map(|layer_bits| BitVector::new(&layer_bits))
+            .collect::<Vec<_>>();
+
         let mut begin_index = collections::HashMap::new();
-        values.iter().enumerate().for_each(|(i, v)| {
-            begin_index.entry(v.clone()).or_insert(i);
+        values.into_iter().enumerate().for_each(|(index, value)| {
+            begin_index.entry(value).or_insert(index);
         });
 
         WaveletMatrix {
@@ -84,6 +100,8 @@ where
         + ops::ShlAssign<usize>
         + ToBigUint
         + Zero
+        + Send
+        + Sync
         + 'static,
     for<'a> &'a NumberType:
         ops::Shl<usize, Output = NumberType> + ops::Shr<usize, Output = NumberType>,

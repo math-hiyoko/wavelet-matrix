@@ -6,6 +6,7 @@ use pyo3::{
     PyResult,
     exceptions::{PyIndexError, PyRuntimeError, PyValueError},
 };
+use rayon::prelude::*;
 
 use crate::traits::{bit_vector::bit_vector::BitVectorTrait, utils::bit_width::BitWidth};
 
@@ -15,6 +16,7 @@ use crate::traits::{bit_vector::bit_vector::BitVectorTrait, utils::bit_width::Bi
 /// one for each bit position. This allows for efficient queries on the sequence.
 pub(crate) trait WaveletMatrixTrait<NumberType, BitVectorType>
 where
+    Self: Send + Sync,
     NumberType: ops::BitAnd<NumberType, Output = NumberType>
         + ops::BitOr<NumberType, Output = NumberType>
         + ops::BitOrAssign
@@ -27,10 +29,11 @@ where
         + ops::ShlAssign<usize>
         + ToBigUint
         + Zero
+        + Send
         + 'static,
     for<'a> &'a NumberType:
         ops::Shl<usize, Output = NumberType> + ops::Shr<usize, Output = NumberType>,
-    BitVectorType: BitVectorTrait,
+    BitVectorType: BitVectorTrait + Sync,
 {
     /// Get the length of the Wavelet Matrix.
     fn len(&self) -> usize;
@@ -74,6 +77,7 @@ where
         let mut indices = (0..self.len()).collect::<Vec<usize>>();
         let mut values = vec![NumberType::zero(); self.len()];
         for (depth, (layer, zero)) in iter::zip(self.get_layers(), self.get_zeros()).enumerate() {
+            let shift = self.height() - depth - 1;
             let bits = layer.values()?;
             let rank = iter::once([0usize; 2])
                 .chain(bits.iter().scan([0usize; 2], |acc, &bit| {
@@ -81,16 +85,19 @@ where
                     Some(*acc)
                 }))
                 .collect::<Vec<_>>();
-            for (index, value) in iter::zip(indices.iter_mut(), values.iter_mut()) {
-                let bit = bits[*index];
-                if bit {
-                    *value |= NumberType::one() << (self.height() - depth - 1);
-                    *index = zero + rank[*index][bit as usize];
-                } else {
-                    *index = rank[*index][bit as usize];
-                }
-                debug_assert!(*index <= self.len());
-            }
+            indices
+                .par_iter_mut()
+                .zip(values.par_iter_mut())
+                .for_each(|(index, value)| {
+                    let bit = bits[*index];
+                    if bit {
+                        *value |= NumberType::one() << shift;
+                        *index = zero + rank[*index][bit as usize];
+                    } else {
+                        *index = rank[*index][bit as usize];
+                    }
+                    debug_assert!(*index <= self.len());
+                });
         }
         Ok(values)
     }
@@ -279,6 +286,11 @@ where
             let start_zero = layer.rank(false, start)?;
             let end_zero = layer.rank(false, end)?;
             debug_assert!(start_zero <= end_zero);
+
+            let start_one = zero + layer.rank(true, start)?;
+            let end_one = zero + layer.rank(true, end)?;
+            debug_assert!(start_one <= end_one);
+
             if start_zero != end_zero {
                 heap.push(QueueItem {
                     len: end_zero - start_zero,
@@ -289,9 +301,6 @@ where
                 });
             }
 
-            let start_one = zero + layer.rank(true, start)?;
-            let end_one = zero + layer.rank(true, end)?;
-            debug_assert!(start_one <= end_one);
             if end_one != start_one {
                 heap.push(QueueItem {
                     len: end_one - start_one,
@@ -362,54 +371,59 @@ where
         }];
 
         for (layer, zero) in iter::zip(self.get_layers(), self.get_zeros()) {
-            let mut next_stack = Vec::with_capacity(stack.len());
+            stack = stack.into_iter().try_fold(
+                Vec::new(),
+                |mut acc, item| -> PyResult<Vec<StackItem<NumberType>>> {
+                    let StackItem {
+                        start1,
+                        end1,
+                        start2,
+                        end2,
+                        value,
+                    } = item;
+                    let start1_zero = layer.rank(false, start1)?;
+                    let end1_zero = layer.rank(false, end1)?;
+                    debug_assert!(start1_zero <= end1_zero);
 
-            for StackItem {
-                start1,
-                end1,
-                start2,
-                end2,
-                value,
-            } in stack
-            {
-                let start1_zero = layer.rank(false, start1)?;
-                let end1_zero = layer.rank(false, end1)?;
-                debug_assert!(start1_zero <= end1_zero);
-                let start2_zero = layer.rank(false, start2)?;
-                let end2_zero = layer.rank(false, end2)?;
-                debug_assert!(start2_zero <= end2_zero);
-                if start1_zero != end1_zero && start2_zero != end2_zero {
-                    next_stack.push(StackItem {
-                        start1: start1_zero,
-                        end1: end1_zero,
-                        start2: start2_zero,
-                        end2: end2_zero,
-                        value: &value << 1,
-                    });
-                }
+                    let start2_zero = layer.rank(false, start2)?;
+                    let end2_zero = layer.rank(false, end2)?;
+                    debug_assert!(start2_zero <= end2_zero);
 
-                let start1_one = zero + layer.rank(true, start1)?;
-                let end1_one = zero + layer.rank(true, end1)?;
-                debug_assert!(start1_one <= end1_one);
-                let start2_one = zero + layer.rank(true, start2)?;
-                let end2_one = zero + layer.rank(true, end2)?;
-                debug_assert!(start2_one <= end2_one);
-                if start1_one != end1_one && start2_one != end2_one {
-                    next_stack.push(StackItem {
-                        start1: start1_one,
-                        end1: end1_one,
-                        start2: start2_one,
-                        end2: end2_one,
-                        value: (&value << 1) | NumberType::one(),
-                    });
-                }
-            }
+                    let start1_one = zero + layer.rank(true, start1)?;
+                    let end1_one = zero + layer.rank(true, end1)?;
+                    debug_assert!(start1_one <= end1_one);
 
-            stack = next_stack;
+                    let start2_one = zero + layer.rank(true, start2)?;
+                    let end2_one = zero + layer.rank(true, end2)?;
+                    debug_assert!(start2_one <= end2_one);
+
+                    if start1_zero != end1_zero && start2_zero != end2_zero {
+                        acc.push(StackItem {
+                            start1: start1_zero,
+                            end1: end1_zero,
+                            start2: start2_zero,
+                            end2: end2_zero,
+                            value: &value << 1usize,
+                        });
+                    }
+
+                    if start1_one != end1_one && start2_one != end2_one {
+                        acc.push(StackItem {
+                            start1: start1_one,
+                            end1: end1_one,
+                            start2: start2_one,
+                            end2: end2_one,
+                            value: (&value << 1usize) | NumberType::one(),
+                        });
+                    }
+
+                    Ok(acc)
+                },
+            )?;
         }
 
         let result = stack
-            .iter()
+            .into_iter()
             .map(
                 |StackItem {
                      start1,
@@ -417,7 +431,7 @@ where
                      start2,
                      end2,
                      value,
-                 }| (value.clone(), end1 - start1, end2 - start2),
+                 }| (value, end1 - start1, end2 - start2),
             )
             .collect::<Vec<_>>();
         Ok(result)
@@ -527,45 +541,48 @@ where
         }];
 
         for (depth, (layer, zero)) in iter::zip(self.get_layers(), self.get_zeros()).enumerate() {
-            let mut next_stack = Vec::with_capacity(stack.len());
+            let shift = self.height() - depth - 1;
 
-            for StackItem { start, end, value } in stack {
-                let start_zero = layer.rank(false, start)?;
-                let end_zero = layer.rank(false, end)?;
-                debug_assert!(start_zero <= end_zero);
-                let next_value_zero = &value << 1;
-                if start_zero != end_zero
-                    && lower
-                        .is_none_or(|lower| lower >> (self.height() - depth - 1) <= next_value_zero)
-                    && upper
-                        .is_none_or(|upper| next_value_zero <= upper >> (self.height() - depth - 1))
-                {
-                    next_stack.push(StackItem {
-                        start: start_zero,
-                        end: end_zero,
-                        value: next_value_zero,
-                    });
-                }
+            stack = stack.into_iter().try_fold(
+                Vec::new(),
+                |mut acc, item| -> PyResult<Vec<StackItem<NumberType>>> {
+                    let StackItem { start, end, value } = item;
 
-                let start_one = zero + layer.rank(true, start)?;
-                let end_one = zero + layer.rank(true, end)?;
-                debug_assert!(start_one <= end_one);
-                let next_value_one = (&value << 1) | NumberType::one();
-                if start_one != end_one
-                    && lower
-                        .is_none_or(|lower| lower >> (self.height() - depth - 1) <= next_value_one)
-                    && upper
-                        .is_none_or(|upper| next_value_one <= upper >> (self.height() - depth - 1))
-                {
-                    next_stack.push(StackItem {
-                        start: start_one,
-                        end: end_one,
-                        value: next_value_one,
-                    });
-                }
-            }
+                    let start_zero = layer.rank(false, start)?;
+                    let end_zero = layer.rank(false, end)?;
+                    debug_assert!(start_zero <= end_zero);
 
-            stack = next_stack;
+                    let start_one = zero + layer.rank(true, start)?;
+                    let end_one = zero + layer.rank(true, end)?;
+                    debug_assert!(start_one <= end_one);
+
+                    let next_value_zero = &value << 1;
+                    if start_zero != end_zero
+                        && lower.is_none_or(|lower| (lower >> shift) <= next_value_zero)
+                        && upper.is_none_or(|upper| next_value_zero <= (upper >> shift))
+                    {
+                        acc.push(StackItem {
+                            start: start_zero,
+                            end: end_zero,
+                            value: next_value_zero,
+                        });
+                    }
+
+                    let next_value_one = (&value << 1) | NumberType::one();
+                    if start_one != end_one
+                        && lower.is_none_or(|lower| (lower >> shift) <= next_value_one)
+                        && upper.is_none_or(|upper| next_value_one <= (upper >> shift))
+                    {
+                        acc.push(StackItem {
+                            start: start_one,
+                            end: end_one,
+                            value: next_value_one,
+                        });
+                    }
+
+                    Ok(acc)
+                },
+            )?;
         }
 
         let result = stack
@@ -615,6 +632,7 @@ where
                 let start_one = zero + layer.rank(true, start)?;
                 let end_one = zero + layer.rank(true, end)?;
                 debug_assert!(start_one <= end_one);
+
                 let next_value_one = (&value << 1) | NumberType::one();
                 if start_one != end_one {
                     next_stack.push(StackItem {
@@ -631,6 +649,7 @@ where
                 let start_zero = layer.rank(false, start)?;
                 let end_zero = layer.rank(false, end)?;
                 debug_assert!(start_zero <= end_zero);
+
                 let next_value_zero = &value << 1;
                 if start_zero != end_zero {
                     next_stack.push(StackItem {
@@ -650,8 +669,8 @@ where
 
         let result = stack
             .into_iter()
-            .map(|StackItem { start, end, value }| (value, end - start))
             .take(k)
+            .map(|StackItem { start, end, value }| (value, end - start))
             .collect::<Vec<_>>();
 
         Ok(result)
@@ -693,6 +712,7 @@ where
                 let start_zero = layer.rank(false, start)?;
                 let end_zero = layer.rank(false, end)?;
                 debug_assert!(start_zero <= end_zero);
+
                 let next_value_zero = &value << 1;
                 if start_zero != end_zero {
                     next_stack.push(StackItem {
@@ -709,6 +729,7 @@ where
                 let start_one = zero + layer.rank(true, start)?;
                 let end_one = zero + layer.rank(true, end)?;
                 debug_assert!(start_one <= end_one);
+
                 let next_value_one = (&value << 1) | NumberType::one();
                 if start_one != end_one {
                     next_stack.push(StackItem {
@@ -728,8 +749,8 @@ where
 
         let result = stack
             .into_iter()
-            .map(|StackItem { start, end, value }| (value, end - start))
             .take(k)
+            .map(|StackItem { start, end, value }| (value, end - start))
             .collect::<Vec<_>>();
 
         Ok(result)
@@ -839,6 +860,8 @@ mod tests {
             + ops::ShlAssign<usize>
             + ToBigUint
             + Zero
+            + Send
+            + Sync
             + 'static,
         for<'a> &'a NumberType:
             ops::Shl<usize, Output = NumberType> + ops::Shr<usize, Output = NumberType>,

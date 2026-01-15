@@ -27,10 +27,12 @@ where
         + ops::ShlAssign<usize>
         + ToBigUint
         + Zero
+        + Send
+        + Sync
         + 'static,
     for<'a> &'a NumberType:
         ops::Shl<usize, Output = NumberType> + ops::Shr<usize, Output = NumberType> + fmt::Display,
-    BitVectorType: DynamicBitVectorTrait,
+    BitVectorType: DynamicBitVectorTrait + Sync,
 {
     fn len(&mut self) -> &mut usize;
 
@@ -193,6 +195,8 @@ mod tests {
             + ops::ShlAssign<usize>
             + ToBigUint
             + Zero
+            + Send
+            + Sync
             + 'static,
         for<'a> &'a NumberType:
             ops::Shl<usize, Output = NumberType> + ops::Shr<usize, Output = NumberType>,
@@ -229,6 +233,8 @@ mod tests {
             + ops::ShlAssign<usize>
             + ToBigUint
             + Zero
+            + Send
+            + Sync
             + 'static,
         for<'a> &'a NumberType: ops::Shl<usize, Output = NumberType>
             + ops::Shr<usize, Output = NumberType>
