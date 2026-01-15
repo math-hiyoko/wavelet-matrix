@@ -30,7 +30,6 @@ where
         + ToBigUint
         + Zero
         + Send
-        + Sync
         + 'static,
     for<'a> &'a NumberType:
         ops::Shl<usize, Output = NumberType> + ops::Shr<usize, Output = NumberType>,
