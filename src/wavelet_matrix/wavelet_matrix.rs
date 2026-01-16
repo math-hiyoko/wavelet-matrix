@@ -29,10 +29,10 @@ where
         + Sync,
     for<'a> &'a NumberType: ops::Shr<usize, Output = NumberType>,
 {
-    pub(crate) fn new(data: &[NumberType]) -> Self {
+    pub(crate) fn new(data: Vec<NumberType>) -> Self {
         let len = data.len();
 
-        let mut values = data.to_owned();
+        let mut values = data;
         let height = values
             .par_iter()
             .max()
@@ -65,10 +65,7 @@ where
             values = next_values;
         }
 
-        let layers = bits
-            .into_par_iter()
-            .map(|layer_bits| BitVector::new(&layer_bits))
-            .collect::<Vec<_>>();
+        let layers = bits.into_par_iter().map(BitVector::new).collect::<Vec<_>>();
 
         let mut begin_index = collections::HashMap::new();
         values.into_iter().enumerate().for_each(|(index, value)| {
@@ -141,7 +138,7 @@ mod tests {
 
     fn create_u8() -> WaveletMatrix<u8> {
         let elements: Vec<u8> = vec![5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0];
-        WaveletMatrix::new(&elements)
+        WaveletMatrix::new(elements)
     }
 
     fn create_biguint() -> WaveletMatrix<BigUint> {
@@ -149,14 +146,14 @@ mod tests {
             .into_iter()
             .map(BigUint::from)
             .collect();
-        WaveletMatrix::new(&elements)
+        WaveletMatrix::new(elements)
     }
 
     #[test]
     fn test_empty() {
         Python::initialize();
 
-        let wv_u8 = WaveletMatrix::<u8>::new(&Vec::new());
+        let wv_u8 = WaveletMatrix::<u8>::new(vec![]);
         assert_eq!(wv_u8.len(), 0);
         assert_eq!(wv_u8.height(), 0);
         assert_eq!(wv_u8.values().unwrap(), Vec::<u8>::new());
@@ -213,7 +210,7 @@ mod tests {
             "ValueError: start must be less than end"
         );
 
-        let wv_biguint = WaveletMatrix::<BigUint>::new(&Vec::new());
+        let wv_biguint = WaveletMatrix::<BigUint>::new(vec![]);
         assert_eq!(wv_biguint.len(), 0);
         assert_eq!(wv_biguint.height(), 0);
         assert_eq!(wv_biguint.values().unwrap(), Vec::<BigUint>::new());
@@ -287,7 +284,7 @@ mod tests {
     fn test_all_zero() {
         Python::initialize();
 
-        let wv_u8 = WaveletMatrix::<u8>::new(&[0u8; 64]);
+        let wv_u8 = WaveletMatrix::<u8>::new(vec![0u8; 64]);
         assert_eq!(wv_u8.len(), 64);
         assert_eq!(wv_u8.height(), 0);
         assert_eq!(wv_u8.values().unwrap(), vec![0u8; 64]);
@@ -304,7 +301,7 @@ mod tests {
         assert_eq!(wv_u8.prev_value(0, 64, None).unwrap(), Some(0u8));
         assert_eq!(wv_u8.next_value(0, 64, None).unwrap(), Some(0u8));
 
-        let wv_biguint = WaveletMatrix::<BigUint>::new(&vec![0u32.into(); 64]);
+        let wv_biguint = WaveletMatrix::<BigUint>::new(vec![0u32.into(); 64]);
         assert_eq!(wv_biguint.len(), 64);
         assert_eq!(wv_biguint.height(), 0);
         assert_eq!(wv_biguint.values().unwrap(), vec![0u32.into(); 64]);
@@ -332,7 +329,7 @@ mod tests {
     fn test_max_value() {
         Python::initialize();
 
-        let wv_u8 = WaveletMatrix::<u8>::new(&[u8::MAX; 64]);
+        let wv_u8 = WaveletMatrix::<u8>::new(vec![u8::MAX; 64]);
         assert_eq!(wv_u8.len(), 64);
         assert_eq!(wv_u8.height(), 8);
         assert_eq!(wv_u8.values().unwrap(), vec![u8::MAX; 64]);

@@ -19,8 +19,8 @@ pub(in crate::traits) struct SampleDynamicBitVector(Vec<bool>);
 
 #[allow(dead_code)]
 impl SampleDynamicBitVector {
-    pub(in crate::traits) fn new(data: &[bool]) -> Self {
-        SampleDynamicBitVector(data.to_owned())
+    pub(in crate::traits) fn new(data: Vec<bool>) -> Self {
+        SampleDynamicBitVector(data)
     }
 }
 
@@ -85,14 +85,14 @@ mod tests {
 
     fn create_dummy() -> SampleDynamicBitVector {
         let bits = [true, false, true, true, false, true, false, false].repeat(999);
-        SampleDynamicBitVector::new(&bits)
+        SampleDynamicBitVector::new(bits)
     }
 
     #[test]
     fn test_empty() {
         Python::initialize();
 
-        let mut bv = SampleDynamicBitVector::new(&[]);
+        let mut bv = SampleDynamicBitVector::new(vec![]);
         assert_eq!(bv.values().unwrap(), Vec::<bool>::new());
         assert_eq!(
             bv.access(0).unwrap_err().to_string(),
@@ -250,7 +250,7 @@ mod tests {
     fn test_insert_remove_values() {
         Python::initialize();
 
-        let mut bv = SampleDynamicBitVector::new(&[]);
+        let mut bv = SampleDynamicBitVector::new(vec![]);
         let bits = [true, false, true, true, false, true, false, false].repeat(999);
 
         for (index, &bit) in bits.iter().enumerate() {

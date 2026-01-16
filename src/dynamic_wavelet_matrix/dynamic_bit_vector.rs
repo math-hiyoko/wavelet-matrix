@@ -29,7 +29,7 @@ enum DynamicBitVectorNode {
 }
 
 impl DynamicBitVectorNode {
-    fn new(bits: &[bool]) -> Self {
+    fn new(bits: Vec<bool>) -> Self {
         if bits.is_empty() {
             return Self::Leaf {
                 bits: BlockType::zero(),
@@ -65,8 +65,8 @@ impl DynamicBitVectorNode {
             .collect::<Vec<DynamicBitVectorNodeBuildItem>>();
 
         fn merge_nodes(
-            left: &DynamicBitVectorNodeBuildItem,
-            right: &DynamicBitVectorNodeBuildItem,
+            left: DynamicBitVectorNodeBuildItem,
+            right: DynamicBitVectorNodeBuildItem,
         ) -> DynamicBitVectorNodeBuildItem {
             let balance = right.height - left.height;
             debug_assert!(
@@ -74,8 +74,8 @@ impl DynamicBitVectorNode {
                 "unbalanced tree detected during build"
             );
             let internal = Box::new(DynamicBitVectorNode::Internal {
-                left: left.node.clone(),
-                right: right.node.clone(),
+                left: left.node,
+                right: right.node,
                 left_total: left.total,
                 left_ones: left.ones,
                 balance,
@@ -89,15 +89,19 @@ impl DynamicBitVectorNode {
         }
 
         while nodes.len() > 1 {
-            let mut next_nodes = (0..nodes.len() - 1)
-                .step_by(2)
-                .map(|i| merge_nodes(&nodes[i], &nodes[i + 1]))
-                .collect::<Vec<DynamicBitVectorNodeBuildItem>>();
-            if nodes.len() % 2 == 1 {
-                let left = next_nodes.pop().unwrap();
-                let right = nodes.last().unwrap();
-                next_nodes.push(merge_nodes(&left, right));
+            let mut next_nodes = Vec::with_capacity(nodes.len().div_ceil(2));
+            while nodes.len() > 1 {
+                let right = nodes.pop().unwrap();
+                let left = nodes.pop().unwrap();
+                let merged = merge_nodes(left, right);
+                next_nodes.push(merged);
             }
+            if nodes.len() == 1 {
+                let right = next_nodes.pop().unwrap();
+                let left = nodes.pop().unwrap();
+                next_nodes.push(merge_nodes(left, right));
+            }
+            next_nodes.reverse();
             nodes = next_nodes;
         }
 
@@ -600,7 +604,7 @@ pub(crate) struct DynamicBitVector {
 }
 
 impl DynamicBitVector {
-    pub(super) fn new(bits: &[bool]) -> Self {
+    pub(super) fn new(bits: Vec<bool>) -> Self {
         Self {
             len: bits.len(),
             ones: bits.iter().filter(|&&b| b).count(),
@@ -789,14 +793,14 @@ mod tests {
 
     fn create_dummy() -> DynamicBitVector {
         let bits = [true, false, true, true, false, true, false, false].repeat(999);
-        DynamicBitVector::new(&bits)
+        DynamicBitVector::new(bits)
     }
 
     #[test]
     fn test_empty() {
         Python::initialize();
 
-        let mut bv = DynamicBitVector::new(&[]);
+        let mut bv = DynamicBitVector::new(vec![]);
         bv.root.assert_avl();
         assert_eq!(bv.values().unwrap(), Vec::<bool>::new());
         assert_eq!(
@@ -821,7 +825,7 @@ mod tests {
         Python::initialize();
 
         let bits = vec![true; 1024];
-        let bv = DynamicBitVector::new(&bits);
+        let bv = DynamicBitVector::new(bits);
         bv.root.assert_avl();
 
         for i in 0..1024 {
@@ -982,7 +986,7 @@ mod tests {
     fn test_insert_remove_values() {
         Python::initialize();
 
-        let mut bv = DynamicBitVector::new(&[]);
+        let mut bv = DynamicBitVector::new(vec![]);
         bv.root.assert_avl();
         let bits = [true, false, true, true, false, true, false, false].repeat(999);
 

@@ -22,7 +22,7 @@ pub(crate) struct BitVector {
 }
 
 impl BitVector {
-    pub(super) fn new(bits: &[bool]) -> Self {
+    pub(super) fn new(bits: Vec<bool>) -> Self {
         let len = bits.len();
         // Pack blocks into BitType words
         let blocks: Vec<BlockType> = bits
@@ -56,7 +56,7 @@ impl BitVector {
             select_index_inner.push(0);
         }
         let mut count = [0usize, 0usize];
-        for (index, &bit) in bits.iter().enumerate() {
+        for (index, bit) in bits.into_iter().enumerate() {
             let bit = bit as usize;
             count[bit] += 1;
             if count[bit].is_multiple_of(SELECT_INDEX_INTERBVAL) {
@@ -134,8 +134,7 @@ impl BitVectorTrait for BitVector {
             let mut left = self.select_index[bit as usize][(kth - 1) / SELECT_INDEX_INTERBVAL]
                 / (BlockType::BITS as usize);
             let mut right = self.select_index[bit as usize][(kth - 1) / SELECT_INDEX_INTERBVAL + 1]
-                / (BlockType::BITS as usize)
-                + 1;
+                .div_ceil(BlockType::BITS as usize);
             debug_assert!(right <= self.blocks.len());
             while left + 1 < right {
                 let mid = (left + right) / 2;
@@ -173,14 +172,14 @@ mod tests {
 
     fn create_dummy() -> BitVector {
         let bits = [true, false, true, true, false, true, false, false].repeat(999);
-        BitVector::new(&bits)
+        BitVector::new(bits)
     }
 
     #[test]
     fn test_empty() {
         Python::initialize();
 
-        let bv = BitVector::new(&[]);
+        let bv = BitVector::new(vec![]);
 
         assert_eq!(bv.values().unwrap(), Vec::<bool>::new());
         assert_eq!(
@@ -198,7 +197,7 @@ mod tests {
         Python::initialize();
 
         let bits = vec![true; 1024];
-        let bv = BitVector::new(&bits);
+        let bv = BitVector::new(bits);
 
         for i in 0..1024 {
             assert!(bv.access(i).unwrap());
