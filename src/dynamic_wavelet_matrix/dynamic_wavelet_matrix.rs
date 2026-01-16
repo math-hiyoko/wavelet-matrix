@@ -27,10 +27,10 @@ where
     NumberType: ops::BitAnd<NumberType, Output = NumberType> + BitWidth + Clone + One + Ord + Sync,
     for<'a> &'a NumberType: ops::Shr<usize, Output = NumberType> + fmt::Display,
 {
-    pub(crate) fn new(data: &[NumberType], max_bit: Option<usize>) -> PyResult<Self> {
+    pub(crate) fn new(data: Vec<NumberType>, max_bit: Option<usize>) -> PyResult<Self> {
         let len = data.len();
 
-        let mut values = data.to_owned();
+        let mut values = data;
         let max_width = values
             .par_iter()
             .max()
@@ -73,7 +73,7 @@ where
 
         let layers = bits
             .into_par_iter()
-            .map(|layer_bits| DynamicBitVector::new(&layer_bits))
+            .map(DynamicBitVector::new)
             .collect::<Vec<_>>();
 
         Ok(DynamicWaveletMatrix {
@@ -163,7 +163,7 @@ mod tests {
 
     fn create_dummy_u8() -> DynamicWaveletMatrix<u8> {
         let elements: Vec<u8> = vec![5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0];
-        DynamicWaveletMatrix::new(&elements, None).unwrap()
+        DynamicWaveletMatrix::new(elements, None).unwrap()
     }
 
     fn create_dummy_biguint() -> DynamicWaveletMatrix<BigUint> {
@@ -171,14 +171,14 @@ mod tests {
             .into_iter()
             .map(BigUint::from)
             .collect();
-        DynamicWaveletMatrix::new(&elements, None).unwrap()
+        DynamicWaveletMatrix::new(elements, None).unwrap()
     }
 
     #[test]
     fn test_empty() {
         Python::initialize();
 
-        let wv_u8 = DynamicWaveletMatrix::<u8>::new(&Vec::new(), None).unwrap();
+        let wv_u8 = DynamicWaveletMatrix::<u8>::new(vec![], None).unwrap();
         assert_eq!(wv_u8.len(), 0);
         assert_eq!(wv_u8.height(), 0);
         assert_eq!(wv_u8.values().unwrap(), Vec::<u8>::new());
@@ -232,7 +232,7 @@ mod tests {
             "ValueError: start must be less than end"
         );
 
-        let wv_biguint = DynamicWaveletMatrix::<BigUint>::new(&Vec::new(), None).unwrap();
+        let wv_biguint = DynamicWaveletMatrix::<BigUint>::new(vec![], None).unwrap();
         assert_eq!(wv_biguint.len(), 0);
         assert_eq!(wv_biguint.height(), 0);
         assert_eq!(wv_biguint.values().unwrap(), Vec::<BigUint>::new());
@@ -303,7 +303,7 @@ mod tests {
     fn test_all_zero() {
         Python::initialize();
 
-        let wv_u8 = DynamicWaveletMatrix::<u8>::new(&[0u8; 64], None).unwrap();
+        let wv_u8 = DynamicWaveletMatrix::<u8>::new(vec![0u8; 64], None).unwrap();
         assert_eq!(wv_u8.len(), 64);
         assert_eq!(wv_u8.height(), 0);
         assert_eq!(wv_u8.values().unwrap(), vec![0u8; 64]);
@@ -320,8 +320,7 @@ mod tests {
         assert_eq!(wv_u8.prev_value(0, 64, None).unwrap(), Some(0u8));
         assert_eq!(wv_u8.next_value(0, 64, None).unwrap(), Some(0u8));
 
-        let wv_biguint =
-            DynamicWaveletMatrix::<BigUint>::new(&vec![0u32.into(); 64], None).unwrap();
+        let wv_biguint = DynamicWaveletMatrix::<BigUint>::new(vec![0u32.into(); 64], None).unwrap();
         assert_eq!(wv_biguint.len(), 64);
         assert_eq!(wv_biguint.height(), 0);
         assert_eq!(wv_biguint.values().unwrap(), vec![0u32.into(); 64]);
@@ -349,7 +348,7 @@ mod tests {
     fn test_max_value() {
         Python::initialize();
 
-        let wv_u8 = DynamicWaveletMatrix::<u8>::new(&[u8::MAX; 64], None).unwrap();
+        let wv_u8 = DynamicWaveletMatrix::<u8>::new(vec![u8::MAX; 64], None).unwrap();
         assert_eq!(wv_u8.len(), 64);
         assert_eq!(wv_u8.height(), 8);
         assert_eq!(wv_u8.values().unwrap(), vec![u8::MAX; 64]);
@@ -656,7 +655,7 @@ mod tests {
     fn test_insert_remove_values() {
         Python::initialize();
 
-        let mut wv_u8 = DynamicWaveletMatrix::new(&[], Some(3)).unwrap();
+        let mut wv_u8 = DynamicWaveletMatrix::new(vec![], Some(3)).unwrap();
         let elements: Vec<u8> = [5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0].repeat(1000);
 
         for (index, &element) in elements.iter().enumerate() {

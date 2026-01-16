@@ -165,7 +165,7 @@ mod tests {
                         zero_values.push(value.clone());
                     }
                 }
-                layers.push(SampleDynamicBitVector::new(&bits));
+                layers.push(SampleDynamicBitVector::new(bits));
                 zeros.push(zero_values.len());
                 values = [zero_values, one_values].concat();
             }

@@ -64,54 +64,54 @@ impl PyDynamicWaveletMatrix {
             let wv: DynamicWaveletMatrixEnum = match bit_width {
                 0..=8 => {
                     let values = values
-                        .iter()
+                        .into_iter()
                         .map(|v| v.to_u8())
                         .collect::<Option<Vec<_>>>()
                         .ok_or(PyRuntimeError::new_err("Value out of range for u8"))?;
-                    DynamicWaveletMatrixEnum::U8(DynamicWaveletMatrix::<u8>::new(&values, max_bit)?)
+                    DynamicWaveletMatrixEnum::U8(DynamicWaveletMatrix::<u8>::new(values, max_bit)?)
                 }
                 9..=16 => {
                     let values = values
-                        .iter()
+                        .into_iter()
                         .map(|v| v.to_u16())
                         .collect::<Option<Vec<_>>>()
                         .ok_or(PyRuntimeError::new_err("Value out of range for u16"))?;
                     DynamicWaveletMatrixEnum::U16(DynamicWaveletMatrix::<u16>::new(
-                        &values, max_bit,
+                        values, max_bit,
                     )?)
                 }
                 17..=32 => {
                     let values = values
-                        .iter()
+                        .into_iter()
                         .map(|v| v.to_u32())
                         .collect::<Option<Vec<_>>>()
                         .ok_or(PyRuntimeError::new_err("Value out of range for u32"))?;
                     DynamicWaveletMatrixEnum::U32(DynamicWaveletMatrix::<u32>::new(
-                        &values, max_bit,
+                        values, max_bit,
                     )?)
                 }
                 33..=64 => {
                     let values = values
-                        .iter()
+                        .into_iter()
                         .map(|v| v.to_u64())
                         .collect::<Option<Vec<_>>>()
                         .ok_or(PyRuntimeError::new_err("Value out of range for u64"))?;
                     DynamicWaveletMatrixEnum::U64(DynamicWaveletMatrix::<u64>::new(
-                        &values, max_bit,
+                        values, max_bit,
                     )?)
                 }
                 65..=128 => {
                     let values = values
-                        .iter()
+                        .into_iter()
                         .map(|v| v.to_u128())
                         .collect::<Option<Vec<_>>>()
                         .ok_or(PyRuntimeError::new_err("Value out of range for u128"))?;
                     DynamicWaveletMatrixEnum::U128(DynamicWaveletMatrix::<u128>::new(
-                        &values, max_bit,
+                        values, max_bit,
                     )?)
                 }
                 _ => DynamicWaveletMatrixEnum::BigUint(DynamicWaveletMatrix::<BigUint>::new(
-                    &values, max_bit,
+                    values, max_bit,
                 )?),
             };
             Ok(PyDynamicWaveletMatrix { inner: wv })
