@@ -6,13 +6,14 @@ use rayon::prelude::*;
 
 use super::bit_vector::BitVector;
 use crate::traits::{
-    utils::bit_width::BitWidth, wavelet_matrix::wavelet_matrix::WaveletMatrixTrait,
+    bit_vector::bit_vector::BlockType, utils::bit_width::BitWidth,
+    wavelet_matrix::wavelet_matrix::WaveletMatrixTrait,
 };
 
 #[derive(Clone)]
 pub(crate) struct WaveletMatrix<NumberType> {
     layers: Vec<BitVector>,
-    zeros: Vec<usize>,
+    zeros_count_per_layer: Vec<usize>,
     begin_index: collections::HashMap<NumberType, usize>,
     height: usize,
     len: usize,
@@ -26,7 +27,8 @@ where
         + hash::Hash
         + One
         + Ord
-        + Sync,
+        + Sync
+        + ops::BitAnd<NumberType>,
     for<'a> &'a NumberType: ops::Shr<usize, Output = NumberType>,
 {
     pub(crate) fn new(data: Vec<NumberType>) -> Self {
@@ -38,19 +40,19 @@ where
             .max()
             .map_or(0usize, |max| max.bit_width());
 
-        let mut zeros = Vec::with_capacity(height);
-        let mut bits = Vec::with_capacity(height);
+        let mut zeros_count_per_layer = Vec::with_capacity(height);
+        let mut layer_blocks_vec = Vec::with_capacity(height);
         for i in 0..height {
-            let layer_bits = values
+            let current_layer_bits = values
                 .par_iter()
                 .map(|value| (value >> (height - i - 1) & NumberType::one()).is_one())
-                .collect::<Vec<_>>();
-            let num_zeros = layer_bits.par_iter().filter(|&&bit| !bit).count();
+                .collect::<Vec<bool>>();
+            let zeros_count = current_layer_bits.par_iter().filter(|&&b| !b).count();
 
             let mut next_values = vec![NumberType::one(); len];
             let mut zero_index = 0usize;
-            let mut one_index = num_zeros;
-            for (&bit, value) in iter::zip(&layer_bits, values) {
+            let mut one_index = zeros_count;
+            for (&bit, value) in iter::zip(&current_layer_bits, values) {
                 if bit {
                     next_values[one_index] = value;
                     one_index += 1;
@@ -60,21 +62,41 @@ where
                 }
             }
 
-            zeros.push(num_zeros);
-            bits.push(layer_bits);
+            let current_layer_blocks = current_layer_bits
+                .into_par_iter()
+                .chunks(BlockType::BITS as usize)
+                .map(|chunk| {
+                    chunk
+                        .iter()
+                        .enumerate()
+                        .fold(BlockType::zero(), |acc, (j, &b)| {
+                            if b {
+                                acc | (BlockType::one() << j)
+                            } else {
+                                acc
+                            }
+                        })
+                })
+                .collect::<Vec<_>>();
+
+            zeros_count_per_layer.push(zeros_count);
+            layer_blocks_vec.push(current_layer_blocks);
             values = next_values;
         }
-
-        let layers = bits.into_par_iter().map(BitVector::new).collect::<Vec<_>>();
 
         let mut begin_index = collections::HashMap::new();
         values.into_iter().enumerate().for_each(|(index, value)| {
             begin_index.entry(value).or_insert(index);
         });
 
+        let layers = layer_blocks_vec
+            .into_par_iter()
+            .map(|blocks| BitVector::new(blocks, len))
+            .collect::<Vec<_>>();
+
         WaveletMatrix {
             layers,
-            zeros,
+            zeros_count_per_layer,
             begin_index,
             height,
             len,
@@ -109,8 +131,8 @@ where
     }
 
     #[inline]
-    fn get_zeros(&self) -> &[usize] {
-        &self.zeros
+    fn get_zeros_count_per_layer(&self) -> &[usize] {
+        &self.zeros_count_per_layer
     }
 
     #[inline]
