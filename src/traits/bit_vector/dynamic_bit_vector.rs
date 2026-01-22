@@ -1,10 +1,10 @@
-use num_traits::Zero;
+use num_traits::{One, Zero};
 use pyo3::{
     PyResult,
     exceptions::{PyIndexError, PyValueError},
 };
 
-use super::bit_vector::BitVectorTrait;
+use super::bit_vector::{BitVectorTrait, BlockType};
 
 pub(crate) trait DynamicBitVectorTrait: BitVectorTrait {
     /// Inserts a bit at the specified position.
@@ -25,8 +25,23 @@ impl SampleDynamicBitVector {
 }
 
 impl BitVectorTrait for SampleDynamicBitVector {
-    fn values(&self) -> PyResult<Vec<bool>> {
-        Ok(self.0.clone())
+    fn values(&self) -> PyResult<Vec<BlockType>> {
+        Ok(self
+            .0
+            .chunks(BlockType::BITS as usize)
+            .map(|chunk| {
+                chunk
+                    .iter()
+                    .enumerate()
+                    .fold(BlockType::zero(), |acc, (i, &b)| {
+                        if b {
+                            acc | (BlockType::one() << i)
+                        } else {
+                            acc
+                        }
+                    })
+            })
+            .collect())
     }
 
     fn access(&self, index: usize) -> PyResult<bool> {
@@ -93,7 +108,7 @@ mod tests {
         Python::initialize();
 
         let mut bv = SampleDynamicBitVector::new(vec![]);
-        assert_eq!(bv.values().unwrap(), Vec::<bool>::new());
+        assert_eq!(bv.values().unwrap(), Vec::<BlockType>::new());
         assert_eq!(
             bv.access(0).unwrap_err().to_string(),
             "IndexError: index out of bounds"
@@ -118,7 +133,22 @@ mod tests {
         let bv = create_dummy();
         assert_eq!(
             bv.values().unwrap(),
-            [true, false, true, true, false, true, false, false].repeat(999)
+            [true, false, true, true, false, true, false, false]
+                .repeat(999)
+                .chunks(BlockType::BITS as usize)
+                .map(|chunk| {
+                    chunk
+                        .iter()
+                        .enumerate()
+                        .fold(BlockType::zero(), |acc, (i, &b)| {
+                            if b {
+                                acc | (BlockType::one() << i)
+                            } else {
+                                acc
+                            }
+                        })
+                })
+                .collect::<Vec<BlockType>>()
         );
     }
 

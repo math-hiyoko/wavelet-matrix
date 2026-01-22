@@ -4,9 +4,11 @@ use pyo3::{
     exceptions::{PyIndexError, PyValueError},
 };
 
+pub(crate) type BlockType = u64;
+
 pub(crate) trait BitVectorTrait {
     /// Get all bit values as a vector.
-    fn values(&self) -> PyResult<Vec<bool>>;
+    fn values(&self) -> PyResult<Vec<BlockType>>;
 
     /// Get the bit value at the specified position.
     fn access(&self, index: usize) -> PyResult<bool>;
@@ -29,8 +31,22 @@ impl SampleBitVector {
 }
 
 impl BitVectorTrait for SampleBitVector {
-    fn values(&self) -> PyResult<Vec<bool>> {
-        Ok(self.0.clone())
+    fn values(&self) -> PyResult<Vec<BlockType>> {
+        Ok(self
+            .0
+            .chunks(BlockType::BITS as usize)
+            .map(|chunk| {
+                chunk
+                    .iter()
+                    .enumerate()
+                    .fold(
+                        BlockType::zero(),
+                        |acc, (i, &b)| {
+                            if b { acc | (1u64 << i) } else { acc }
+                        },
+                    )
+            })
+            .collect())
     }
 
     fn access(&self, index: usize) -> PyResult<bool> {
@@ -79,7 +95,7 @@ mod tests {
 
         let bv = SampleBitVector::new(vec![]);
 
-        assert_eq!(bv.values().unwrap(), Vec::<bool>::new());
+        assert_eq!(bv.values().unwrap(), Vec::<BlockType>::new());
         assert_eq!(
             bv.access(0).unwrap_err().to_string(),
             "IndexError: index out of bounds"
@@ -97,7 +113,21 @@ mod tests {
         let bv = create_dummy();
         assert_eq!(
             bv.values().unwrap(),
-            [true, false, true, true, false, true, false, false].repeat(999)
+            [true, false, true, true, false, true, false, false]
+                .repeat(999)
+                .chunks(BlockType::BITS as usize)
+                .map(|chunk| {
+                    chunk
+                        .iter()
+                        .enumerate()
+                        .fold(
+                            BlockType::zero(),
+                            |acc, (i, &b)| {
+                                if b { acc | (1u64 << i) } else { acc }
+                            },
+                        )
+                })
+                .collect::<Vec<BlockType>>()
         );
     }
 

@@ -7,11 +7,13 @@ use pyo3::{
 };
 
 use crate::traits::{
-    bit_vector::{bit_vector::BitVectorTrait, dynamic_bit_vector::DynamicBitVectorTrait},
+    bit_vector::{
+        bit_vector::{BitVectorTrait, BlockType},
+        dynamic_bit_vector::DynamicBitVectorTrait,
+    },
     utils::bit_select::BitSelect,
 };
 
-type BlockType = u64;
 const BITS_SIZE_LIMIT: usize = BlockType::BITS as usize / 2;
 
 #[derive(Debug, Clone)]
@@ -29,8 +31,8 @@ enum DynamicBitVectorNode {
 }
 
 impl DynamicBitVectorNode {
-    fn new(bits: Vec<bool>) -> Self {
-        if bits.is_empty() {
+    fn new(blocks: Vec<BlockType>, len: usize) -> Self {
+        if blocks.is_empty() {
             return Self::Leaf {
                 bits: BlockType::zero(),
             };
@@ -43,7 +45,13 @@ impl DynamicBitVectorNode {
             height: isize,
         }
 
-        let mut nodes = bits
+        let mut nodes = blocks
+            .into_iter()
+            .flat_map(|block| {
+                (0..BlockType::BITS).map(move |i| ((block >> i) & BlockType::one()).is_one())
+            })
+            .take(len)
+            .collect::<Vec<bool>>()
             .chunks(BITS_SIZE_LIMIT)
             .map(|chunk| DynamicBitVectorNodeBuildItem {
                 node: Box::new(DynamicBitVectorNode::Leaf {
@@ -604,19 +612,40 @@ pub(crate) struct DynamicBitVector {
 }
 
 impl DynamicBitVector {
-    pub(super) fn new(bits: Vec<bool>) -> Self {
+    pub(super) fn new(blocks: Vec<BlockType>, len: usize) -> Self {
+        let ones = len
+            - blocks
+                .iter()
+                .map(|block| block.count_ones() as usize)
+                .sum::<usize>();
         Self {
-            len: bits.len(),
-            ones: bits.iter().filter(|&&b| b).count(),
-            root: Box::new(DynamicBitVectorNode::new(bits)),
+            len,
+            ones,
+            root: Box::new(DynamicBitVectorNode::new(blocks, len)),
         }
     }
 }
 
 impl BitVectorTrait for DynamicBitVector {
     #[inline]
-    fn values(&self) -> PyResult<Vec<bool>> {
-        Ok(self.root.values(self.len))
+    fn values(&self) -> PyResult<Vec<BlockType>> {
+        Ok(self
+            .root
+            .values(self.len)
+            .chunks(BlockType::BITS as usize)
+            .map(|chunk| {
+                chunk
+                    .iter()
+                    .enumerate()
+                    .fold(BlockType::zero(), |acc, (i, &b)| {
+                        if b {
+                            acc | (BlockType::one() << i)
+                        } else {
+                            acc
+                        }
+                    })
+            })
+            .collect())
     }
 
     #[inline]
@@ -793,16 +822,31 @@ mod tests {
 
     fn create_dummy() -> DynamicBitVector {
         let bits = [true, false, true, true, false, true, false, false].repeat(999);
-        DynamicBitVector::new(bits)
+        let blocks = bits
+            .chunks(BlockType::BITS as usize)
+            .map(|chunk| {
+                chunk
+                    .iter()
+                    .enumerate()
+                    .fold(BlockType::zero(), |acc, (i, &b)| {
+                        if b {
+                            acc | (BlockType::one() << i)
+                        } else {
+                            acc
+                        }
+                    })
+            })
+            .collect::<Vec<BlockType>>();
+        DynamicBitVector::new(blocks, bits.len())
     }
 
     #[test]
     fn test_empty() {
         Python::initialize();
 
-        let mut bv = DynamicBitVector::new(vec![]);
+        let mut bv = DynamicBitVector::new(vec![], 0);
         bv.root.assert_avl();
-        assert_eq!(bv.values().unwrap(), Vec::<bool>::new());
+        assert_eq!(bv.values().unwrap(), Vec::<BlockType>::new());
         assert_eq!(
             bv.access(0).unwrap_err().to_string(),
             "IndexError: index out of bounds"
@@ -825,7 +869,22 @@ mod tests {
         Python::initialize();
 
         let bits = vec![true; 1024];
-        let bv = DynamicBitVector::new(bits);
+        let blocks = bits
+            .chunks(BlockType::BITS as usize)
+            .map(|chunk| {
+                chunk
+                    .iter()
+                    .enumerate()
+                    .fold(BlockType::zero(), |acc, (i, &b)| {
+                        if b {
+                            acc | (BlockType::one() << i)
+                        } else {
+                            acc
+                        }
+                    })
+            })
+            .collect::<Vec<BlockType>>();
+        let bv = DynamicBitVector::new(blocks, bits.len());
         bv.root.assert_avl();
 
         for i in 0..1024 {
@@ -845,7 +904,22 @@ mod tests {
         bv.root.assert_avl();
         assert_eq!(
             bv.values().unwrap(),
-            [true, false, true, true, false, true, false, false].repeat(999)
+            [true, false, true, true, false, true, false, false]
+                .repeat(999)
+                .chunks(BlockType::BITS as usize)
+                .map(|chunk| {
+                    chunk
+                        .iter()
+                        .enumerate()
+                        .fold(BlockType::zero(), |acc, (i, &b)| {
+                            if b {
+                                acc | (BlockType::one() << i)
+                            } else {
+                                acc
+                            }
+                        })
+                })
+                .collect::<Vec<BlockType>>()
         );
     }
 
@@ -986,16 +1060,31 @@ mod tests {
     fn test_insert_remove_values() {
         Python::initialize();
 
-        let mut bv = DynamicBitVector::new(vec![]);
+        let mut bv = DynamicBitVector::new(vec![], 0);
         bv.root.assert_avl();
         let bits = [true, false, true, true, false, true, false, false].repeat(999);
+        let blocks = bits
+            .chunks(BlockType::BITS as usize)
+            .map(|chunk| {
+                chunk
+                    .iter()
+                    .enumerate()
+                    .fold(BlockType::zero(), |acc, (i, &b)| {
+                        if b {
+                            acc | (BlockType::one() << i)
+                        } else {
+                            acc
+                        }
+                    })
+            })
+            .collect::<Vec<BlockType>>();
 
         for (index, &bit) in bits.iter().enumerate() {
             bv.insert(index, bit).unwrap();
             bv.root.assert_avl();
             assert_eq!(bv.access(index).unwrap(), bit);
         }
-        assert_eq!(bv.values().unwrap(), bits);
+        assert_eq!(bv.values().unwrap(), blocks);
 
         for &bit in &bits {
             assert_eq!(bv.remove(0).unwrap(), bit);
@@ -1008,7 +1097,7 @@ mod tests {
             bv.root.assert_avl();
             assert_eq!(bv.access(0).unwrap(), bit);
         }
-        assert_eq!(bv.values().unwrap(), bits);
+        assert_eq!(bv.values().unwrap(), blocks);
 
         for (index, &bit) in bits.iter().enumerate().rev() {
             assert_eq!(bv.remove(index).unwrap(), bit);

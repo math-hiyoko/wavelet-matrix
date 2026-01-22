@@ -36,7 +36,7 @@ where
 {
     fn len(&mut self) -> &mut usize;
 
-    fn get_layers_and_zeros(&mut self) -> (&mut [BitVectorType], &mut [usize]);
+    fn get_layers_and_zeros_count_per_layer(&mut self) -> (&mut [BitVectorType], &mut [usize]);
 
     /// Inserts a value at the specified index.
     fn insert(&mut self, mut index: usize, value: &NumberType) -> PyResult<()> {
@@ -53,7 +53,7 @@ where
         *self.len() += 1;
 
         let height = self.height();
-        let (layers, zeros) = self.get_layers_and_zeros();
+        let (layers, zeros) = self.get_layers_and_zeros_count_per_layer();
         for (i, (layer, zero)) in iter::zip(layers, zeros).enumerate() {
             let bit = (value >> (height - i - 1) & NumberType::one()).is_one();
             layer.insert(index, bit)?;
@@ -75,7 +75,7 @@ where
         }
         *self.len() -= 1;
 
-        let (layers, zeros) = self.get_layers_and_zeros();
+        let (layers, zeros) = self.get_layers_and_zeros_count_per_layer();
         let mut result = NumberType::zero();
         for (layer, zero) in iter::zip(layers, zeros) {
             let bit = layer.remove(index)?;
@@ -126,7 +126,7 @@ mod tests {
 
     struct SampleDynamicWaveletMatrix<NumberType> {
         layers: Vec<SampleDynamicBitVector>,
-        zeros: Vec<usize>,
+        zeros_count_per_layer: Vec<usize>,
         height: usize,
         len: usize,
         phantom: marker::PhantomData<NumberType>,
@@ -150,7 +150,7 @@ mod tests {
             let height = max_bit.unwrap_or(max_width);
             let len = values.len();
             let mut layers: Vec<SampleDynamicBitVector> = Vec::with_capacity(height);
-            let mut zeros: Vec<usize> = Vec::with_capacity(height);
+            let mut zeros_count_per_layer: Vec<usize> = Vec::with_capacity(height);
 
             for i in 0..height {
                 let mut bits = Vec::with_capacity(len);
@@ -166,13 +166,13 @@ mod tests {
                     }
                 }
                 layers.push(SampleDynamicBitVector::new(bits));
-                zeros.push(zero_values.len());
+                zeros_count_per_layer.push(zero_values.len());
                 values = [zero_values, one_values].concat();
             }
 
             Ok(SampleDynamicWaveletMatrix {
                 layers,
-                zeros,
+                zeros_count_per_layer,
                 height,
                 len,
                 phantom: marker::PhantomData,
@@ -205,8 +205,8 @@ mod tests {
             &self.layers
         }
 
-        fn get_zeros(&self) -> &[usize] {
-            &self.zeros
+        fn get_zeros_count_per_layer(&self) -> &[usize] {
+            &self.zeros_count_per_layer
         }
 
         fn height(&self) -> usize {
@@ -244,8 +244,10 @@ mod tests {
             &mut self.len
         }
 
-        fn get_layers_and_zeros(&mut self) -> (&mut [SampleDynamicBitVector], &mut [usize]) {
-            (&mut self.layers, &mut self.zeros)
+        fn get_layers_and_zeros_count_per_layer(
+            &mut self,
+        ) -> (&mut [SampleDynamicBitVector], &mut [usize]) {
+            (&mut self.layers, &mut self.zeros_count_per_layer)
         }
     }
 

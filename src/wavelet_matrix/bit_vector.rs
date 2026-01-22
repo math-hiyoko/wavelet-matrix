@@ -6,11 +6,12 @@ use pyo3::{
     PyResult,
     exceptions::{PyIndexError, PyValueError},
 };
-use rayon::prelude::*;
 
-use crate::traits::{bit_vector::bit_vector::BitVectorTrait, utils::bit_select::BitSelect};
+use crate::traits::{
+    bit_vector::bit_vector::{BitVectorTrait, BlockType},
+    utils::bit_select::BitSelect,
+};
 
-type BlockType = u64;
 const SELECT_INDEX_INTERBVAL: usize = 64;
 
 #[derive(Clone)]
@@ -22,24 +23,7 @@ pub(crate) struct BitVector {
 }
 
 impl BitVector {
-    pub(super) fn new(bits: Vec<bool>) -> Self {
-        let len = bits.len();
-        // Pack blocks into BitType words
-        let blocks: Vec<BlockType> = bits
-            .chunks(BlockType::BITS as usize)
-            .map(|chunk| {
-                chunk
-                    .iter()
-                    .enumerate()
-                    .fold(BlockType::zero(), |acc, (i, &bit)| {
-                        if bit {
-                            acc | (BlockType::one() << i)
-                        } else {
-                            acc
-                        }
-                    })
-            })
-            .collect();
+    pub(super) fn new(blocks: Vec<BlockType>, len: usize) -> Self {
         // Build the rank index structure.
         let ranks: Vec<usize> = iter::once(0usize)
             .chain(blocks.iter().scan(0usize, |acc, block| {
@@ -56,8 +40,9 @@ impl BitVector {
             select_index_inner.push(0);
         }
         let mut count = [0usize, 0usize];
-        for (index, bit) in bits.into_iter().enumerate() {
-            let bit = bit as usize;
+        for index in 0..len {
+            let (block_index, bit_index) = index.div_rem(&(BlockType::BITS as usize));
+            let bit = ((blocks[block_index] >> bit_index) & BlockType::one()).is_one() as usize;
             count[bit] += 1;
             if count[bit].is_multiple_of(SELECT_INDEX_INTERBVAL) {
                 select_index[bit].push(index);
@@ -78,17 +63,8 @@ impl BitVector {
 
 impl BitVectorTrait for BitVector {
     #[inline]
-    fn values(&self) -> PyResult<Vec<bool>> {
-        let mut result: Vec<bool> = self
-            .blocks
-            .par_iter()
-            .flat_map_iter(|&block| {
-                (0..BlockType::BITS as usize)
-                    .map(move |i| ((block >> i) & BlockType::one()).is_one())
-            })
-            .collect();
-        result.truncate(self.len);
-        Ok(result)
+    fn values(&self) -> PyResult<Vec<BlockType>> {
+        Ok(self.blocks.clone())
     }
 
     #[inline]
@@ -172,16 +148,31 @@ mod tests {
 
     fn create_dummy() -> BitVector {
         let bits = [true, false, true, true, false, true, false, false].repeat(999);
-        BitVector::new(bits)
+        let blocks = bits
+            .chunks(BlockType::BITS as usize)
+            .map(|chunk| {
+                chunk
+                    .iter()
+                    .enumerate()
+                    .fold(BlockType::zero(), |acc, (i, &b)| {
+                        if b {
+                            acc | (BlockType::one() << i)
+                        } else {
+                            acc
+                        }
+                    })
+            })
+            .collect();
+        BitVector::new(blocks, bits.len())
     }
 
     #[test]
     fn test_empty() {
         Python::initialize();
 
-        let bv = BitVector::new(vec![]);
+        let bv = BitVector::new(vec![], 0);
 
-        assert_eq!(bv.values().unwrap(), Vec::<bool>::new());
+        assert_eq!(bv.values().unwrap(), Vec::<BlockType>::new());
         assert_eq!(
             bv.access(0).unwrap_err().to_string(),
             "IndexError: index out of bounds"
@@ -197,7 +188,22 @@ mod tests {
         Python::initialize();
 
         let bits = vec![true; 1024];
-        let bv = BitVector::new(bits);
+        let blocks = bits
+            .chunks(BlockType::BITS as usize)
+            .map(|chunk| {
+                chunk
+                    .iter()
+                    .enumerate()
+                    .fold(BlockType::zero(), |acc, (i, &b)| {
+                        if b {
+                            acc | (BlockType::one() << i)
+                        } else {
+                            acc
+                        }
+                    })
+            })
+            .collect();
+        let bv = BitVector::new(blocks, bits.len());
 
         for i in 0..1024 {
             assert!(bv.access(i).unwrap());
@@ -215,7 +221,22 @@ mod tests {
         let bv = create_dummy();
         assert_eq!(
             bv.values().unwrap(),
-            [true, false, true, true, false, true, false, false].repeat(999)
+            [true, false, true, true, false, true, false, false]
+                .repeat(999)
+                .chunks(BlockType::BITS as usize)
+                .map(|chunk| {
+                    chunk
+                        .iter()
+                        .enumerate()
+                        .fold(BlockType::zero(), |acc, (i, &b)| {
+                            if b {
+                                acc | (BlockType::one() << i)
+                            } else {
+                                acc
+                            }
+                        })
+                })
+                .collect::<Vec<BlockType>>()
         );
     }
 

@@ -8,7 +8,10 @@ use pyo3::{
 };
 use rayon::prelude::*;
 
-use crate::traits::{bit_vector::bit_vector::BitVectorTrait, utils::bit_width::BitWidth};
+use crate::traits::{
+    bit_vector::bit_vector::{BitVectorTrait, BlockType},
+    utils::bit_width::BitWidth,
+};
 
 /// A Wavelet Matrix data structure for efficient rank, select, and quantile queries.
 ///
@@ -45,18 +48,20 @@ where
     fn get_layers(&self) -> &[BitVectorType];
 
     /// Get the number of zeros in each layer.
-    fn get_zeros(&self) -> &[usize];
+    fn get_zeros_count_per_layer(&self) -> &[usize];
 
     /// Get the begin index for each unique value.
     #[inline]
     fn begin_index(&self, value: &NumberType) -> Option<usize> {
         let mut start = 0usize;
         let mut end = self.len();
-        for (depth, (layer, zero)) in iter::zip(self.get_layers(), self.get_zeros()).enumerate() {
+        for (depth, (layer, zeros_count)) in
+            iter::zip(self.get_layers(), self.get_zeros_count_per_layer()).enumerate()
+        {
             let bit = (value >> (self.height() - depth - 1) & NumberType::one()).is_one();
             if bit {
-                start = zero + layer.rank(bit, start).ok()?;
-                end = zero + layer.rank(bit, end).ok()?;
+                start = zeros_count + layer.rank(bit, start).ok()?;
+                end = zeros_count + layer.rank(bit, end).ok()?;
             } else {
                 start = layer.rank(bit, start).ok()?;
                 end = layer.rank(bit, end).ok()?;
@@ -76,9 +81,20 @@ where
     fn values(&self) -> PyResult<Vec<NumberType>> {
         let mut indices = (0..self.len()).collect::<Vec<usize>>();
         let mut values = vec![NumberType::zero(); self.len()];
-        for (depth, (layer, zero)) in iter::zip(self.get_layers(), self.get_zeros()).enumerate() {
+        for (depth, (layer, zeros_count)) in
+            iter::zip(self.get_layers(), self.get_zeros_count_per_layer()).enumerate()
+        {
             let shift = self.height() - depth - 1;
-            let bits = layer.values()?;
+            let bits = layer
+                .values()?
+                .into_par_iter()
+                .flat_map_iter(|block| {
+                    (0..BlockType::BITS).map(move |i| ((block >> i) & BlockType::one()).is_one())
+                })
+                .collect::<Vec<_>>()
+                .into_iter()
+                .take(self.len())
+                .collect::<Vec<_>>();
             let rank = iter::once([0usize; 2])
                 .chain(bits.iter().scan([0usize; 2], |acc, &bit| {
                     acc[bit as usize] += 1;
@@ -92,7 +108,7 @@ where
                     let bit = bits[*index];
                     if bit {
                         *value |= NumberType::one() << shift;
-                        *index = zero + rank[*index][bit as usize];
+                        *index = zeros_count + rank[*index][bit as usize];
                     } else {
                         *index = rank[*index][bit as usize];
                     }
@@ -109,12 +125,12 @@ where
         }
 
         let mut result = NumberType::zero();
-        for (layer, zero) in iter::zip(self.get_layers(), self.get_zeros()) {
+        for (layer, zeros_count) in iter::zip(self.get_layers(), self.get_zeros_count_per_layer()) {
             let bit = layer.access(index)?;
             result <<= 1;
             if bit {
                 result |= NumberType::one();
-                index = zero + layer.rank(bit, index)?;
+                index = zeros_count + layer.rank(bit, index)?;
             } else {
                 index = layer.rank(bit, index)?;
             }
@@ -138,10 +154,12 @@ where
             None => return Ok(0usize),
         };
 
-        for (depth, (layer, zero)) in iter::zip(self.get_layers(), self.get_zeros()).enumerate() {
+        for (depth, (layer, zeros_count)) in
+            iter::zip(self.get_layers(), self.get_zeros_count_per_layer()).enumerate()
+        {
             let bit = (value >> (self.height() - depth - 1) & NumberType::one()).is_one();
             if bit {
-                end = zero + layer.rank(bit, end)?;
+                end = zeros_count + layer.rank(bit, end)?;
             } else {
                 end = layer.rank(bit, end)?;
             }
@@ -167,13 +185,14 @@ where
         };
 
         let mut index = begin_index + kth - 1;
-        for (depth, (layer, zero)) in iter::zip(self.get_layers(), self.get_zeros())
-            .enumerate()
-            .rev()
+        for (depth, (layer, zeros_count)) in
+            iter::zip(self.get_layers(), self.get_zeros_count_per_layer())
+                .enumerate()
+                .rev()
         {
             let bit = (value >> (self.height() - depth - 1) & NumberType::one()).is_one();
             if bit {
-                index -= zero;
+                index -= zeros_count;
             }
             index = match layer.select(bit, index + 1)? {
                 Some(index) => index,
@@ -201,7 +220,9 @@ where
         }
 
         let mut result = NumberType::zero();
-        for (depth, (layer, zero)) in iter::zip(self.get_layers(), self.get_zeros()).enumerate() {
+        for (depth, (layer, zeros_count)) in
+            iter::zip(self.get_layers(), self.get_zeros_count_per_layer()).enumerate()
+        {
             let count_zeros = layer.rank(false, end)? - layer.rank(false, start)?;
             let bit = if kth <= count_zeros {
                 false
@@ -212,8 +233,8 @@ where
 
             if bit {
                 result |= NumberType::one() << (self.height() - depth - 1);
-                start = zero + layer.rank(bit, start)?;
-                end = zero + layer.rank(bit, end)?;
+                start = zeros_count + layer.rank(bit, start)?;
+                end = zeros_count + layer.rank(bit, end)?;
             } else {
                 start = layer.rank(bit, start)?;
                 end = layer.rank(bit, end)?;
@@ -281,14 +302,14 @@ where
             }
 
             let layer = &self.get_layers()[depth];
-            let zero = self.get_zeros()[depth];
+            let zeros_count = self.get_zeros_count_per_layer()[depth];
 
             let start_zero = layer.rank(false, start)?;
             let end_zero = layer.rank(false, end)?;
             debug_assert!(start_zero <= end_zero);
 
-            let start_one = zero + layer.rank(true, start)?;
-            let end_one = zero + layer.rank(true, end)?;
+            let start_one = zeros_count + layer.rank(true, start)?;
+            let end_one = zeros_count + layer.rank(true, end)?;
             debug_assert!(start_one <= end_one);
 
             if start_zero != end_zero {
@@ -370,7 +391,7 @@ where
             value: NumberType::zero(),
         }];
 
-        for (layer, zero) in iter::zip(self.get_layers(), self.get_zeros()) {
+        for (layer, zeros_count) in iter::zip(self.get_layers(), self.get_zeros_count_per_layer()) {
             stack = stack.into_iter().try_fold(
                 Vec::new(),
                 |mut acc, item| -> PyResult<Vec<StackItem<NumberType>>> {
@@ -389,12 +410,12 @@ where
                     let end2_zero = layer.rank(false, end2)?;
                     debug_assert!(start2_zero <= end2_zero);
 
-                    let start1_one = zero + layer.rank(true, start1)?;
-                    let end1_one = zero + layer.rank(true, end1)?;
+                    let start1_one = zeros_count + layer.rank(true, start1)?;
+                    let end1_one = zeros_count + layer.rank(true, end1)?;
                     debug_assert!(start1_one <= end1_one);
 
-                    let start2_one = zero + layer.rank(true, start2)?;
-                    let end2_one = zero + layer.rank(true, end2)?;
+                    let start2_one = zeros_count + layer.rank(true, start2)?;
+                    let end2_one = zeros_count + layer.rank(true, end2)?;
                     debug_assert!(start2_one <= end2_one);
 
                     if start1_zero != end1_zero && start2_zero != end2_zero {
@@ -456,12 +477,14 @@ where
         }
 
         let mut count = 0usize;
-        for (depth, (layer, zero)) in iter::zip(self.get_layers(), self.get_zeros()).enumerate() {
+        for (depth, (layer, zeros_count)) in
+            iter::zip(self.get_layers(), self.get_zeros_count_per_layer()).enumerate()
+        {
             let bit = (upper >> (self.height() - depth - 1) & NumberType::one()).is_one();
             if bit {
                 count += layer.rank(false, end)? - layer.rank(false, start)?;
-                start = zero + layer.rank(bit, start)?;
-                end = zero + layer.rank(bit, end)?;
+                start = zeros_count + layer.rank(bit, start)?;
+                end = zeros_count + layer.rank(bit, end)?;
             } else {
                 start = layer.rank(bit, start)?;
                 end = layer.rank(bit, end)?;
@@ -540,7 +563,9 @@ where
             value: NumberType::zero(),
         }];
 
-        for (depth, (layer, zero)) in iter::zip(self.get_layers(), self.get_zeros()).enumerate() {
+        for (depth, (layer, zeros_count)) in
+            iter::zip(self.get_layers(), self.get_zeros_count_per_layer()).enumerate()
+        {
             let shift = self.height() - depth - 1;
 
             stack = stack.into_iter().try_fold(
@@ -552,8 +577,8 @@ where
                     let end_zero = layer.rank(false, end)?;
                     debug_assert!(start_zero <= end_zero);
 
-                    let start_one = zero + layer.rank(true, start)?;
-                    let end_one = zero + layer.rank(true, end)?;
+                    let start_one = zeros_count + layer.rank(true, start)?;
+                    let end_one = zeros_count + layer.rank(true, end)?;
                     debug_assert!(start_one <= end_one);
 
                     let next_value_zero = &value << 1;
@@ -625,12 +650,12 @@ where
             value: NumberType::zero(),
         }];
 
-        for (layer, zero) in iter::zip(self.get_layers(), self.get_zeros()) {
+        for (layer, zeros_count) in iter::zip(self.get_layers(), self.get_zeros_count_per_layer()) {
             let mut next_stack = Vec::with_capacity(k);
 
             for StackItem { start, end, value } in stack {
-                let start_one = zero + layer.rank(true, start)?;
-                let end_one = zero + layer.rank(true, end)?;
+                let start_one = zeros_count + layer.rank(true, start)?;
+                let end_one = zeros_count + layer.rank(true, end)?;
                 debug_assert!(start_one <= end_one);
 
                 let next_value_one = (&value << 1) | NumberType::one();
@@ -705,7 +730,7 @@ where
             value: NumberType::zero(),
         }];
 
-        for (layer, zero) in iter::zip(self.get_layers(), self.get_zeros()) {
+        for (layer, zeros_count) in iter::zip(self.get_layers(), self.get_zeros_count_per_layer()) {
             let mut next_stack = Vec::with_capacity(k);
 
             for StackItem { start, end, value } in stack {
@@ -726,8 +751,8 @@ where
                     break;
                 }
 
-                let start_one = zero + layer.rank(true, start)?;
-                let end_one = zero + layer.rank(true, end)?;
+                let start_one = zeros_count + layer.rank(true, start)?;
+                let end_one = zeros_count + layer.rank(true, end)?;
                 debug_assert!(start_one <= end_one);
 
                 let next_value_one = (&value << 1) | NumberType::one();
@@ -800,7 +825,7 @@ mod tests {
 
     struct SampleWaveletMatrix<NumberType> {
         layers: Vec<SampleBitVector>,
-        zeros: Vec<usize>,
+        zeros_count_per_layer: Vec<usize>,
         height: usize,
         len: usize,
         phantom: marker::PhantomData<NumberType>,
@@ -816,7 +841,7 @@ mod tests {
             let height = values.iter().max().map_or(0usize, |max| max.bit_width());
             let len = values.len();
             let mut layers: Vec<SampleBitVector> = Vec::with_capacity(height);
-            let mut zeros: Vec<usize> = Vec::with_capacity(height);
+            let mut zeros_count_per_layer: Vec<usize> = Vec::with_capacity(height);
 
             for i in 0..height {
                 let mut bits = Vec::with_capacity(len);
@@ -832,13 +857,13 @@ mod tests {
                     }
                 }
                 layers.push(SampleBitVector::new(bits));
-                zeros.push(zero_values.len());
+                zeros_count_per_layer.push(zero_values.len());
                 values = [zero_values, one_values].concat();
             }
 
             SampleWaveletMatrix {
                 layers,
-                zeros,
+                zeros_count_per_layer,
                 height,
                 len,
                 phantom: marker::PhantomData,
@@ -870,8 +895,8 @@ mod tests {
             &self.layers
         }
 
-        fn get_zeros(&self) -> &[usize] {
-            &self.zeros
+        fn get_zeros_count_per_layer(&self) -> &[usize] {
+            &self.zeros_count_per_layer
         }
 
         fn height(&self) -> usize {

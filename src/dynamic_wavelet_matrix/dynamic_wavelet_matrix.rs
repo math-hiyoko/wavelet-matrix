@@ -1,4 +1,4 @@
-use std::{fmt, iter, marker, ops};
+use std::{fmt, marker, ops};
 
 use num_bigint::ToBigUint;
 use num_traits::{One, Zero};
@@ -7,6 +7,7 @@ use rayon::prelude::*;
 
 use super::dynamic_bit_vector::DynamicBitVector;
 use crate::traits::{
+    bit_vector::bit_vector::BlockType,
     utils::bit_width::BitWidth,
     wavelet_matrix::{
         dynamic_wavelet_matrix::DynamicWaveletMatrixTrait, wavelet_matrix::WaveletMatrixTrait,
@@ -16,7 +17,7 @@ use crate::traits::{
 #[derive(Clone)]
 pub(crate) struct DynamicWaveletMatrix<NumberType> {
     layers: Vec<DynamicBitVector>,
-    zeros: Vec<usize>,
+    zeros_count_per_layer: Vec<usize>,
     height: usize,
     len: usize,
     phantom: marker::PhantomData<NumberType>,
@@ -44,20 +45,37 @@ where
         }
         let height = max_bit.unwrap_or(max_width);
 
-        let mut zeros = Vec::with_capacity(height);
-        let mut bits = Vec::with_capacity(height);
+        let mut zeros_count_per_layer = Vec::with_capacity(height);
+        let mut layer_blocks_vec = Vec::with_capacity(height);
         for i in 0..height {
-            let layer_bits = values
+            let current_layer_blocks = values
                 .par_iter()
                 .map(|value| (value >> (height - i - 1) & NumberType::one()).is_one())
+                .chunks(BlockType::BITS as usize)
+                .map(|chunk| {
+                    chunk
+                        .iter()
+                        .enumerate()
+                        .fold(BlockType::zero(), |acc, (j, &b)| {
+                            if b {
+                                acc | (BlockType::one() << j)
+                            } else {
+                                acc
+                            }
+                        })
+                })
                 .collect::<Vec<_>>();
-            let num_zeros = layer_bits.par_iter().filter(|&&bit| !bit).count();
+            let zeros_count = len
+                - current_layer_blocks
+                    .par_iter()
+                    .map(|block| block.count_ones() as usize)
+                    .sum::<usize>();
 
             let mut next_values = vec![NumberType::one(); len];
             let mut zero_index = 0usize;
-            let mut one_index = num_zeros;
-            for (&bit, value) in iter::zip(&layer_bits, values) {
-                if bit {
+            let mut one_index = zeros_count;
+            for value in values.into_iter() {
+                if ((&value >> (height - i - 1)) & NumberType::one()).is_one() {
                     next_values[one_index] = value;
                     one_index += 1;
                 } else {
@@ -66,19 +84,20 @@ where
                 }
             }
 
-            zeros.push(num_zeros);
-            bits.push(layer_bits);
+            zeros_count_per_layer.push(zeros_count);
+            layer_blocks_vec.push(current_layer_blocks);
             values = next_values;
         }
+        drop(values);
 
-        let layers = bits
+        let layers = layer_blocks_vec
             .into_par_iter()
-            .map(DynamicBitVector::new)
+            .map(|blocks| DynamicBitVector::new(blocks, len))
             .collect::<Vec<_>>();
 
         Ok(DynamicWaveletMatrix {
             layers,
-            zeros,
+            zeros_count_per_layer,
             height,
             len,
             phantom: marker::PhantomData,
@@ -111,8 +130,8 @@ where
         &self.layers
     }
 
-    fn get_zeros(&self) -> &[usize] {
-        &self.zeros
+    fn get_zeros_count_per_layer(&self) -> &[usize] {
+        &self.zeros_count_per_layer
     }
 
     fn height(&self) -> usize {
@@ -149,8 +168,8 @@ where
         &mut self.len
     }
 
-    fn get_layers_and_zeros(&mut self) -> (&mut [DynamicBitVector], &mut [usize]) {
-        (&mut self.layers, &mut self.zeros)
+    fn get_layers_and_zeros_count_per_layer(&mut self) -> (&mut [DynamicBitVector], &mut [usize]) {
+        (&mut self.layers, &mut self.zeros_count_per_layer)
     }
 }
 
