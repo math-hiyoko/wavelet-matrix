@@ -1,4 +1,4 @@
-use std::{fmt, marker, ops};
+use std::{fmt, iter, marker, ops};
 
 use num_bigint::ToBigUint;
 use num_traits::{One, Zero};
@@ -48,9 +48,27 @@ where
         let mut zeros_count_per_layer = Vec::with_capacity(height);
         let mut layer_blocks_vec = Vec::with_capacity(height);
         for i in 0..height {
-            let current_layer_blocks = values
+            let current_layer_bits = values
                 .par_iter()
                 .map(|value| (value >> (height - i - 1) & NumberType::one()).is_one())
+                .collect::<Vec<bool>>();
+            let zeros_count = current_layer_bits.par_iter().filter(|&&b| !b).count();
+
+            let mut next_values = vec![NumberType::one(); len];
+            let mut zero_index = 0usize;
+            let mut one_index = zeros_count;
+            for (&bit, value) in iter::zip(&current_layer_bits, values) {
+                if bit {
+                    next_values[one_index] = value;
+                    one_index += 1;
+                } else {
+                    next_values[zero_index] = value;
+                    zero_index += 1;
+                }
+            }
+
+            let current_layer_blocks = current_layer_bits
+                .into_par_iter()
                 .chunks(BlockType::BITS as usize)
                 .map(|chunk| {
                     chunk
@@ -65,24 +83,6 @@ where
                         })
                 })
                 .collect::<Vec<_>>();
-            let zeros_count = len
-                - current_layer_blocks
-                    .par_iter()
-                    .map(|block| block.count_ones() as usize)
-                    .sum::<usize>();
-
-            let mut next_values = vec![NumberType::one(); len];
-            let mut zero_index = 0usize;
-            let mut one_index = zeros_count;
-            for value in values.into_iter() {
-                if ((&value >> (height - i - 1)) & NumberType::one()).is_one() {
-                    next_values[one_index] = value;
-                    one_index += 1;
-                } else {
-                    next_values[zero_index] = value;
-                    zero_index += 1;
-                }
-            }
 
             zeros_count_per_layer.push(zeros_count);
             layer_blocks_vec.push(current_layer_blocks);
