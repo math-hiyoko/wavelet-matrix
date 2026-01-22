@@ -84,15 +84,15 @@ where
             values = next_values;
         }
 
-        let layers = layer_blocks_vec
-            .into_par_iter()
-            .map(|blocks| BitVector::new(blocks, len))
-            .collect::<Vec<_>>();
-
         let mut begin_index = collections::HashMap::new();
         values.into_iter().enumerate().for_each(|(index, value)| {
             begin_index.entry(value).or_insert(index);
         });
+
+        let layers = layer_blocks_vec
+            .into_par_iter()
+            .map(|blocks| BitVector::new(blocks, len))
+            .collect::<Vec<_>>();
 
         WaveletMatrix {
             layers,
