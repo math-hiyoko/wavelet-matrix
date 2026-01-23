@@ -1,10 +1,10 @@
-use num_traits::Zero;
+use num_traits::{One, Zero};
 use pyo3::{
     PyResult,
     exceptions::{PyIndexError, PyValueError},
 };
 
-pub(crate) type BlockType = u64;
+pub(crate) type BlockType = u32;
 
 pub(crate) trait BitVectorTrait {
     /// Get all bit values as a vector.
@@ -39,12 +39,13 @@ impl BitVectorTrait for SampleBitVector {
                 chunk
                     .iter()
                     .enumerate()
-                    .fold(
-                        BlockType::zero(),
-                        |acc, (i, &b)| {
-                            if b { acc | (1u64 << i) } else { acc }
-                        },
-                    )
+                    .fold(BlockType::zero(), |acc, (i, &b)| {
+                        if b {
+                            acc | (BlockType::one() << i)
+                        } else {
+                            acc
+                        }
+                    })
             })
             .collect())
     }
@@ -120,12 +121,13 @@ mod tests {
                     chunk
                         .iter()
                         .enumerate()
-                        .fold(
-                            BlockType::zero(),
-                            |acc, (i, &b)| {
-                                if b { acc | (1u64 << i) } else { acc }
-                            },
-                        )
+                        .fold(BlockType::zero(), |acc, (i, &b)| {
+                            if b {
+                                acc | (BlockType::one() << i)
+                            } else {
+                                acc
+                            }
+                        })
                 })
                 .collect::<Vec<BlockType>>()
         );
