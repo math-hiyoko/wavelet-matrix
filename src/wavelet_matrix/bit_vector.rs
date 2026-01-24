@@ -12,7 +12,7 @@ use crate::traits::{
     utils::bit_select::BitSelect,
 };
 
-const SELECT_INDEX_INTERBVAL: usize = 64;
+const SELECT_INDEX_INTERBVAL: usize = 512;
 
 #[derive(Clone)]
 pub(crate) struct BitVector {
@@ -109,7 +109,7 @@ impl BitVectorTrait for BitVector {
         let block_index = {
             let mut left = self.select_index[bit as usize][(kth - 1) / SELECT_INDEX_INTERBVAL]
                 / (BlockType::BITS as usize);
-            let mut right = self.select_index[bit as usize][(kth - 1) / SELECT_INDEX_INTERBVAL + 1]
+            let mut right = self.select_index[bit as usize][kth / SELECT_INDEX_INTERBVAL + 1]
                 .div_ceil(BlockType::BITS as usize);
             debug_assert!(right <= self.blocks.len());
             while left + 1 < right {
