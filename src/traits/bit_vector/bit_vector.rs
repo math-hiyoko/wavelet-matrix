@@ -4,7 +4,7 @@ use pyo3::{
     exceptions::{PyIndexError, PyValueError},
 };
 
-pub(crate) type BlockType = u32;
+pub(crate) type BlockType = u64;
 
 pub(crate) trait BitVectorTrait {
     /// Get all bit values as a vector.
