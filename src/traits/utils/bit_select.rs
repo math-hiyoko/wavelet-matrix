@@ -99,6 +99,54 @@ impl BitSelect for u64 {
     }
 }
 
+impl BitSelect for u128 {
+    fn bit_select(&self, bit: bool, mut k: usize) -> Option<usize> {
+        if k.is_zero() {
+            return None;
+        }
+
+        let value = if bit { *self } else { !*self };
+        if value.count_ones() < k as u32 {
+            return None;
+        }
+
+        let x1 = value - ((value & 0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAu128) >> 1);
+        let x2 = (x1 & 0x33333333333333333333333333333333u128)
+            + ((x1 >> 2) & 0x33333333333333333333333333333333u128);
+        let x3 = (x2 + (x2 >> 4)) & 0x0F0F0F0F0F0F0F0F0F0F0F0F0F0F0F0Fu128;
+
+        let mut pos = 0;
+
+        loop {
+            let cnt = ((x3 >> pos) & 0xFFu128) as usize;
+            if k <= cnt {
+                break;
+            }
+            k -= cnt;
+            pos += 8;
+        }
+
+        let cnt4 = ((x2 >> pos) & 0x0Fu128) as usize;
+        if k > cnt4 {
+            k -= cnt4;
+            pos += 4;
+        }
+
+        let cnt2 = ((x1 >> pos) & 0x03u128) as usize;
+        if k > cnt2 {
+            k -= cnt2;
+            pos += 2;
+        }
+
+        let bit0 = ((value >> pos) & 1u128) as usize;
+        if bit0 < k {
+            pos += 1;
+        }
+
+        Some(pos)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -127,6 +175,20 @@ mod tests {
         assert_eq!(x.bit_select(false, 25), Some(42));
         assert_eq!(x.bit_select(false, 37), None);
         let y = 0u64;
+        assert_eq!(y.bit_select(true, 1), None);
+        assert_eq!(y.bit_select(false, 1), Some(0));
+    }
+
+    #[test]
+    fn test_bit_selec_u128() {
+        let x = 0b10110010010110001011001001011000101100100101100010110010010110001011001001011000101100100101100010110010010110001011001001011000u128;
+        assert_eq!(x.bit_select(true, 0), None);
+        assert_eq!(x.bit_select(true, 40), Some(92));
+        assert_eq!(x.bit_select(true, 57), None);
+        assert_eq!(x.bit_select(false, 0), None);
+        assert_eq!(x.bit_select(false, 50), Some(87));
+        assert_eq!(x.bit_select(false, 73), None);
+        let y = 0u128;
         assert_eq!(y.bit_select(true, 1), None);
         assert_eq!(y.bit_select(false, 1), Some(0));
     }
