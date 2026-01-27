@@ -607,20 +607,13 @@ impl DynamicBitVectorNode {
 #[derive(Clone)]
 pub(crate) struct DynamicBitVector {
     len: usize,
-    ones: usize,
     root: Box<DynamicBitVectorNode>,
 }
 
 impl DynamicBitVector {
     pub(super) fn new(blocks: Vec<BlockType>, len: usize) -> Self {
-        let ones = len
-            - blocks
-                .iter()
-                .map(|block| block.count_ones() as usize)
-                .sum::<usize>();
         Self {
             len,
-            ones,
             root: Box::new(DynamicBitVectorNode::new(blocks, len)),
         }
     }
@@ -770,7 +763,6 @@ impl DynamicBitVectorTrait for DynamicBitVector {
 
         self.root.insert(index, bit, self.len);
         self.len += 1;
-        self.ones += if bit { 1 } else { 0 };
         Ok(())
     }
 
@@ -781,7 +773,6 @@ impl DynamicBitVectorTrait for DynamicBitVector {
 
         let (bit, _) = self.root.remove(index, self.len);
         self.len -= 1;
-        self.ones -= if bit { 1 } else { 0 };
         Ok(bit)
     }
 }
