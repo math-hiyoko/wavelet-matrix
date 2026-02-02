@@ -27,11 +27,7 @@
     {% endblock %}
 
     {% block search_box %}
-        {% if search and all_modules|length > 1 %}
-            {# we set a pattern here so that we can use the :valid CSS selector #}
-            <input type="search" placeholder="Search..." role="searchbox" aria-label="search"
-                   pattern=".+" required>
-        {% endif %}
+        {# search disabled via template #}
     {% endblock %}
 
     {% block nav_index %}
@@ -130,9 +126,7 @@
         {% include "livereload.html.jinja2" %}
     {% endif %}
     {% block search_js %}
-        {% if search and all_modules|length > 1 %}
-            {% include "search.html.jinja2" %}
-        {% endif %}
+        {# search disabled via template #}
     {% endblock %}
 {% endblock content %}
 {#
@@ -292,19 +286,13 @@ See https://pdoc.dev/docs/pdoc/render_helpers.html#DefaultMacroExtension for an 
 {% enddefaultmacro %}
 {# fmt: on #}
 {% defaultmacro view_source_state(doc) %}
-    {% if show_source and doc.source %}
-        <input id="{{ doc.qualname or "mod-" + doc.name }}-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-    {% endif %}
+    {# show_source disabled via template #}
 {% enddefaultmacro %}
 {% defaultmacro view_source_button(doc) %}
-    {% if show_source and doc.source %}
-        <label class="view-source-button" for="{{ doc.qualname or "mod-" + doc.name }}-view-source"><span>View Source</span></label>
-    {% endif %}
+    {# show_source disabled via template #}
 {% enddefaultmacro %}
 {% defaultmacro view_source_code(doc) %}
-    {% if show_source and doc.source %}
-        {{ doc | highlight }}
-    {% endif %}
+    {# show_source disabled via template #}
 {% enddefaultmacro %}
 {% defaultmacro module_name() %}
     <h1 class="modulename">
