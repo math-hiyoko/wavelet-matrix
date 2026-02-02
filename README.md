@@ -160,7 +160,7 @@ pdoc wavelet_matrix \
       --no-search \
       --no-show-source \
       --docformat markdown \
-      --footer-text "© 2026 Koki Watanabe"
+      --temate-directory pdoc_templates
 ```
 
 ## References
