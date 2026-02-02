@@ -213,7 +213,7 @@ jobs:
             --no-search \
             --no-show-source \
             --docformat markdown \
-            --temate-directory pdoc_templates
+            --template-directory pdoc_templates
           if ! git diff --exit-code -- docs; then
             echo "::error::Docs are out of date. Please run pdoc and commit generated docs."
             exit 1

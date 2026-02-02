@@ -160,7 +160,7 @@ pdoc wavelet_matrix \
       --no-search \
       --no-show-source \
       --docformat markdown \
-      --temate-directory pdoc_templates
+      --template-directory pdoc_templates
 ```
 
 ## References
