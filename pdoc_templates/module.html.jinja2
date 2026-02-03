@@ -1,5 +1,14 @@
 {% extends "frame.html.jinja2" %}
 {% block title %}{{ module.modulename }} API documentation{% endblock %}
+{% block head %}
+<style>
+@media (max-width: 768px) {
+    nav.pdoc > label#navtoggle {
+        top: 100px;
+    }
+}
+</style>
+{% endblock %}
 {% block nav %}
     {% block module_list_link %}
         {% set parentmodule = ".".join(module.modulename.split(".")[:-1]) %}
