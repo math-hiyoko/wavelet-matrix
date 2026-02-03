@@ -211,9 +211,8 @@ jobs:
           pdoc wavelet_matrix \
             --output-directory docs \
             --no-search \
-            --no-show-source \
             --docformat markdown \
-            --footer-text "© 2026 Koki Watanabe"
+            --template-directory pdoc_templates
           if ! git diff --exit-code -- docs; then
             echo "::error::Docs are out of date. Please run pdoc and commit generated docs."
             exit 1
