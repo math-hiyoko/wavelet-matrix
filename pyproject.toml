@@ -7,7 +7,7 @@ name = "wavelet-matrix"
 dynamic = ["version"]
 description = "High-performance indexed sequence data structure powered by Rust, supporting fast rank/select and range queries."
 authors = [
-    {name = "Koki Watanabe"}
+    {name = "Koki Watanabe", email = "koki.watanabe.56@gmail.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.9"
