@@ -57,7 +57,6 @@ dev = [
 ]
 
 [project.urls]
-homepage = "https://github.com/math-hiyoko/wavelet-matrix"
 documentation = "https://math-hiyoko.github.io/wavelet-matrix"
 repository = "https://github.com/math-hiyoko/wavelet-matrix"
 

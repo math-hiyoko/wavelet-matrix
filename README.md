@@ -11,6 +11,7 @@
 ![PyPI - Format](https://img.shields.io/pypi/format/wavelet-matrix)
 ![Rust](https://img.shields.io/badge/powered%20by-Rust-orange)
 ![Unsafe](https://img.shields.io/badge/unsafe-0-success)
+![GitHub Repo stars](https://img.shields.io/github/stars/math-hiyoko/wavelet-matrix)
 
 
 High-performance Wavelet Matrix implementation powered by Rust,  
