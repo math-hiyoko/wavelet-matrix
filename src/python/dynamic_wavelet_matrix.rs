@@ -39,7 +39,7 @@ enum DynamicWaveletMatrixEnum {
 /// dwm = DynamicWaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0], max_bit=4)
 /// ```
 #[derive(Clone)]
-#[pyclass(name = "DynamicWaveletMatrix")]
+#[pyclass(name = "DynamicWaveletMatrix", skip_from_py_object)]
 pub(crate) struct PyDynamicWaveletMatrix {
     inner: DynamicWaveletMatrixEnum,
 }
@@ -114,7 +114,7 @@ impl PyDynamicWaveletMatrix {
                     values, max_bit,
                 )?),
             };
-            Ok(PyDynamicWaveletMatrix { inner: wv })
+            Ok(Self { inner: wv })
         })
     }
 

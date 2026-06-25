@@ -1,8 +1,8 @@
+#[cfg(test)]
 use num_traits::{One, Zero};
-use pyo3::{
-    PyResult,
-    exceptions::{PyIndexError, PyValueError},
-};
+use pyo3::PyResult;
+#[cfg(test)]
+use pyo3::exceptions::{PyIndexError, PyValueError};
 
 pub(crate) type BlockType = u128;
 
@@ -20,16 +20,17 @@ pub(crate) trait BitVectorTrait {
     fn select(&self, bit: bool, kth: usize) -> PyResult<Option<usize>>;
 }
 
-#[allow(dead_code)]
+#[cfg(test)]
 pub(in crate::traits) struct SampleBitVector(Vec<bool>);
 
-#[allow(dead_code)]
+#[cfg(test)]
 impl SampleBitVector {
     pub(in crate::traits) fn new(data: Vec<bool>) -> Self {
         SampleBitVector(data)
     }
 }
 
+#[cfg(test)]
 impl BitVectorTrait for SampleBitVector {
     fn values(&self) -> PyResult<Vec<BlockType>> {
         Ok(self

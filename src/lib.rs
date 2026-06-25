@@ -1,4 +1,5 @@
 #![forbid(unsafe_code)]
+mod disk_wavelet_matrix;
 mod dynamic_wavelet_matrix;
 mod python;
 mod traits;

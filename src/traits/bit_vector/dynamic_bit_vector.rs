@@ -1,10 +1,12 @@
+#[cfg(test)]
 use num_traits::{One, Zero};
-use pyo3::{
-    PyResult,
-    exceptions::{PyIndexError, PyValueError},
-};
+use pyo3::PyResult;
+#[cfg(test)]
+use pyo3::exceptions::{PyIndexError, PyValueError};
 
-use super::bit_vector::{BitVectorTrait, BlockType};
+use super::bit_vector::BitVectorTrait;
+#[cfg(test)]
+use super::bit_vector::BlockType;
 
 pub(crate) trait DynamicBitVectorTrait: BitVectorTrait {
     /// Inserts a bit at the specified position.
@@ -14,16 +16,17 @@ pub(crate) trait DynamicBitVectorTrait: BitVectorTrait {
     fn remove(&mut self, index: usize) -> PyResult<bool>;
 }
 
-#[allow(dead_code)]
+#[cfg(test)]
 pub(in crate::traits) struct SampleDynamicBitVector(Vec<bool>);
 
-#[allow(dead_code)]
+#[cfg(test)]
 impl SampleDynamicBitVector {
     pub(in crate::traits) fn new(data: Vec<bool>) -> Self {
         SampleDynamicBitVector(data)
     }
 }
 
+#[cfg(test)]
 impl BitVectorTrait for SampleDynamicBitVector {
     fn values(&self) -> PyResult<Vec<BlockType>> {
         Ok(self
@@ -74,6 +77,7 @@ impl BitVectorTrait for SampleDynamicBitVector {
     }
 }
 
+#[cfg(test)]
 impl DynamicBitVectorTrait for SampleDynamicBitVector {
     fn insert(&mut self, index: usize, bit: bool) -> PyResult<()> {
         if index > self.0.len() {

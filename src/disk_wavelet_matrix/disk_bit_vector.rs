@@ -1,10 +1,12 @@
-use std::iter;
+use std::{iter, mem};
 
+use bytemuck::{cast_slice, cast_slice_mut};
+use memmap2::{Mmap, MmapMut};
 use num_integer::Integer;
 use num_traits::{One, Zero};
 use pyo3::{
     PyResult,
-    exceptions::{PyIndexError, PyValueError},
+    exceptions::{PyIndexError, PyRuntimeError, PyValueError},
 };
 
 use crate::traits::{
@@ -14,33 +16,48 @@ use crate::traits::{
 
 const SELECT_INDEX_INTERVAL: usize = 512;
 
-#[derive(Clone)]
-pub(crate) struct BitVector {
+pub(crate) struct DiskBitVector {
     len: usize,
-    ranks: Vec<usize>,
-    blocks: Vec<BlockType>,
-    select_index: [Vec<usize>; 2],
+    ranks: Mmap,
+    blocks: Mmap,
+    select_index: [Mmap; 2],
 }
 
-impl BitVector {
-    pub(super) fn new(blocks: Vec<BlockType>, len: usize) -> Self {
+impl DiskBitVector {
+    pub(super) fn new(blocks: Mmap, len: usize) -> PyResult<Self> {
+        assert!(blocks.len().is_multiple_of(mem::size_of::<BlockType>()));
+        let blocks_data: &[BlockType] = cast_slice(&blocks[..]);
+
         // Build the rank index structure.
-        let ranks: Vec<usize> = iter::once(0usize)
-            .chain(blocks.iter().scan(0usize, |acc, block| {
+        let mut ranks = MmapMut::map_anon((blocks_data.len() + 1) * mem::size_of::<usize>())
+            .map_err(PyRuntimeError::new_err)?;
+        let ranks_data: &mut [usize] = cast_slice_mut(&mut ranks[..]);
+        iter::once(0usize)
+            .chain(blocks_data.iter().scan(0usize, |acc, block| {
                 *acc += block.count_ones() as usize;
                 Some(*acc)
             }))
-            .collect();
+            .enumerate()
+            .for_each(|(index, rank)| ranks_data[index] = rank);
 
-        let mut select_index = [
-            Vec::with_capacity((len - ranks.last().unwrap()) / SELECT_INDEX_INTERVAL + 2),
-            Vec::with_capacity(ranks.last().unwrap() / SELECT_INDEX_INTERVAL + 2),
+        let mut select_index_0 = MmapMut::map_anon(
+            ((len - ranks_data.last().unwrap()) / SELECT_INDEX_INTERVAL + 2)
+                * mem::size_of::<usize>(),
+        )
+        .map_err(PyRuntimeError::new_err)?;
+        let mut select_index_1 = MmapMut::map_anon(
+            (ranks_data.last().unwrap() / SELECT_INDEX_INTERVAL + 2) * mem::size_of::<usize>(),
+        )
+        .map_err(PyRuntimeError::new_err)?;
+
+        let select_index_data: [&mut [usize]; 2] = [
+            cast_slice_mut(&mut select_index_0[..]),
+            cast_slice_mut(&mut select_index_1[..]),
         ];
-        for select_index_inner in select_index.iter_mut() {
-            select_index_inner.push(0);
-        }
+        select_index_data[0][0] = 0;
+        select_index_data[1][0] = 0;
         let mut count = [0usize, 0usize];
-        for (index, bit) in blocks
+        for (index, bit) in blocks_data
             .iter()
             .flat_map(|block| {
                 (0..BlockType::BITS as usize)
@@ -50,27 +67,61 @@ impl BitVector {
             .enumerate()
         {
             count[bit] += 1;
-            if count[bit].is_multiple_of(SELECT_INDEX_INTERVAL) {
-                select_index[bit].push(index);
+            let (count_div, count_rem) = count[bit].div_rem(&SELECT_INDEX_INTERVAL);
+            if count_rem.is_zero() {
+                select_index_data[bit][count_div] = index;
             }
         }
-        for select_index_inner in select_index.iter_mut() {
-            select_index_inner.push(len);
-        }
+        select_index_data[0][count[0] / SELECT_INDEX_INTERVAL + 1] = len;
+        select_index_data[1][count[1] / SELECT_INDEX_INTERVAL + 1] = len;
+
+        Ok(Self {
+            len,
+            ranks: ranks.make_read_only().map_err(PyRuntimeError::new_err)?,
+            blocks,
+            select_index: [
+                select_index_0
+                    .make_read_only()
+                    .map_err(PyRuntimeError::new_err)?,
+                select_index_1
+                    .make_read_only()
+                    .map_err(PyRuntimeError::new_err)?,
+            ],
+        })
+    }
+}
+
+impl Clone for DiskBitVector {
+    fn clone(&self) -> Self {
+        let mut ranks = MmapMut::map_anon(self.ranks.len()).unwrap();
+        let mut blocks = MmapMut::map_anon(self.blocks.len()).unwrap();
+        let mut select_index = [
+            MmapMut::map_anon(self.select_index[0].len()).unwrap(),
+            MmapMut::map_anon(self.select_index[1].len()).unwrap(),
+        ];
+        ranks.copy_from_slice(&self.ranks[..]);
+        blocks.copy_from_slice(&self.blocks[..]);
+        select_index[0].copy_from_slice(&self.select_index[0][..]);
+        select_index[1].copy_from_slice(&self.select_index[1][..]);
+
+        let [select_index_0, select_index_1] = select_index;
 
         Self {
-            len,
-            ranks,
-            blocks,
-            select_index,
+            len: self.len,
+            ranks: ranks.make_read_only().unwrap(),
+            blocks: blocks.make_read_only().unwrap(),
+            select_index: [
+                select_index_0.make_read_only().unwrap(),
+                select_index_1.make_read_only().unwrap(),
+            ],
         }
     }
 }
 
-impl BitVectorTrait for BitVector {
+impl BitVectorTrait for DiskBitVector {
     #[inline]
     fn values(&self) -> PyResult<Vec<BlockType>> {
-        Ok(self.blocks.clone())
+        Ok(cast_slice(&self.blocks[..]).to_vec())
     }
 
     #[inline]
@@ -79,7 +130,8 @@ impl BitVectorTrait for BitVector {
             return Err(PyIndexError::new_err("index out of bounds"));
         }
         let (block_index, bit_index) = index.div_rem(&(BlockType::BITS as usize));
-        Ok(((self.blocks[block_index] >> bit_index) & BlockType::one()).is_one())
+        let blocks_data: &[BlockType] = cast_slice(&self.blocks[..]);
+        Ok(((blocks_data[block_index] >> bit_index) & BlockType::one()).is_one())
     }
 
     #[inline]
@@ -95,9 +147,11 @@ impl BitVectorTrait for BitVector {
         }
 
         let (block_index, bit_index) = end.div_rem(&(BlockType::BITS as usize));
-        let mut rank = self.ranks[block_index];
-        if block_index < self.blocks.len() {
-            rank += (self.blocks[block_index]
+        let ranks_data: &[usize] = cast_slice(&self.ranks[..]);
+        let blocks_data: &[BlockType] = cast_slice(&self.blocks[..]);
+        let mut rank = ranks_data[block_index];
+        if block_index < blocks_data.len() {
+            rank += (blocks_data[block_index]
                 & ((BlockType::one() << bit_index) - BlockType::one()))
             .count_ones() as usize;
         }
@@ -113,18 +167,25 @@ impl BitVectorTrait for BitVector {
             return Ok(None);
         }
 
+        let select_index_data: [&[usize]; 2] = [
+            cast_slice(&self.select_index[0][..]),
+            cast_slice(&self.select_index[1][..]),
+        ];
+        let ranks_data: &[usize] = cast_slice(&self.ranks[..]);
+        let blocks_data: &[BlockType] = cast_slice(&self.blocks[..]);
+
         let block_index = {
-            let mut left = self.select_index[bit as usize][(kth - 1) / SELECT_INDEX_INTERVAL]
+            let mut left = select_index_data[bit as usize][(kth - 1) / SELECT_INDEX_INTERVAL]
                 / (BlockType::BITS as usize);
-            let mut right = self.select_index[bit as usize][kth / SELECT_INDEX_INTERVAL + 1]
+            let mut right = select_index_data[bit as usize][kth / SELECT_INDEX_INTERVAL + 1]
                 .div_ceil(BlockType::BITS as usize);
             debug_assert!(right <= self.blocks.len());
             while left + 1 < right {
                 let mid = (left + right) / 2;
                 let rank_at_mid = if bit {
-                    self.ranks[mid]
+                    ranks_data[mid]
                 } else {
-                    mid * (BlockType::BITS as usize) - self.ranks[mid]
+                    mid * (BlockType::BITS as usize) - ranks_data[mid]
                 };
                 if rank_at_mid < kth {
                     left = mid;
@@ -136,11 +197,11 @@ impl BitVectorTrait for BitVector {
         };
 
         kth -= if bit {
-            self.ranks[block_index]
+            ranks_data[block_index]
         } else {
-            block_index * (BlockType::BITS as usize) - self.ranks[block_index]
+            block_index * (BlockType::BITS as usize) - ranks_data[block_index]
         };
-        let index = self.blocks[block_index].bit_select(bit, kth).unwrap()
+        let index = blocks_data[block_index].bit_select(bit, kth).unwrap()
             + block_index * (BlockType::BITS as usize);
 
         Ok(Some(index))
@@ -153,31 +214,42 @@ mod tests {
 
     use super::*;
 
-    fn create_dummy() -> BitVector {
+    fn create_disk_bit_vector(bits: Vec<bool>) -> DiskBitVector {
+        let len = bits.len();
+        let mut blocks =
+            MmapMut::map_anon(len.div_ceil(BlockType::BITS as usize) * mem::size_of::<BlockType>())
+                .map_err(PyRuntimeError::new_err)
+                .unwrap();
+        let blocks_data: &mut [BlockType] = cast_slice_mut(&mut blocks[..]);
+        bits.chunks(BlockType::BITS as usize)
+            .enumerate()
+            .for_each(|(index, chunk)| {
+                blocks_data[index] =
+                    chunk
+                        .iter()
+                        .enumerate()
+                        .fold(BlockType::zero(), |acc, (i, &b)| {
+                            if b {
+                                acc | (BlockType::one() << i)
+                            } else {
+                                acc
+                            }
+                        })
+            });
+
+        DiskBitVector::new(blocks.make_read_only().unwrap(), len).unwrap()
+    }
+
+    fn create_dummy() -> DiskBitVector {
         let bits = [true, false, true, true, false, true, false, false].repeat(999);
-        let blocks = bits
-            .chunks(BlockType::BITS as usize)
-            .map(|chunk| {
-                chunk
-                    .iter()
-                    .enumerate()
-                    .fold(BlockType::zero(), |acc, (i, &b)| {
-                        if b {
-                            acc | (BlockType::one() << i)
-                        } else {
-                            acc
-                        }
-                    })
-            })
-            .collect();
-        BitVector::new(blocks, bits.len())
+        create_disk_bit_vector(bits)
     }
 
     #[test]
     fn test_empty() {
         Python::initialize();
 
-        let bv = BitVector::new(vec![], 0);
+        let bv = create_disk_bit_vector(vec![]);
 
         assert_eq!(bv.values().unwrap(), Vec::<BlockType>::new());
         assert_eq!(
@@ -195,22 +267,7 @@ mod tests {
         Python::initialize();
 
         let bits = vec![true; 1024];
-        let blocks = bits
-            .chunks(BlockType::BITS as usize)
-            .map(|chunk| {
-                chunk
-                    .iter()
-                    .enumerate()
-                    .fold(BlockType::zero(), |acc, (i, &b)| {
-                        if b {
-                            acc | (BlockType::one() << i)
-                        } else {
-                            acc
-                        }
-                    })
-            })
-            .collect();
-        let bv = BitVector::new(blocks, bits.len());
+        let bv = create_disk_bit_vector(bits);
 
         for i in 0..1024 {
             assert!(bv.access(i).unwrap());
