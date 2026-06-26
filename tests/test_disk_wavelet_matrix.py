@@ -12,18 +12,18 @@ def wm_small():
 def wm_large():
     return WaveletMatrix(
         [
-            5 << 500,
-            4 << 500,
-            5 << 500,
-            5 << 500,
-            2 << 500,
-            1 << 500,
-            5 << 500,
-            6 << 500,
-            1 << 500,
-            3 << 500,
-            5 << 500,
-            0 << 500,
+            5 << 100,
+            4 << 100,
+            5 << 100,
+            5 << 100,
+            2 << 100,
+            1 << 100,
+            5 << 100,
+            6 << 100,
+            1 << 100,
+            3 << 100,
+            5 << 100,
+            0 << 100,
         ],
         on_disk=True,
     )
@@ -88,18 +88,18 @@ def test_values(wm_small, wm_large):
     """Test values method"""
     assert wm_small.values() == [5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0]
     assert wm_large.values() == [
-        5 << 500,
-        4 << 500,
-        5 << 500,
-        5 << 500,
-        2 << 500,
-        1 << 500,
-        5 << 500,
-        6 << 500,
-        1 << 500,
-        3 << 500,
-        5 << 500,
-        0 << 500,
+        5 << 100,
+        4 << 100,
+        5 << 100,
+        5 << 100,
+        2 << 100,
+        1 << 100,
+        5 << 100,
+        6 << 100,
+        1 << 100,
+        3 << 100,
+        5 << 100,
+        0 << 100,
     ]
 
 
@@ -109,7 +109,7 @@ def test_access(wm_small, wm_large):
     with pytest.raises(IndexError):
         wm_small.access(12)
 
-    assert wm_large.access(6) == 5 << 500
+    assert wm_large.access(6) == 5 << 100
     with pytest.raises(IndexError):
         wm_large.access(12)
 
@@ -121,10 +121,10 @@ def test_rank(wm_small, wm_large):
     with pytest.raises(IndexError):
         wm_small.rank(5, 13)
 
-    assert wm_large.rank(5 << 500, 8) == 4
-    assert wm_large.rank(10 << 500, 8) == 0
+    assert wm_large.rank(5 << 100, 8) == 4
+    assert wm_large.rank(10 << 100, 8) == 0
     with pytest.raises(IndexError):
-        wm_large.rank(5 << 500, 13)
+        wm_large.rank(5 << 100, 13)
 
 
 def test_select(wm_small, wm_large):
@@ -132,8 +132,8 @@ def test_select(wm_small, wm_large):
     assert wm_small.select(5, 4) == 6
     assert wm_small.select(5, 6) is None
 
-    assert wm_large.select(5 << 500, 4) == 6
-    assert wm_large.select(5 << 500, 6) is None
+    assert wm_large.select(5 << 100, 4) == 6
+    assert wm_large.select(5 << 100, 6) is None
 
 
 def test_quantile(wm_small, wm_large):
@@ -142,7 +142,7 @@ def test_quantile(wm_small, wm_large):
     with pytest.raises(ValueError):
         wm_small.quantile(2, 12, 13)
 
-    assert wm_large.quantile(2, 12, 8) == 5 << 500
+    assert wm_large.quantile(2, 12, 8) == 5 << 100
     with pytest.raises(ValueError):
         wm_large.quantile(2, 12, 13)
 
@@ -154,8 +154,8 @@ def test_topk(wm_small, wm_large):
         wm_small.topk(1, 13, 20)
 
     assert wm_large.topk(1, 10, 2) == [
-        {"value": 5 << 500, "count": 3},
-        {"value": 1 << 500, "count": 2},
+        {"value": 5 << 100, "count": 3},
+        {"value": 1 << 100, "count": 2},
     ]
     with pytest.raises(IndexError):
         wm_large.topk(1, 13, 20)
@@ -167,7 +167,7 @@ def test_range_sum(wm_small, wm_large):
     with pytest.raises(IndexError):
         wm_small.range_sum(1, 13)
 
-    assert wm_large.range_sum(2, 8) == 24 << 500
+    assert wm_large.range_sum(2, 8) == 24 << 100
     with pytest.raises(IndexError):
         wm_large.range_sum(1, 13)
 
@@ -182,8 +182,8 @@ def test_range_intersection(wm_small, wm_large):
         wm_small.range_intersection(0, 6, 4, 13)
 
     assert wm_large.range_intersection(0, 6, 6, 11) == [
-        {"value": 1 << 500, "count1": 1, "count2": 1},
-        {"value": 5 << 500, "count1": 3, "count2": 2},
+        {"value": 1 << 100, "count1": 1, "count2": 1},
+        {"value": 5 << 100, "count1": 3, "count2": 2},
     ]
     with pytest.raises(IndexError):
         wm_large.range_intersection(0, 6, 4, 13)
@@ -195,9 +195,9 @@ def test_range_freq(wm_small, wm_large):
     with pytest.raises(IndexError):
         wm_small.range_freq(0, 13, 2, 5)
 
-    assert wm_large.range_freq(1, 9, 4 << 500, 6 << 500) == 4
+    assert wm_large.range_freq(1, 9, 4 << 100, 6 << 100) == 4
     with pytest.raises(IndexError):
-        wm_large.range_freq(0, 13, 2 << 500, 5 << 500)
+        wm_large.range_freq(0, 13, 2 << 100, 5 << 100)
 
 
 def test_range_list(wm_small, wm_large):
@@ -209,12 +209,12 @@ def test_range_list(wm_small, wm_large):
     with pytest.raises(IndexError):
         wm_small.range_list(0, 13, 0, 5)
 
-    assert wm_large.range_list(1, 9, 4 << 500, 6 << 500) == [
-        {"value": 4 << 500, "count": 1},
-        {"value": 5 << 500, "count": 3},
+    assert wm_large.range_list(1, 9, 4 << 100, 6 << 100) == [
+        {"value": 4 << 100, "count": 1},
+        {"value": 5 << 100, "count": 3},
     ]
     with pytest.raises(IndexError):
-        wm_large.range_list(0, 13, 0 << 500, 5 << 500)
+        wm_large.range_list(0, 13, 0 << 100, 5 << 100)
 
 
 def test_range_maxk(wm_small, wm_large):
@@ -227,8 +227,8 @@ def test_range_maxk(wm_small, wm_large):
         wm_small.range_maxk(0, 13, 20)
 
     assert wm_large.range_maxk(1, 9, 2) == [
-        {"value": 6 << 500, "count": 1},
-        {"value": 5 << 500, "count": 3},
+        {"value": 6 << 100, "count": 1},
+        {"value": 5 << 100, "count": 3},
     ]
     with pytest.raises(IndexError):
         wm_large.range_maxk(0, 13, 20)
@@ -244,8 +244,8 @@ def test_range_mink(wm_small, wm_large):
         wm_small.range_mink(0, 13, 20)
 
     assert wm_large.range_mink(1, 9, 2) == [
-        {"value": 1 << 500, "count": 2},
-        {"value": 2 << 500, "count": 1},
+        {"value": 1 << 100, "count": 2},
+        {"value": 2 << 100, "count": 1},
     ]
     with pytest.raises(IndexError):
         wm_large.range_mink(0, 13, 20)
@@ -258,8 +258,8 @@ def test_prev_value(wm_small, wm_large):
     with pytest.raises(IndexError):
         wm_small.prev_value(0, 13)
 
-    assert wm_large.prev_value(1, 9, 7 << 500) == 6 << 500
-    assert wm_large.prev_value(1, 10, 1 << 500) is None
+    assert wm_large.prev_value(1, 9, 7 << 100) == 6 << 100
+    assert wm_large.prev_value(1, 10, 1 << 100) is None
     with pytest.raises(IndexError):
         wm_large.prev_value(0, 13)
 
@@ -270,6 +270,6 @@ def test_next_value(wm_small, wm_large):
     with pytest.raises(IndexError):
         wm_small.next_value(0, 13)
 
-    assert wm_large.next_value(1, 9, 3 << 500) == 4 << 500
+    assert wm_large.next_value(1, 9, 3 << 100) == 4 << 100
     with pytest.raises(IndexError):
         wm_large.next_value(0, 13)

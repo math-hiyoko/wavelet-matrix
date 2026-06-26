@@ -244,7 +244,20 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e .[test]
       - name: Run benchmarks
-        run: pytest --benchmark-only
+        run: pytest --benchmark-only --db .pymon
+      - name: Display benchmark results
+        run: |
+          sqlite3 -header -column .pymon '\
+            SELECT\
+              ITEM_FS_LOC AS file,\
+              COALESCE(ITEM_VARIANT, ITEM) AS test,\
+              printf("%.3f", TOTAL_TIME) AS time_sec,\
+              printf("%.2f", CPU_USAGE) AS cpu_usage,\
+              printf("%.2f", MEM_USAGE) AS mem_mb\
+            FROM TEST_METRICS\
+            WHERE KIND = "function"\
+            ORDER BY mem_mb DESC\
+          '
 
   release:
     name: Release

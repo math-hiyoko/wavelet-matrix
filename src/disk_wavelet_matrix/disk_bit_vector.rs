@@ -31,6 +31,7 @@ impl DiskBitVector {
         // Build the rank index structure.
         let mut ranks = MmapMut::map_anon((blocks_data.len() + 1) * mem::size_of::<usize>())
             .map_err(PyRuntimeError::new_err)?;
+        assert!(ranks.len().is_multiple_of(mem::size_of::<usize>()));
         let ranks_data: &mut [usize] = cast_slice_mut(&mut ranks[..]);
         iter::once(0usize)
             .chain(blocks_data.iter().scan(0usize, |acc, block| {
