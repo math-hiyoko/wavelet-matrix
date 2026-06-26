@@ -249,7 +249,7 @@ jobs:
         run: |
           sqlite3 -header -column .pymon '
             SELECT
-              ITEM_FS_LOC AS file,
+              ITEM_PATH AS path,
               COALESCE(ITEM_VARIANT, ITEM) AS test,
               printf("%.3f", TOTAL_TIME) AS time_sec,
               printf("%.2f", CPU_USAGE) AS cpu_usage,
