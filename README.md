@@ -24,6 +24,7 @@ supporting fast rank / select / range queries over indexed sequences
 ## Features:
 - Fast rank, select, quantile
 - Rich range queries (freq / sum / top-k / min / max)
+- Optional disk-backed storage for static WaveletMatrix (`on_disk=True`)
 - Optional dynamic updates (insert / remove / update)
 - Safe Rust (no unsafe)
 
@@ -40,6 +41,12 @@ from wavelet_matrix import WaveletMatrix
 
 data = [5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0]
 wm = WaveletMatrix(data)
+```  
+
+WaveletMatrix also supports disk-backed storage for large static sequences.  
+Set `on_disk=True` to keep its internal data on disk instead of holding it all in memory.  
+```python
+wm = WaveletMatrix(data, on_disk=True)
 ```
 
 ### Frequency Queries

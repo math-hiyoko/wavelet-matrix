@@ -95,7 +95,7 @@ where
             .map(|blocks| DynamicBitVector::new(blocks, len))
             .collect::<Vec<_>>();
 
-        Ok(DynamicWaveletMatrix {
+        Ok(Self {
             layers,
             zeros_count_per_layer,
             height,

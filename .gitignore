@@ -75,3 +75,4 @@ target/
 Cargo.lock
 .ruff_cache/
 .benchmarks/
+.pymon

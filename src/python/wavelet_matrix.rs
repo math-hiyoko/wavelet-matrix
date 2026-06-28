@@ -1,5 +1,9 @@
+use std::mem;
+
+use bytemuck::cast_slice_mut;
+use memmap2::MmapMut;
 use num_bigint::BigUint;
-use num_traits::ToPrimitive;
+use num_traits::Zero;
 use pyo3::{
     exceptions::{PyIndexError, PyRuntimeError, PyTypeError, PyValueError},
     prelude::*,
@@ -7,6 +11,7 @@ use pyo3::{
 };
 
 use crate::{
+    disk_wavelet_matrix::disk_wavelet_matrix::DiskWaveletMatrix,
     traits::wavelet_matrix::wavelet_matrix::WaveletMatrixTrait,
     wavelet_matrix::wavelet_matrix::WaveletMatrix,
 };
@@ -19,6 +24,11 @@ enum WaveletMatrixEnum {
     U64(WaveletMatrix<u64>),
     U128(WaveletMatrix<u128>),
     BigUint(WaveletMatrix<BigUint>),
+    DiskU8(DiskWaveletMatrix<u8>),
+    DiskU16(DiskWaveletMatrix<u16>),
+    DiskU32(DiskWaveletMatrix<u32>),
+    DiskU64(DiskWaveletMatrix<u64>),
+    DiskU128(DiskWaveletMatrix<u128>),
 }
 /// A Wavelet Matrix for fast queries on a static sequence of integers.
 ///
@@ -43,10 +53,10 @@ enum WaveletMatrixEnum {
 ///
 /// ```python
 /// from wavelet_matrix import WaveletMatrix
-/// wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0])
+/// wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0], on_disk=False)  # in-memory
 /// ```
 #[derive(Clone)]
-#[pyclass(name = "WaveletMatrix")]
+#[pyclass(name = "WaveletMatrix", skip_from_py_object)]
 pub(crate) struct PyWaveletMatrix {
     inner: WaveletMatrixEnum,
 }
@@ -55,63 +65,138 @@ pub(crate) struct PyWaveletMatrix {
 impl PyWaveletMatrix {
     /// Creates a new Wavelet Matrix from the given list or tuple of integers.
     #[new]
-    fn new(py: Python<'_>, data: &Bound<'_, PySequence>) -> PyResult<Self> {
-        let values: Vec<BigUint> = data
-            .try_iter()?
-            .map(|item| {
-                item?.extract::<BigUint>().map_err(|_| {
-                    PyValueError::new_err("Input elements must be non-negative integers")
-                })
-            })
-            .collect::<PyResult<_>>()?;
+    #[pyo3(signature = (data, on_disk=false))]
+    fn new(data: &Bound<'_, PySequence>, on_disk: bool) -> PyResult<Self> {
+        let (len, max_value) =
+            data.try_iter()?
+                .try_fold((0usize, BigUint::zero()), |(len, max_value), item| {
+                    let value = item?.extract::<BigUint>().map_err(|_| {
+                        PyValueError::new_err("Input elements must be non-negative integers")
+                    })?;
+                    Ok::<_, PyErr>((len + 1, max_value.max(value)))
+                })?;
+        let bit_width = max_value.bits();
 
-        py.detach(move || {
-            let bit_width = values.iter().map(|v| v.bits()).max().unwrap_or(0) as usize;
-            let wv: WaveletMatrixEnum = match bit_width {
-                0..=8 => {
-                    let values = values
-                        .into_iter()
-                        .map(|v| v.to_u8())
-                        .collect::<Option<Vec<_>>>()
-                        .ok_or(PyRuntimeError::new_err("Value out of range for u8"))?;
-                    WaveletMatrixEnum::U8(WaveletMatrix::<u8>::new(values))
-                }
-                9..=16 => {
-                    let values = values
-                        .into_iter()
-                        .map(|v| v.to_u16())
-                        .collect::<Option<Vec<_>>>()
-                        .ok_or(PyRuntimeError::new_err("Value out of range for u16"))?;
-                    WaveletMatrixEnum::U16(WaveletMatrix::<u16>::new(values))
-                }
-                17..=32 => {
-                    let values = values
-                        .into_iter()
-                        .map(|v| v.to_u32())
-                        .collect::<Option<Vec<_>>>()
-                        .ok_or(PyRuntimeError::new_err("Value out of range for u32"))?;
-                    WaveletMatrixEnum::U32(WaveletMatrix::<u32>::new(values))
-                }
-                33..=64 => {
-                    let values = values
-                        .into_iter()
-                        .map(|v| v.to_u64())
-                        .collect::<Option<Vec<_>>>()
-                        .ok_or(PyRuntimeError::new_err("Value out of range for u64"))?;
-                    WaveletMatrixEnum::U64(WaveletMatrix::<u64>::new(values))
-                }
-                65..=128 => {
-                    let values = values
-                        .into_iter()
-                        .map(|v| v.to_u128())
-                        .collect::<Option<Vec<_>>>()
-                        .ok_or(PyRuntimeError::new_err("Value out of range for u128"))?;
-                    WaveletMatrixEnum::U128(WaveletMatrix::<u128>::new(values))
-                }
-                _ => WaveletMatrixEnum::BigUint(WaveletMatrix::<BigUint>::new(values)),
-            };
-            Ok(PyWaveletMatrix { inner: wv })
-        })
+        let wv: WaveletMatrixEnum = match (on_disk, bit_width) {
+            (false, 0..=8) => {
+                let values = data
+                    .try_iter()?
+                    .map(|item| item?.extract::<u8>().map_err(PyValueError::new_err))
+                    .collect::<PyResult<Vec<_>>>()?;
+                WaveletMatrixEnum::U8(WaveletMatrix::<u8>::new(values))
+            }
+            (false, 9..=16) => {
+                let values = data
+                    .try_iter()?
+                    .map(|item| item?.extract::<u16>().map_err(PyValueError::new_err))
+                    .collect::<PyResult<Vec<_>>>()?;
+                WaveletMatrixEnum::U16(WaveletMatrix::<u16>::new(values))
+            }
+            (false, 17..=32) => {
+                let values = data
+                    .try_iter()?
+                    .map(|item| item?.extract::<u32>().map_err(PyValueError::new_err))
+                    .collect::<PyResult<Vec<_>>>()?;
+                WaveletMatrixEnum::U32(WaveletMatrix::<u32>::new(values))
+            }
+            (false, 33..=64) => {
+                let values = data
+                    .try_iter()?
+                    .map(|item| item?.extract::<u64>().map_err(PyValueError::new_err))
+                    .collect::<PyResult<Vec<_>>>()?;
+                WaveletMatrixEnum::U64(WaveletMatrix::<u64>::new(values))
+            }
+            (false, 65..=128) => {
+                let values = data
+                    .try_iter()?
+                    .map(|item| item?.extract::<u128>().map_err(PyValueError::new_err))
+                    .collect::<PyResult<Vec<_>>>()?;
+                WaveletMatrixEnum::U128(WaveletMatrix::<u128>::new(values))
+            }
+            (false, _) => {
+                let values = data
+                    .try_iter()?
+                    .map(|item| item?.extract::<BigUint>().map_err(PyValueError::new_err))
+                    .collect::<PyResult<Vec<_>>>()?;
+                WaveletMatrixEnum::BigUint(WaveletMatrix::<BigUint>::new(values))
+            }
+            (true, 0..=8) => {
+                let mut values = MmapMut::map_anon(len * mem::size_of::<u8>())
+                    .map_err(PyRuntimeError::new_err)?;
+                let values_data: &mut [u8] = cast_slice_mut(&mut values[..]);
+                data.try_iter()?
+                    .zip(values_data.iter_mut())
+                    .try_for_each(|(item, value)| {
+                        *value = item?.extract::<u8>().map_err(PyValueError::new_err)?;
+                        Ok::<_, PyErr>(())
+                    })?;
+                WaveletMatrixEnum::DiskU8(DiskWaveletMatrix::<u8>::new(
+                    values.make_read_only().unwrap(),
+                )?)
+            }
+            (true, 9..=16) => {
+                let mut values = MmapMut::map_anon(len * mem::size_of::<u16>())
+                    .map_err(PyRuntimeError::new_err)?;
+                let values_data: &mut [u16] = cast_slice_mut(&mut values[..]);
+                data.try_iter()?
+                    .zip(values_data.iter_mut())
+                    .try_for_each(|(item, value)| {
+                        *value = item?.extract::<u16>().map_err(PyValueError::new_err)?;
+                        Ok::<_, PyErr>(())
+                    })?;
+                WaveletMatrixEnum::DiskU16(DiskWaveletMatrix::<u16>::new(
+                    values.make_read_only().unwrap(),
+                )?)
+            }
+            (true, 17..=32) => {
+                let mut values = MmapMut::map_anon(len * mem::size_of::<u32>())
+                    .map_err(PyRuntimeError::new_err)?;
+                let values_data: &mut [u32] = cast_slice_mut(&mut values[..]);
+                data.try_iter()?
+                    .zip(values_data.iter_mut())
+                    .try_for_each(|(item, value)| {
+                        *value = item?.extract::<u32>().map_err(PyValueError::new_err)?;
+                        Ok::<_, PyErr>(())
+                    })?;
+                WaveletMatrixEnum::DiskU32(DiskWaveletMatrix::<u32>::new(
+                    values.make_read_only().unwrap(),
+                )?)
+            }
+            (true, 33..=64) => {
+                let mut values = MmapMut::map_anon(len * mem::size_of::<u64>())
+                    .map_err(PyRuntimeError::new_err)?;
+                let values_data: &mut [u64] = cast_slice_mut(&mut values[..]);
+                data.try_iter()?
+                    .zip(values_data.iter_mut())
+                    .try_for_each(|(item, value)| {
+                        *value = item?.extract::<u64>().map_err(PyValueError::new_err)?;
+                        Ok::<_, PyErr>(())
+                    })?;
+                WaveletMatrixEnum::DiskU64(DiskWaveletMatrix::<u64>::new(
+                    values.make_read_only().unwrap(),
+                )?)
+            }
+            (true, 65..=128) => {
+                let mut values = MmapMut::map_anon(len * mem::size_of::<u128>())
+                    .map_err(PyRuntimeError::new_err)?;
+                let values_data: &mut [u128] = cast_slice_mut(&mut values[..]);
+                data.try_iter()?
+                    .zip(values_data.iter_mut())
+                    .try_for_each(|(item, value)| {
+                        *value = item?.extract::<u128>().map_err(PyValueError::new_err)?;
+                        Ok::<_, PyErr>(())
+                    })?;
+                WaveletMatrixEnum::DiskU128(DiskWaveletMatrix::<u128>::new(
+                    values.make_read_only().unwrap(),
+                )?)
+            }
+            (true, _) => {
+                return Err(PyValueError::new_err(
+                    "Values must be u128 or smaller for on-disk WaveletMatrix, please use `on_disk=False` for larger values.",
+                ));
+            }
+        };
+        Ok(PyWaveletMatrix { inner: wv })
     }
 
     /// Returns the length of the Wavelet Matrix.
@@ -123,6 +208,11 @@ impl PyWaveletMatrix {
             WaveletMatrixEnum::U64(wm) => Ok(wm.len()),
             WaveletMatrixEnum::U128(wm) => Ok(wm.len()),
             WaveletMatrixEnum::BigUint(wm) => Ok(wm.len()),
+            WaveletMatrixEnum::DiskU8(wm) => Ok(wm.len()),
+            WaveletMatrixEnum::DiskU16(wm) => Ok(wm.len()),
+            WaveletMatrixEnum::DiskU32(wm) => Ok(wm.len()),
+            WaveletMatrixEnum::DiskU64(wm) => Ok(wm.len()),
+            WaveletMatrixEnum::DiskU128(wm) => Ok(wm.len()),
         })
     }
 
@@ -166,21 +256,34 @@ impl PyWaveletMatrix {
             WaveletMatrixEnum::U64(wm) => getitem_impl!(wm),
             WaveletMatrixEnum::U128(wm) => getitem_impl!(wm),
             WaveletMatrixEnum::BigUint(wm) => getitem_impl!(wm),
+            WaveletMatrixEnum::DiskU8(wm) => getitem_impl!(wm),
+            WaveletMatrixEnum::DiskU16(wm) => getitem_impl!(wm),
+            WaveletMatrixEnum::DiskU32(wm) => getitem_impl!(wm),
+            WaveletMatrixEnum::DiskU64(wm) => getitem_impl!(wm),
+            WaveletMatrixEnum::DiskU128(wm) => getitem_impl!(wm),
         }
     }
 
     fn __str__(&self, py: Python<'_>) -> PyResult<String> {
-        let (len, uint_type, max_bit) = py.detach(move || match &self.inner {
-            WaveletMatrixEnum::U8(wm) => (wm.len(), "u8", wm.height()),
-            WaveletMatrixEnum::U16(wm) => (wm.len(), "u16", wm.height()),
-            WaveletMatrixEnum::U32(wm) => (wm.len(), "u32", wm.height()),
-            WaveletMatrixEnum::U64(wm) => (wm.len(), "u64", wm.height()),
-            WaveletMatrixEnum::U128(wm) => (wm.len(), "u128", wm.height()),
-            WaveletMatrixEnum::BigUint(wm) => (wm.len(), "BigUint", wm.height()),
+        let (len, uint_type, max_bit, on_disk) = py.detach(move || match &self.inner {
+            WaveletMatrixEnum::U8(wm) => (wm.len(), "u8", wm.height(), false),
+            WaveletMatrixEnum::U16(wm) => (wm.len(), "u16", wm.height(), false),
+            WaveletMatrixEnum::U32(wm) => (wm.len(), "u32", wm.height(), false),
+            WaveletMatrixEnum::U64(wm) => (wm.len(), "u64", wm.height(), false),
+            WaveletMatrixEnum::U128(wm) => (wm.len(), "u128", wm.height(), false),
+            WaveletMatrixEnum::BigUint(wm) => (wm.len(), "BigUint", wm.height(), false),
+            WaveletMatrixEnum::DiskU8(wm) => (wm.len(), "u8", wm.height(), true),
+            WaveletMatrixEnum::DiskU16(wm) => (wm.len(), "u16", wm.height(), true),
+            WaveletMatrixEnum::DiskU32(wm) => (wm.len(), "u32", wm.height(), true),
+            WaveletMatrixEnum::DiskU64(wm) => (wm.len(), "u64", wm.height(), true),
+            WaveletMatrixEnum::DiskU128(wm) => (wm.len(), "u128", wm.height(), true),
         });
         let result = format!(
-            "WaveletMatrix(len={}, type={}, max_bit={})",
-            len, uint_type, max_bit,
+            "WaveletMatrix(len={}, type={}, max_bit={}, on_disk={})",
+            len,
+            uint_type,
+            max_bit,
+            if on_disk { "True" } else { "False" },
         );
         Ok(result)
     }
@@ -229,6 +332,21 @@ impl PyWaveletMatrix {
             WaveletMatrixEnum::BigUint(wm) => {
                 Ok(PyList::new(py, &py.detach(move || wm.values())?)?.unbind())
             }
+            WaveletMatrixEnum::DiskU8(wm) => {
+                Ok(PyList::new(py, &py.detach(move || wm.values())?)?.unbind())
+            }
+            WaveletMatrixEnum::DiskU16(wm) => {
+                Ok(PyList::new(py, &py.detach(move || wm.values())?)?.unbind())
+            }
+            WaveletMatrixEnum::DiskU32(wm) => {
+                Ok(PyList::new(py, &py.detach(move || wm.values())?)?.unbind())
+            }
+            WaveletMatrixEnum::DiskU64(wm) => {
+                Ok(PyList::new(py, &py.detach(move || wm.values())?)?.unbind())
+            }
+            WaveletMatrixEnum::DiskU128(wm) => {
+                Ok(PyList::new(py, &py.detach(move || wm.values())?)?.unbind())
+            }
         }
     }
 
@@ -268,6 +386,21 @@ impl PyWaveletMatrix {
             WaveletMatrixEnum::BigUint(wm) => py
                 .detach(move || wm.access(index))
                 .map(|value| value.into_pyobject(py).unwrap().unbind()),
+            WaveletMatrixEnum::DiskU8(wm) => py
+                .detach(move || wm.access(index))
+                .map(|value| PyInt::new(py, value).into()),
+            WaveletMatrixEnum::DiskU16(wm) => py
+                .detach(move || wm.access(index))
+                .map(|value| PyInt::new(py, value).into()),
+            WaveletMatrixEnum::DiskU32(wm) => py
+                .detach(move || wm.access(index))
+                .map(|value| PyInt::new(py, value).into()),
+            WaveletMatrixEnum::DiskU64(wm) => py
+                .detach(move || wm.access(index))
+                .map(|value| PyInt::new(py, value).into()),
+            WaveletMatrixEnum::DiskU128(wm) => py
+                .detach(move || wm.access(index))
+                .map(|value| PyInt::new(py, value).into()),
         }
     }
 
@@ -310,6 +443,11 @@ impl PyWaveletMatrix {
             WaveletMatrixEnum::U64(wm) => rank_impl!(wm, u64),
             WaveletMatrixEnum::U128(wm) => rank_impl!(wm, u128),
             WaveletMatrixEnum::BigUint(wm) => rank_impl!(wm, BigUint),
+            WaveletMatrixEnum::DiskU8(wm) => rank_impl!(wm, u8),
+            WaveletMatrixEnum::DiskU16(wm) => rank_impl!(wm, u16),
+            WaveletMatrixEnum::DiskU32(wm) => rank_impl!(wm, u32),
+            WaveletMatrixEnum::DiskU64(wm) => rank_impl!(wm, u64),
+            WaveletMatrixEnum::DiskU128(wm) => rank_impl!(wm, u128),
         }
     }
 
@@ -353,6 +491,11 @@ impl PyWaveletMatrix {
             WaveletMatrixEnum::U64(wm) => select_impl!(wm, u64),
             WaveletMatrixEnum::U128(wm) => select_impl!(wm, u128),
             WaveletMatrixEnum::BigUint(wm) => select_impl!(wm, BigUint),
+            WaveletMatrixEnum::DiskU8(wm) => select_impl!(wm, u8),
+            WaveletMatrixEnum::DiskU16(wm) => select_impl!(wm, u16),
+            WaveletMatrixEnum::DiskU32(wm) => select_impl!(wm, u32),
+            WaveletMatrixEnum::DiskU64(wm) => select_impl!(wm, u64),
+            WaveletMatrixEnum::DiskU128(wm) => select_impl!(wm, u128),
         }
     }
 
@@ -404,6 +547,21 @@ impl PyWaveletMatrix {
             WaveletMatrixEnum::BigUint(wm) => py
                 .detach(move || wm.quantile(start, end, kth))
                 .map(|value| value.into_pyobject(py).unwrap().unbind()),
+            WaveletMatrixEnum::DiskU8(wm) => py
+                .detach(move || wm.quantile(start, end, kth))
+                .map(|value| PyInt::new(py, value).into()),
+            WaveletMatrixEnum::DiskU16(wm) => py
+                .detach(move || wm.quantile(start, end, kth))
+                .map(|value| PyInt::new(py, value).into()),
+            WaveletMatrixEnum::DiskU32(wm) => py
+                .detach(move || wm.quantile(start, end, kth))
+                .map(|value| PyInt::new(py, value).into()),
+            WaveletMatrixEnum::DiskU64(wm) => py
+                .detach(move || wm.quantile(start, end, kth))
+                .map(|value| PyInt::new(py, value).into()),
+            WaveletMatrixEnum::DiskU128(wm) => py
+                .detach(move || wm.quantile(start, end, kth))
+                .map(|value| PyInt::new(py, value).into()),
         }
     }
 
@@ -466,6 +624,11 @@ impl PyWaveletMatrix {
             WaveletMatrixEnum::U64(wm) => topk_impl!(wm),
             WaveletMatrixEnum::U128(wm) => topk_impl!(wm),
             WaveletMatrixEnum::BigUint(wm) => topk_impl!(wm),
+            WaveletMatrixEnum::DiskU8(wm) => topk_impl!(wm),
+            WaveletMatrixEnum::DiskU16(wm) => topk_impl!(wm),
+            WaveletMatrixEnum::DiskU32(wm) => topk_impl!(wm),
+            WaveletMatrixEnum::DiskU64(wm) => topk_impl!(wm),
+            WaveletMatrixEnum::DiskU128(wm) => topk_impl!(wm),
         }
     }
 
@@ -501,6 +664,11 @@ impl PyWaveletMatrix {
             WaveletMatrixEnum::U64(wm) => wm.range_sum(start, end),
             WaveletMatrixEnum::U128(wm) => wm.range_sum(start, end),
             WaveletMatrixEnum::BigUint(wm) => wm.range_sum(start, end),
+            WaveletMatrixEnum::DiskU8(wm) => wm.range_sum(start, end),
+            WaveletMatrixEnum::DiskU16(wm) => wm.range_sum(start, end),
+            WaveletMatrixEnum::DiskU32(wm) => wm.range_sum(start, end),
+            WaveletMatrixEnum::DiskU64(wm) => wm.range_sum(start, end),
+            WaveletMatrixEnum::DiskU128(wm) => wm.range_sum(start, end),
         })?;
         Ok(result.into_pyobject(py)?.unbind())
     }
@@ -563,6 +731,11 @@ impl PyWaveletMatrix {
             WaveletMatrixEnum::U64(wm) => range_intersection_impl!(wm),
             WaveletMatrixEnum::U128(wm) => range_intersection_impl!(wm),
             WaveletMatrixEnum::BigUint(wm) => range_intersection_impl!(wm),
+            WaveletMatrixEnum::DiskU8(wm) => range_intersection_impl!(wm),
+            WaveletMatrixEnum::DiskU16(wm) => range_intersection_impl!(wm),
+            WaveletMatrixEnum::DiskU32(wm) => range_intersection_impl!(wm),
+            WaveletMatrixEnum::DiskU64(wm) => range_intersection_impl!(wm),
+            WaveletMatrixEnum::DiskU128(wm) => range_intersection_impl!(wm),
         }
     }
 
@@ -620,6 +793,11 @@ impl PyWaveletMatrix {
             WaveletMatrixEnum::U64(wm) => range_freq_impl!(wm, u64),
             WaveletMatrixEnum::U128(wm) => range_freq_impl!(wm, u128),
             WaveletMatrixEnum::BigUint(wm) => range_freq_impl!(wm, BigUint),
+            WaveletMatrixEnum::DiskU8(wm) => range_freq_impl!(wm, u8),
+            WaveletMatrixEnum::DiskU16(wm) => range_freq_impl!(wm, u16),
+            WaveletMatrixEnum::DiskU32(wm) => range_freq_impl!(wm, u32),
+            WaveletMatrixEnum::DiskU64(wm) => range_freq_impl!(wm, u64),
+            WaveletMatrixEnum::DiskU128(wm) => range_freq_impl!(wm, u128),
         }
     }
 
@@ -687,6 +865,11 @@ impl PyWaveletMatrix {
             WaveletMatrixEnum::U64(wm) => range_list_impl!(wm, u64),
             WaveletMatrixEnum::U128(wm) => range_list_impl!(wm, u128),
             WaveletMatrixEnum::BigUint(wm) => range_list_impl!(wm, BigUint),
+            WaveletMatrixEnum::DiskU8(wm) => range_list_impl!(wm, u8),
+            WaveletMatrixEnum::DiskU16(wm) => range_list_impl!(wm, u16),
+            WaveletMatrixEnum::DiskU32(wm) => range_list_impl!(wm, u32),
+            WaveletMatrixEnum::DiskU64(wm) => range_list_impl!(wm, u64),
+            WaveletMatrixEnum::DiskU128(wm) => range_list_impl!(wm, u128),
         }
     }
 
@@ -747,6 +930,11 @@ impl PyWaveletMatrix {
             WaveletMatrixEnum::U64(wm) => range_maxk_impl!(wm),
             WaveletMatrixEnum::U128(wm) => range_maxk_impl!(wm),
             WaveletMatrixEnum::BigUint(wm) => range_maxk_impl!(wm),
+            WaveletMatrixEnum::DiskU8(wm) => range_maxk_impl!(wm),
+            WaveletMatrixEnum::DiskU16(wm) => range_maxk_impl!(wm),
+            WaveletMatrixEnum::DiskU32(wm) => range_maxk_impl!(wm),
+            WaveletMatrixEnum::DiskU64(wm) => range_maxk_impl!(wm),
+            WaveletMatrixEnum::DiskU128(wm) => range_maxk_impl!(wm),
         }
     }
 
@@ -807,6 +995,11 @@ impl PyWaveletMatrix {
             WaveletMatrixEnum::U64(wm) => range_mink_impl!(wm),
             WaveletMatrixEnum::U128(wm) => range_mink_impl!(wm),
             WaveletMatrixEnum::BigUint(wm) => range_mink_impl!(wm),
+            WaveletMatrixEnum::DiskU8(wm) => range_mink_impl!(wm),
+            WaveletMatrixEnum::DiskU16(wm) => range_mink_impl!(wm),
+            WaveletMatrixEnum::DiskU32(wm) => range_mink_impl!(wm),
+            WaveletMatrixEnum::DiskU64(wm) => range_mink_impl!(wm),
+            WaveletMatrixEnum::DiskU128(wm) => range_mink_impl!(wm),
         }
     }
 
@@ -854,6 +1047,11 @@ impl PyWaveletMatrix {
             WaveletMatrixEnum::U64(wm) => prev_value_impl!(wm, u64),
             WaveletMatrixEnum::U128(wm) => prev_value_impl!(wm, u128),
             WaveletMatrixEnum::BigUint(wm) => prev_value_impl!(wm, BigUint),
+            WaveletMatrixEnum::DiskU8(wm) => prev_value_impl!(wm, u8),
+            WaveletMatrixEnum::DiskU16(wm) => prev_value_impl!(wm, u16),
+            WaveletMatrixEnum::DiskU32(wm) => prev_value_impl!(wm, u32),
+            WaveletMatrixEnum::DiskU64(wm) => prev_value_impl!(wm, u64),
+            WaveletMatrixEnum::DiskU128(wm) => prev_value_impl!(wm, u128),
         }
     }
 
@@ -905,6 +1103,11 @@ impl PyWaveletMatrix {
             WaveletMatrixEnum::U64(wm) => next_value_impl!(wm, u64),
             WaveletMatrixEnum::U128(wm) => next_value_impl!(wm, u128),
             WaveletMatrixEnum::BigUint(wm) => next_value_impl!(wm, BigUint),
+            WaveletMatrixEnum::DiskU8(wm) => next_value_impl!(wm, u8),
+            WaveletMatrixEnum::DiskU16(wm) => next_value_impl!(wm, u16),
+            WaveletMatrixEnum::DiskU32(wm) => next_value_impl!(wm, u32),
+            WaveletMatrixEnum::DiskU64(wm) => next_value_impl!(wm, u64),
+            WaveletMatrixEnum::DiskU128(wm) => next_value_impl!(wm, u128),
         }
     }
 
@@ -928,6 +1131,11 @@ impl PyWaveletMatrix {
             WaveletMatrixEnum::U64(wm) => Ok(wm.height()),
             WaveletMatrixEnum::U128(wm) => Ok(wm.height()),
             WaveletMatrixEnum::BigUint(wm) => Ok(wm.height()),
+            WaveletMatrixEnum::DiskU8(wm) => Ok(wm.height()),
+            WaveletMatrixEnum::DiskU16(wm) => Ok(wm.height()),
+            WaveletMatrixEnum::DiskU32(wm) => Ok(wm.height()),
+            WaveletMatrixEnum::DiskU64(wm) => Ok(wm.height()),
+            WaveletMatrixEnum::DiskU128(wm) => Ok(wm.height()),
         })
     }
 }
@@ -943,11 +1151,21 @@ mod tests {
             let elements = vec![5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0];
             let pylist = PyList::new(py, &elements).unwrap();
             let pysequence = pylist.cast::<PySequence>().unwrap();
-            let wm = PyWaveletMatrix::new(py, pysequence).unwrap();
+            let wm = PyWaveletMatrix::new(pysequence, false).unwrap();
+            let disk_wm = PyWaveletMatrix::new(pysequence, true).unwrap();
 
             assert_eq!(wm.__len__(py).unwrap(), elements.len());
+            assert_eq!(disk_wm.__len__(py).unwrap(), elements.len());
             assert_eq!(
                 wm.__getitem__(py, &PyInt::new(py, 4))
+                    .unwrap()
+                    .extract::<u8>(py)
+                    .unwrap(),
+                elements[4]
+            );
+            assert_eq!(
+                disk_wm
+                    .__getitem__(py, &PyInt::new(py, 4))
                     .unwrap()
                     .extract::<u8>(py)
                     .unwrap(),
@@ -961,23 +1179,55 @@ mod tests {
                 elements[2..6].to_vec()
             );
             assert_eq!(
+                disk_wm
+                    .__getitem__(py, &PySlice::new(py, 2, 6, 1))
+                    .unwrap()
+                    .extract::<Vec<u8>>(py)
+                    .unwrap(),
+                elements[2..6].to_vec()
+            );
+            assert_eq!(
                 wm.__str__(py).unwrap(),
-                "WaveletMatrix(len=12, type=u8, max_bit=3)",
+                "WaveletMatrix(len=12, type=u8, max_bit=3, on_disk=False)",
+            );
+            assert_eq!(
+                disk_wm.__str__(py).unwrap(),
+                "WaveletMatrix(len=12, type=u8, max_bit=3, on_disk=True)",
             );
             assert_eq!(
                 wm.__repr__(py).unwrap(),
-                "WaveletMatrix(len=12, type=u8, max_bit=3)",
+                "WaveletMatrix(len=12, type=u8, max_bit=3, on_disk=False)",
+            );
+            assert_eq!(
+                disk_wm.__repr__(py).unwrap(),
+                "WaveletMatrix(len=12, type=u8, max_bit=3, on_disk=True)",
             );
             assert_eq!(
                 wm.__copy__(py).unwrap().__str__(py).unwrap(),
-                "WaveletMatrix(len=12, type=u8, max_bit=3)",
+                "WaveletMatrix(len=12, type=u8, max_bit=3, on_disk=False)",
+            );
+            assert_eq!(
+                disk_wm.__copy__(py).unwrap().__str__(py).unwrap(),
+                "WaveletMatrix(len=12, type=u8, max_bit=3, on_disk=True)",
             );
             assert_eq!(
                 wm.values(py).unwrap().extract::<Vec<u8>>(py).unwrap(),
                 elements
             );
             assert_eq!(
+                disk_wm.values(py).unwrap().extract::<Vec<u8>>(py).unwrap(),
+                elements
+            );
+            assert_eq!(
                 wm.access(py, &PyInt::new(py, 3))
+                    .unwrap()
+                    .extract::<u8>(py)
+                    .unwrap(),
+                elements[3]
+            );
+            assert_eq!(
+                disk_wm
+                    .access(py, &PyInt::new(py, 3))
                     .unwrap()
                     .extract::<u8>(py)
                     .unwrap(),
@@ -989,7 +1239,19 @@ mod tests {
                 4
             );
             assert_eq!(
+                disk_wm
+                    .rank(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 9))
+                    .unwrap(),
+                4
+            );
+            assert_eq!(
                 wm.select(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 4))
+                    .unwrap(),
+                Some(6usize)
+            );
+            assert_eq!(
+                disk_wm
+                    .select(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 4))
                     .unwrap(),
                 Some(6usize)
             );
@@ -1006,6 +1268,19 @@ mod tests {
                 elements[2]
             );
             assert_eq!(
+                disk_wm
+                    .quantile(
+                        py,
+                        &PyInt::new(py, 2),
+                        &PyInt::new(py, 12),
+                        &PyInt::new(py, 8)
+                    )
+                    .unwrap()
+                    .extract::<u8>(py)
+                    .unwrap(),
+                elements[2]
+            );
+            assert_eq!(
                 wm.topk(
                     py,
                     &PyInt::new(py, 1),
@@ -1019,7 +1294,29 @@ mod tests {
                 2
             );
             assert_eq!(
+                disk_wm
+                    .topk(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 10),
+                        Some(PyInt::new(py, 2))
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
+                2
+            );
+            assert_eq!(
                 wm.range_sum(py, &PyInt::new(py, 2), &PyInt::new(py, 8))
+                    .unwrap()
+                    .extract::<u8>(py)
+                    .unwrap(),
+                24
+            );
+            assert_eq!(
+                disk_wm
+                    .range_sum(py, &PyInt::new(py, 2), &PyInt::new(py, 8))
                     .unwrap()
                     .extract::<u8>(py)
                     .unwrap(),
@@ -1040,6 +1337,21 @@ mod tests {
                 2
             );
             assert_eq!(
+                disk_wm
+                    .range_intersection(
+                        py,
+                        &PyInt::new(py, 0),
+                        &PyInt::new(py, 6),
+                        &PyInt::new(py, 6),
+                        &PyInt::new(py, 11)
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
+                2
+            );
+            assert_eq!(
                 wm.range_freq(
                     py,
                     &PyInt::new(py, 1),
@@ -1048,6 +1360,18 @@ mod tests {
                     Some(PyInt::new(py, elements[7]))
                 )
                 .unwrap(),
+                4
+            );
+            assert_eq!(
+                disk_wm
+                    .range_freq(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, elements[1])),
+                        Some(PyInt::new(py, elements[7]))
+                    )
+                    .unwrap(),
                 4
             );
             assert_eq!(
@@ -1065,6 +1389,21 @@ mod tests {
                 2
             );
             assert_eq!(
+                disk_wm
+                    .range_list(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, elements[1])),
+                        Some(PyInt::new(py, elements[7]))
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
+                2
+            );
+            assert_eq!(
                 wm.range_maxk(
                     py,
                     &PyInt::new(py, 1),
@@ -1075,6 +1414,20 @@ mod tests {
                 .extract::<Vec<Py<PyDict>>>(py)
                 .unwrap()
                 .len(),
+                2
+            );
+            assert_eq!(
+                disk_wm
+                    .range_maxk(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, 2))
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
                 2
             );
             assert_eq!(
@@ -1091,6 +1444,20 @@ mod tests {
                 2
             );
             assert_eq!(
+                disk_wm
+                    .range_mink(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, 2))
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
+                2
+            );
+            assert_eq!(
                 wm.prev_value(
                     py,
                     &PyInt::new(py, 1),
@@ -1101,6 +1468,20 @@ mod tests {
                 .unwrap()
                 .extract::<u8>(py)
                 .unwrap(),
+                elements[7]
+            );
+            assert_eq!(
+                disk_wm
+                    .prev_value(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, 7))
+                    )
+                    .unwrap()
+                    .unwrap()
+                    .extract::<u8>(py)
+                    .unwrap(),
                 elements[7]
             );
             assert_eq!(
@@ -1116,7 +1497,22 @@ mod tests {
                 .unwrap(),
                 elements[1]
             );
+            assert_eq!(
+                disk_wm
+                    .next_value(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, 3))
+                    )
+                    .unwrap()
+                    .unwrap()
+                    .extract::<u8>(py)
+                    .unwrap(),
+                elements[1]
+            );
             assert_eq!(wm.max_bit(py).unwrap(), 3);
+            assert_eq!(disk_wm.max_bit(py).unwrap(), 3);
         });
     }
 
@@ -1139,11 +1535,21 @@ mod tests {
             ];
             let pylist = PyList::new(py, &elements).unwrap();
             let pysequence = pylist.cast::<PySequence>().unwrap();
-            let wm = PyWaveletMatrix::new(py, pysequence).unwrap();
+            let wm = PyWaveletMatrix::new(pysequence, false).unwrap();
+            let disk_wm = PyWaveletMatrix::new(pysequence, true).unwrap();
 
             assert_eq!(wm.__len__(py).unwrap(), elements.len());
+            assert_eq!(disk_wm.__len__(py).unwrap(), elements.len());
             assert_eq!(
                 wm.__getitem__(py, &PyInt::new(py, 4))
+                    .unwrap()
+                    .extract::<u16>(py)
+                    .unwrap(),
+                elements[4]
+            );
+            assert_eq!(
+                disk_wm
+                    .__getitem__(py, &PyInt::new(py, 4))
                     .unwrap()
                     .extract::<u16>(py)
                     .unwrap(),
@@ -1157,23 +1563,55 @@ mod tests {
                 elements[2..6].to_vec()
             );
             assert_eq!(
+                disk_wm
+                    .__getitem__(py, &PySlice::new(py, 2, 6, 1))
+                    .unwrap()
+                    .extract::<Vec<u16>>(py)
+                    .unwrap(),
+                elements[2..6].to_vec()
+            );
+            assert_eq!(
                 wm.__str__(py).unwrap(),
-                "WaveletMatrix(len=12, type=u16, max_bit=11)",
+                "WaveletMatrix(len=12, type=u16, max_bit=11, on_disk=False)",
+            );
+            assert_eq!(
+                disk_wm.__str__(py).unwrap(),
+                "WaveletMatrix(len=12, type=u16, max_bit=11, on_disk=True)",
             );
             assert_eq!(
                 wm.__repr__(py).unwrap(),
-                "WaveletMatrix(len=12, type=u16, max_bit=11)",
+                "WaveletMatrix(len=12, type=u16, max_bit=11, on_disk=False)",
+            );
+            assert_eq!(
+                disk_wm.__repr__(py).unwrap(),
+                "WaveletMatrix(len=12, type=u16, max_bit=11, on_disk=True)",
             );
             assert_eq!(
                 wm.__copy__(py).unwrap().__str__(py).unwrap(),
-                "WaveletMatrix(len=12, type=u16, max_bit=11)",
+                "WaveletMatrix(len=12, type=u16, max_bit=11, on_disk=False)",
+            );
+            assert_eq!(
+                disk_wm.__copy__(py).unwrap().__str__(py).unwrap(),
+                "WaveletMatrix(len=12, type=u16, max_bit=11, on_disk=True)",
             );
             assert_eq!(
                 wm.values(py).unwrap().extract::<Vec<u16>>(py).unwrap(),
                 elements
             );
             assert_eq!(
+                disk_wm.values(py).unwrap().extract::<Vec<u16>>(py).unwrap(),
+                elements
+            );
+            assert_eq!(
                 wm.access(py, &PyInt::new(py, 3))
+                    .unwrap()
+                    .extract::<u16>(py)
+                    .unwrap(),
+                elements[3]
+            );
+            assert_eq!(
+                disk_wm
+                    .access(py, &PyInt::new(py, 3))
                     .unwrap()
                     .extract::<u16>(py)
                     .unwrap(),
@@ -1185,7 +1623,19 @@ mod tests {
                 4
             );
             assert_eq!(
+                disk_wm
+                    .rank(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 9))
+                    .unwrap(),
+                4
+            );
+            assert_eq!(
                 wm.select(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 4))
+                    .unwrap(),
+                Some(6usize)
+            );
+            assert_eq!(
+                disk_wm
+                    .select(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 4))
                     .unwrap(),
                 Some(6usize)
             );
@@ -1202,6 +1652,19 @@ mod tests {
                 elements[2]
             );
             assert_eq!(
+                disk_wm
+                    .quantile(
+                        py,
+                        &PyInt::new(py, 2),
+                        &PyInt::new(py, 12),
+                        &PyInt::new(py, 8)
+                    )
+                    .unwrap()
+                    .extract::<u16>(py)
+                    .unwrap(),
+                elements[2]
+            );
+            assert_eq!(
                 wm.topk(
                     py,
                     &PyInt::new(py, 1),
@@ -1215,7 +1678,29 @@ mod tests {
                 2
             );
             assert_eq!(
+                disk_wm
+                    .topk(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 10),
+                        Some(PyInt::new(py, 2))
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
+                2
+            );
+            assert_eq!(
                 wm.range_sum(py, &PyInt::new(py, 2), &PyInt::new(py, 8))
+                    .unwrap()
+                    .extract::<u16>(py)
+                    .unwrap(),
+                24 << 8
+            );
+            assert_eq!(
+                disk_wm
+                    .range_sum(py, &PyInt::new(py, 2), &PyInt::new(py, 8))
                     .unwrap()
                     .extract::<u16>(py)
                     .unwrap(),
@@ -1236,6 +1721,21 @@ mod tests {
                 2
             );
             assert_eq!(
+                disk_wm
+                    .range_intersection(
+                        py,
+                        &PyInt::new(py, 0),
+                        &PyInt::new(py, 6),
+                        &PyInt::new(py, 6),
+                        &PyInt::new(py, 11)
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
+                2
+            );
+            assert_eq!(
                 wm.range_freq(
                     py,
                     &PyInt::new(py, 1),
@@ -1244,6 +1744,18 @@ mod tests {
                     Some(PyInt::new(py, elements[7]))
                 )
                 .unwrap(),
+                4
+            );
+            assert_eq!(
+                disk_wm
+                    .range_freq(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, elements[1])),
+                        Some(PyInt::new(py, elements[7]))
+                    )
+                    .unwrap(),
                 4
             );
             assert_eq!(
@@ -1261,6 +1773,21 @@ mod tests {
                 2
             );
             assert_eq!(
+                disk_wm
+                    .range_list(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, elements[1])),
+                        Some(PyInt::new(py, elements[7]))
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
+                2
+            );
+            assert_eq!(
                 wm.range_maxk(
                     py,
                     &PyInt::new(py, 1),
@@ -1271,6 +1798,20 @@ mod tests {
                 .extract::<Vec<Py<PyDict>>>(py)
                 .unwrap()
                 .len(),
+                2
+            );
+            assert_eq!(
+                disk_wm
+                    .range_maxk(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, 2))
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
                 2
             );
             assert_eq!(
@@ -1287,6 +1828,20 @@ mod tests {
                 2
             );
             assert_eq!(
+                disk_wm
+                    .range_mink(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, 2))
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
+                2
+            );
+            assert_eq!(
                 wm.prev_value(
                     py,
                     &PyInt::new(py, 1),
@@ -1297,6 +1852,20 @@ mod tests {
                 .unwrap()
                 .extract::<u16>(py)
                 .unwrap(),
+                elements[7]
+            );
+            assert_eq!(
+                disk_wm
+                    .prev_value(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, 7 << 8))
+                    )
+                    .unwrap()
+                    .unwrap()
+                    .extract::<u16>(py)
+                    .unwrap(),
                 elements[7]
             );
             assert_eq!(
@@ -1312,7 +1881,22 @@ mod tests {
                 .unwrap(),
                 elements[1]
             );
+            assert_eq!(
+                disk_wm
+                    .next_value(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, 3 << 8))
+                    )
+                    .unwrap()
+                    .unwrap()
+                    .extract::<u16>(py)
+                    .unwrap(),
+                elements[1]
+            );
             assert_eq!(wm.max_bit(py).unwrap(), 11);
+            assert_eq!(disk_wm.max_bit(py).unwrap(), 11);
         });
     }
 
@@ -1335,11 +1919,21 @@ mod tests {
             ];
             let pylist = PyList::new(py, &elements).unwrap();
             let pysequence = pylist.cast::<PySequence>().unwrap();
-            let wm = PyWaveletMatrix::new(py, pysequence).unwrap();
+            let wm = PyWaveletMatrix::new(pysequence, false).unwrap();
+            let disk_wm = PyWaveletMatrix::new(pysequence, true).unwrap();
 
             assert_eq!(wm.__len__(py).unwrap(), elements.len());
+            assert_eq!(disk_wm.__len__(py).unwrap(), elements.len());
             assert_eq!(
                 wm.__getitem__(py, &PyInt::new(py, 4))
+                    .unwrap()
+                    .extract::<u32>(py)
+                    .unwrap(),
+                elements[4]
+            );
+            assert_eq!(
+                disk_wm
+                    .__getitem__(py, &PyInt::new(py, 4))
                     .unwrap()
                     .extract::<u32>(py)
                     .unwrap(),
@@ -1353,23 +1947,55 @@ mod tests {
                 elements[2..6].to_vec()
             );
             assert_eq!(
+                disk_wm
+                    .__getitem__(py, &PySlice::new(py, 2, 6, 1))
+                    .unwrap()
+                    .extract::<Vec<u32>>(py)
+                    .unwrap(),
+                elements[2..6].to_vec()
+            );
+            assert_eq!(
                 wm.__str__(py).unwrap(),
-                "WaveletMatrix(len=12, type=u32, max_bit=19)",
+                "WaveletMatrix(len=12, type=u32, max_bit=19, on_disk=False)",
+            );
+            assert_eq!(
+                disk_wm.__str__(py).unwrap(),
+                "WaveletMatrix(len=12, type=u32, max_bit=19, on_disk=True)",
             );
             assert_eq!(
                 wm.__repr__(py).unwrap(),
-                "WaveletMatrix(len=12, type=u32, max_bit=19)",
+                "WaveletMatrix(len=12, type=u32, max_bit=19, on_disk=False)",
+            );
+            assert_eq!(
+                disk_wm.__repr__(py).unwrap(),
+                "WaveletMatrix(len=12, type=u32, max_bit=19, on_disk=True)",
             );
             assert_eq!(
                 wm.__copy__(py).unwrap().__str__(py).unwrap(),
-                "WaveletMatrix(len=12, type=u32, max_bit=19)",
+                "WaveletMatrix(len=12, type=u32, max_bit=19, on_disk=False)",
+            );
+            assert_eq!(
+                disk_wm.__copy__(py).unwrap().__str__(py).unwrap(),
+                "WaveletMatrix(len=12, type=u32, max_bit=19, on_disk=True)",
             );
             assert_eq!(
                 wm.values(py).unwrap().extract::<Vec<u32>>(py).unwrap(),
                 elements
             );
             assert_eq!(
+                disk_wm.values(py).unwrap().extract::<Vec<u32>>(py).unwrap(),
+                elements
+            );
+            assert_eq!(
                 wm.access(py, &PyInt::new(py, 3))
+                    .unwrap()
+                    .extract::<u32>(py)
+                    .unwrap(),
+                elements[3]
+            );
+            assert_eq!(
+                disk_wm
+                    .access(py, &PyInt::new(py, 3))
                     .unwrap()
                     .extract::<u32>(py)
                     .unwrap(),
@@ -1381,7 +2007,19 @@ mod tests {
                 4
             );
             assert_eq!(
+                disk_wm
+                    .rank(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 9))
+                    .unwrap(),
+                4
+            );
+            assert_eq!(
                 wm.select(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 4))
+                    .unwrap(),
+                Some(6usize)
+            );
+            assert_eq!(
+                disk_wm
+                    .select(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 4))
                     .unwrap(),
                 Some(6usize)
             );
@@ -1398,6 +2036,19 @@ mod tests {
                 elements[2]
             );
             assert_eq!(
+                disk_wm
+                    .quantile(
+                        py,
+                        &PyInt::new(py, 2),
+                        &PyInt::new(py, 12),
+                        &PyInt::new(py, 8)
+                    )
+                    .unwrap()
+                    .extract::<u32>(py)
+                    .unwrap(),
+                elements[2]
+            );
+            assert_eq!(
                 wm.topk(
                     py,
                     &PyInt::new(py, 1),
@@ -1411,7 +2062,29 @@ mod tests {
                 2
             );
             assert_eq!(
+                disk_wm
+                    .topk(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 10),
+                        Some(PyInt::new(py, 2))
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
+                2
+            );
+            assert_eq!(
                 wm.range_sum(py, &PyInt::new(py, 2), &PyInt::new(py, 8))
+                    .unwrap()
+                    .extract::<u32>(py)
+                    .unwrap(),
+                24 << 16
+            );
+            assert_eq!(
+                disk_wm
+                    .range_sum(py, &PyInt::new(py, 2), &PyInt::new(py, 8))
                     .unwrap()
                     .extract::<u32>(py)
                     .unwrap(),
@@ -1432,6 +2105,21 @@ mod tests {
                 2
             );
             assert_eq!(
+                disk_wm
+                    .range_intersection(
+                        py,
+                        &PyInt::new(py, 0),
+                        &PyInt::new(py, 6),
+                        &PyInt::new(py, 6),
+                        &PyInt::new(py, 11)
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
+                2
+            );
+            assert_eq!(
                 wm.range_freq(
                     py,
                     &PyInt::new(py, 1),
@@ -1440,6 +2128,18 @@ mod tests {
                     Some(PyInt::new(py, elements[7]))
                 )
                 .unwrap(),
+                4
+            );
+            assert_eq!(
+                disk_wm
+                    .range_freq(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, elements[1])),
+                        Some(PyInt::new(py, elements[7]))
+                    )
+                    .unwrap(),
                 4
             );
             assert_eq!(
@@ -1457,6 +2157,21 @@ mod tests {
                 2
             );
             assert_eq!(
+                disk_wm
+                    .range_list(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, elements[1])),
+                        Some(PyInt::new(py, elements[7]))
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
+                2
+            );
+            assert_eq!(
                 wm.range_maxk(
                     py,
                     &PyInt::new(py, 1),
@@ -1467,6 +2182,20 @@ mod tests {
                 .extract::<Vec<Py<PyDict>>>(py)
                 .unwrap()
                 .len(),
+                2
+            );
+            assert_eq!(
+                disk_wm
+                    .range_maxk(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, 2))
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
                 2
             );
             assert_eq!(
@@ -1483,6 +2212,20 @@ mod tests {
                 2
             );
             assert_eq!(
+                disk_wm
+                    .range_mink(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, 2))
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
+                2
+            );
+            assert_eq!(
                 wm.prev_value(
                     py,
                     &PyInt::new(py, 1),
@@ -1493,6 +2236,20 @@ mod tests {
                 .unwrap()
                 .extract::<u32>(py)
                 .unwrap(),
+                elements[7]
+            );
+            assert_eq!(
+                disk_wm
+                    .prev_value(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, 7 << 16))
+                    )
+                    .unwrap()
+                    .unwrap()
+                    .extract::<u32>(py)
+                    .unwrap(),
                 elements[7]
             );
             assert_eq!(
@@ -1508,7 +2265,22 @@ mod tests {
                 .unwrap(),
                 elements[1]
             );
+            assert_eq!(
+                disk_wm
+                    .next_value(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, 3 << 16))
+                    )
+                    .unwrap()
+                    .unwrap()
+                    .extract::<u32>(py)
+                    .unwrap(),
+                elements[1]
+            );
             assert_eq!(wm.max_bit(py).unwrap(), 19);
+            assert_eq!(disk_wm.max_bit(py).unwrap(), 19);
         });
     }
 
@@ -1531,11 +2303,21 @@ mod tests {
             ];
             let pylist = PyList::new(py, &elements).unwrap();
             let pysequence = pylist.cast::<PySequence>().unwrap();
-            let wm = PyWaveletMatrix::new(py, pysequence).unwrap();
+            let wm = PyWaveletMatrix::new(pysequence, false).unwrap();
+            let disk_wm = PyWaveletMatrix::new(pysequence, true).unwrap();
 
             assert_eq!(wm.__len__(py).unwrap(), elements.len());
+            assert_eq!(disk_wm.__len__(py).unwrap(), elements.len());
             assert_eq!(
                 wm.__getitem__(py, &PyInt::new(py, 4))
+                    .unwrap()
+                    .extract::<u64>(py)
+                    .unwrap(),
+                elements[4]
+            );
+            assert_eq!(
+                disk_wm
+                    .__getitem__(py, &PyInt::new(py, 4))
                     .unwrap()
                     .extract::<u64>(py)
                     .unwrap(),
@@ -1549,23 +2331,55 @@ mod tests {
                 elements[2..6].to_vec()
             );
             assert_eq!(
+                disk_wm
+                    .__getitem__(py, &PySlice::new(py, 2, 6, 1))
+                    .unwrap()
+                    .extract::<Vec<u64>>(py)
+                    .unwrap(),
+                elements[2..6].to_vec()
+            );
+            assert_eq!(
                 wm.__str__(py).unwrap(),
-                "WaveletMatrix(len=12, type=u64, max_bit=35)",
+                "WaveletMatrix(len=12, type=u64, max_bit=35, on_disk=False)",
+            );
+            assert_eq!(
+                disk_wm.__str__(py).unwrap(),
+                "WaveletMatrix(len=12, type=u64, max_bit=35, on_disk=True)",
             );
             assert_eq!(
                 wm.__repr__(py).unwrap(),
-                "WaveletMatrix(len=12, type=u64, max_bit=35)",
+                "WaveletMatrix(len=12, type=u64, max_bit=35, on_disk=False)",
+            );
+            assert_eq!(
+                disk_wm.__repr__(py).unwrap(),
+                "WaveletMatrix(len=12, type=u64, max_bit=35, on_disk=True)",
             );
             assert_eq!(
                 wm.__copy__(py).unwrap().__str__(py).unwrap(),
-                "WaveletMatrix(len=12, type=u64, max_bit=35)",
+                "WaveletMatrix(len=12, type=u64, max_bit=35, on_disk=False)",
+            );
+            assert_eq!(
+                disk_wm.__copy__(py).unwrap().__str__(py).unwrap(),
+                "WaveletMatrix(len=12, type=u64, max_bit=35, on_disk=True)",
             );
             assert_eq!(
                 wm.values(py).unwrap().extract::<Vec<u64>>(py).unwrap(),
                 elements
             );
             assert_eq!(
+                disk_wm.values(py).unwrap().extract::<Vec<u64>>(py).unwrap(),
+                elements
+            );
+            assert_eq!(
                 wm.access(py, &PyInt::new(py, 3))
+                    .unwrap()
+                    .extract::<u64>(py)
+                    .unwrap(),
+                elements[3]
+            );
+            assert_eq!(
+                disk_wm
+                    .access(py, &PyInt::new(py, 3))
                     .unwrap()
                     .extract::<u64>(py)
                     .unwrap(),
@@ -1577,7 +2391,19 @@ mod tests {
                 4
             );
             assert_eq!(
+                disk_wm
+                    .rank(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 9))
+                    .unwrap(),
+                4
+            );
+            assert_eq!(
                 wm.select(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 4))
+                    .unwrap(),
+                Some(6usize)
+            );
+            assert_eq!(
+                disk_wm
+                    .select(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 4))
                     .unwrap(),
                 Some(6usize)
             );
@@ -1594,6 +2420,19 @@ mod tests {
                 elements[2]
             );
             assert_eq!(
+                disk_wm
+                    .quantile(
+                        py,
+                        &PyInt::new(py, 2),
+                        &PyInt::new(py, 12),
+                        &PyInt::new(py, 8)
+                    )
+                    .unwrap()
+                    .extract::<u64>(py)
+                    .unwrap(),
+                elements[2]
+            );
+            assert_eq!(
                 wm.topk(
                     py,
                     &PyInt::new(py, 1),
@@ -1607,7 +2446,29 @@ mod tests {
                 2
             );
             assert_eq!(
+                disk_wm
+                    .topk(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 10),
+                        Some(PyInt::new(py, 2))
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
+                2
+            );
+            assert_eq!(
                 wm.range_sum(py, &PyInt::new(py, 2), &PyInt::new(py, 8))
+                    .unwrap()
+                    .extract::<u64>(py)
+                    .unwrap(),
+                24 << 32
+            );
+            assert_eq!(
+                disk_wm
+                    .range_sum(py, &PyInt::new(py, 2), &PyInt::new(py, 8))
                     .unwrap()
                     .extract::<u64>(py)
                     .unwrap(),
@@ -1628,6 +2489,21 @@ mod tests {
                 2
             );
             assert_eq!(
+                disk_wm
+                    .range_intersection(
+                        py,
+                        &PyInt::new(py, 0),
+                        &PyInt::new(py, 6),
+                        &PyInt::new(py, 6),
+                        &PyInt::new(py, 11)
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
+                2
+            );
+            assert_eq!(
                 wm.range_freq(
                     py,
                     &PyInt::new(py, 1),
@@ -1636,6 +2512,18 @@ mod tests {
                     Some(PyInt::new(py, elements[7]))
                 )
                 .unwrap(),
+                4
+            );
+            assert_eq!(
+                disk_wm
+                    .range_freq(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, elements[1])),
+                        Some(PyInt::new(py, elements[7]))
+                    )
+                    .unwrap(),
                 4
             );
             assert_eq!(
@@ -1653,6 +2541,21 @@ mod tests {
                 2
             );
             assert_eq!(
+                disk_wm
+                    .range_list(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, elements[1])),
+                        Some(PyInt::new(py, elements[7]))
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
+                2
+            );
+            assert_eq!(
                 wm.range_maxk(
                     py,
                     &PyInt::new(py, 1),
@@ -1663,6 +2566,20 @@ mod tests {
                 .extract::<Vec<Py<PyDict>>>(py)
                 .unwrap()
                 .len(),
+                2
+            );
+            assert_eq!(
+                disk_wm
+                    .range_maxk(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, 2))
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
                 2
             );
             assert_eq!(
@@ -1679,6 +2596,20 @@ mod tests {
                 2
             );
             assert_eq!(
+                disk_wm
+                    .range_mink(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, 2))
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
+                2
+            );
+            assert_eq!(
                 wm.prev_value(
                     py,
                     &PyInt::new(py, 1),
@@ -1689,6 +2620,20 @@ mod tests {
                 .unwrap()
                 .extract::<u64>(py)
                 .unwrap(),
+                elements[7]
+            );
+            assert_eq!(
+                disk_wm
+                    .prev_value(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, 7u64 << 32))
+                    )
+                    .unwrap()
+                    .unwrap()
+                    .extract::<u64>(py)
+                    .unwrap(),
                 elements[7]
             );
             assert_eq!(
@@ -1704,7 +2649,22 @@ mod tests {
                 .unwrap(),
                 elements[1]
             );
+            assert_eq!(
+                disk_wm
+                    .next_value(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, 3u64 << 32))
+                    )
+                    .unwrap()
+                    .unwrap()
+                    .extract::<u64>(py)
+                    .unwrap(),
+                elements[1]
+            );
             assert_eq!(wm.max_bit(py).unwrap(), 35);
+            assert_eq!(disk_wm.max_bit(py).unwrap(), 35);
         });
     }
 
@@ -1727,11 +2687,21 @@ mod tests {
             ];
             let pylist = PyList::new(py, &elements).unwrap();
             let pysequence = pylist.cast::<PySequence>().unwrap();
-            let wm = PyWaveletMatrix::new(py, pysequence).unwrap();
+            let wm = PyWaveletMatrix::new(pysequence, false).unwrap();
+            let disk_wm = PyWaveletMatrix::new(pysequence, true).unwrap();
 
             assert_eq!(wm.__len__(py).unwrap(), elements.len());
+            assert_eq!(disk_wm.__len__(py).unwrap(), elements.len());
             assert_eq!(
                 wm.__getitem__(py, &PyInt::new(py, 4))
+                    .unwrap()
+                    .extract::<u128>(py)
+                    .unwrap(),
+                elements[4]
+            );
+            assert_eq!(
+                disk_wm
+                    .__getitem__(py, &PyInt::new(py, 4))
                     .unwrap()
                     .extract::<u128>(py)
                     .unwrap(),
@@ -1745,23 +2715,59 @@ mod tests {
                 elements[2..6].to_vec()
             );
             assert_eq!(
+                disk_wm
+                    .__getitem__(py, &PySlice::new(py, 2, 6, 1))
+                    .unwrap()
+                    .extract::<Vec<u128>>(py)
+                    .unwrap(),
+                elements[2..6].to_vec()
+            );
+            assert_eq!(
                 wm.__str__(py).unwrap(),
-                "WaveletMatrix(len=12, type=u128, max_bit=67)",
+                "WaveletMatrix(len=12, type=u128, max_bit=67, on_disk=False)",
+            );
+            assert_eq!(
+                disk_wm.__str__(py).unwrap(),
+                "WaveletMatrix(len=12, type=u128, max_bit=67, on_disk=True)",
             );
             assert_eq!(
                 wm.__repr__(py).unwrap(),
-                "WaveletMatrix(len=12, type=u128, max_bit=67)",
+                "WaveletMatrix(len=12, type=u128, max_bit=67, on_disk=False)",
+            );
+            assert_eq!(
+                disk_wm.__repr__(py).unwrap(),
+                "WaveletMatrix(len=12, type=u128, max_bit=67, on_disk=True)",
             );
             assert_eq!(
                 wm.__copy__(py).unwrap().__str__(py).unwrap(),
-                "WaveletMatrix(len=12, type=u128, max_bit=67)",
+                "WaveletMatrix(len=12, type=u128, max_bit=67, on_disk=False)",
+            );
+            assert_eq!(
+                disk_wm.__copy__(py).unwrap().__str__(py).unwrap(),
+                "WaveletMatrix(len=12, type=u128, max_bit=67, on_disk=True)",
             );
             assert_eq!(
                 wm.values(py).unwrap().extract::<Vec<u128>>(py).unwrap(),
                 elements
             );
             assert_eq!(
+                disk_wm
+                    .values(py)
+                    .unwrap()
+                    .extract::<Vec<u128>>(py)
+                    .unwrap(),
+                elements
+            );
+            assert_eq!(
                 wm.access(py, &PyInt::new(py, 3))
+                    .unwrap()
+                    .extract::<u128>(py)
+                    .unwrap(),
+                elements[3]
+            );
+            assert_eq!(
+                disk_wm
+                    .access(py, &PyInt::new(py, 3))
                     .unwrap()
                     .extract::<u128>(py)
                     .unwrap(),
@@ -1773,7 +2779,19 @@ mod tests {
                 4
             );
             assert_eq!(
+                disk_wm
+                    .rank(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 9))
+                    .unwrap(),
+                4
+            );
+            assert_eq!(
                 wm.select(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 4))
+                    .unwrap(),
+                Some(6usize)
+            );
+            assert_eq!(
+                disk_wm
+                    .select(py, &PyInt::new(py, elements[0]), &PyInt::new(py, 4))
                     .unwrap(),
                 Some(6usize)
             );
@@ -1790,6 +2808,19 @@ mod tests {
                 elements[2]
             );
             assert_eq!(
+                disk_wm
+                    .quantile(
+                        py,
+                        &PyInt::new(py, 2),
+                        &PyInt::new(py, 12),
+                        &PyInt::new(py, 8)
+                    )
+                    .unwrap()
+                    .extract::<u128>(py)
+                    .unwrap(),
+                elements[2]
+            );
+            assert_eq!(
                 wm.topk(
                     py,
                     &PyInt::new(py, 1),
@@ -1803,7 +2834,29 @@ mod tests {
                 2
             );
             assert_eq!(
+                disk_wm
+                    .topk(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 10),
+                        Some(PyInt::new(py, 2))
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
+                2
+            );
+            assert_eq!(
                 wm.range_sum(py, &PyInt::new(py, 2), &PyInt::new(py, 8))
+                    .unwrap()
+                    .extract::<u128>(py)
+                    .unwrap(),
+                24 << 64
+            );
+            assert_eq!(
+                disk_wm
+                    .range_sum(py, &PyInt::new(py, 2), &PyInt::new(py, 8))
                     .unwrap()
                     .extract::<u128>(py)
                     .unwrap(),
@@ -1824,6 +2877,21 @@ mod tests {
                 2
             );
             assert_eq!(
+                disk_wm
+                    .range_intersection(
+                        py,
+                        &PyInt::new(py, 0),
+                        &PyInt::new(py, 6),
+                        &PyInt::new(py, 6),
+                        &PyInt::new(py, 11)
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
+                2
+            );
+            assert_eq!(
                 wm.range_freq(
                     py,
                     &PyInt::new(py, 1),
@@ -1832,6 +2900,18 @@ mod tests {
                     Some(PyInt::new(py, elements[7]))
                 )
                 .unwrap(),
+                4
+            );
+            assert_eq!(
+                disk_wm
+                    .range_freq(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, elements[1])),
+                        Some(PyInt::new(py, elements[7]))
+                    )
+                    .unwrap(),
                 4
             );
             assert_eq!(
@@ -1849,6 +2929,21 @@ mod tests {
                 2
             );
             assert_eq!(
+                disk_wm
+                    .range_list(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, elements[1])),
+                        Some(PyInt::new(py, elements[7]))
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
+                2
+            );
+            assert_eq!(
                 wm.range_maxk(
                     py,
                     &PyInt::new(py, 1),
@@ -1859,6 +2954,20 @@ mod tests {
                 .extract::<Vec<Py<PyDict>>>(py)
                 .unwrap()
                 .len(),
+                2
+            );
+            assert_eq!(
+                disk_wm
+                    .range_maxk(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, 2))
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
                 2
             );
             assert_eq!(
@@ -1875,6 +2984,20 @@ mod tests {
                 2
             );
             assert_eq!(
+                disk_wm
+                    .range_mink(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, 2))
+                    )
+                    .unwrap()
+                    .extract::<Vec<Py<PyDict>>>(py)
+                    .unwrap()
+                    .len(),
+                2
+            );
+            assert_eq!(
                 wm.prev_value(
                     py,
                     &PyInt::new(py, 1),
@@ -1885,6 +3008,20 @@ mod tests {
                 .unwrap()
                 .extract::<u128>(py)
                 .unwrap(),
+                elements[7]
+            );
+            assert_eq!(
+                disk_wm
+                    .prev_value(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, 7u128 << 64))
+                    )
+                    .unwrap()
+                    .unwrap()
+                    .extract::<u128>(py)
+                    .unwrap(),
                 elements[7]
             );
             assert_eq!(
@@ -1900,7 +3037,22 @@ mod tests {
                 .unwrap(),
                 elements[1]
             );
+            assert_eq!(
+                disk_wm
+                    .next_value(
+                        py,
+                        &PyInt::new(py, 1),
+                        &PyInt::new(py, 9),
+                        Some(PyInt::new(py, 3u128 << 64))
+                    )
+                    .unwrap()
+                    .unwrap()
+                    .extract::<u128>(py)
+                    .unwrap(),
+                elements[1]
+            );
             assert_eq!(wm.max_bit(py).unwrap(), 67);
+            assert_eq!(disk_wm.max_bit(py).unwrap(), 67);
         });
     }
 
@@ -1923,7 +3075,7 @@ mod tests {
             ];
             let pylist = elements.clone().into_pyobject(py).unwrap();
             let pysequence = pylist.cast::<PySequence>().unwrap();
-            let wm = PyWaveletMatrix::new(py, pysequence).unwrap();
+            let wm = PyWaveletMatrix::new(pysequence, false).unwrap();
 
             assert_eq!(wm.__len__(py).unwrap(), elements.len());
             assert_eq!(
@@ -1942,15 +3094,15 @@ mod tests {
             );
             assert_eq!(
                 wm.__str__(py).unwrap(),
-                "WaveletMatrix(len=12, type=BigUint, max_bit=131)",
+                "WaveletMatrix(len=12, type=BigUint, max_bit=131, on_disk=False)",
             );
             assert_eq!(
                 wm.__repr__(py).unwrap(),
-                "WaveletMatrix(len=12, type=BigUint, max_bit=131)",
+                "WaveletMatrix(len=12, type=BigUint, max_bit=131, on_disk=False)",
             );
             assert_eq!(
                 wm.__copy__(py).unwrap().__str__(py).unwrap(),
-                "WaveletMatrix(len=12, type=BigUint, max_bit=131)",
+                "WaveletMatrix(len=12, type=BigUint, max_bit=131, on_disk=False)",
             );
             assert_eq!(
                 wm.values(py).unwrap().extract::<Vec<BigUint>>(py).unwrap(),

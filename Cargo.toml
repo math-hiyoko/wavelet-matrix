@@ -1,6 +1,6 @@
 [package]
 name = "wavelet-matrix"
-version = "2.1.8"
+version = "2.2.0"
 edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -9,8 +9,10 @@ name = "wavelet_matrix"
 crate-type = ["cdylib"]
 
 [dependencies]
+bytemuck = "1.25.0"
+memmap2 = "0.9.10"
 num-bigint = "0.4.6"
 num-integer = "0.1.46"
 num-traits = "0.2.19"
-pyo3 = { version = "0.27.2", features = ["num-bigint"] }
-rayon = "1.11.0"
+pyo3 = { version = "0.28.3", features = ["num-bigint"] }
+rayon = "1.12.0"
