@@ -74,7 +74,7 @@ addopts = [
     "--strict-markers",
     "--tb=short",
     "--benchmark-columns=mean,stddev,min,max",
-    "--benchmark-group-by=func",
+    "--benchmark-group-by=fullfunc",
 ]
 
 [tool.ruff]

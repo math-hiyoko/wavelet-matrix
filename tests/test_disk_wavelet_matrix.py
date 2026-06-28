@@ -29,6 +29,12 @@ def wm_large():
     )
 
 
+def test_large_construction():
+    data = [1 << 500, 2 << 500, 3 << 500, 4 << 500, 5 << 500]
+    with pytest.raises(ValueError):
+        WaveletMatrix(data, on_disk=True)
+
+
 def test_empty():
     """Test WaveletMatrix with empty data"""
     wv_empty = WaveletMatrix([], on_disk=True)
