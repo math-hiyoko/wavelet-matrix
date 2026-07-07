@@ -1,5 +1,6 @@
 use std::{collections, hash, iter, ops};
 
+use itertools::Itertools;
 use num_bigint::ToBigUint;
 use num_traits::{One, Zero};
 use rayon::prelude::*;
@@ -47,27 +48,11 @@ where
                 .map(|value| (value >> (height - i - 1) & NumberType::one()).is_one())
                 .collect::<Vec<bool>>();
 
-            let current_layer_blocks = current_layer_bits
-                .chunks(BlockType::BITS as usize)
-                .map(|chunk| {
-                    chunk
-                        .iter()
-                        .enumerate()
-                        .fold(BlockType::zero(), |acc, (j, &b)| {
-                            if b {
-                                acc | (BlockType::one() << j)
-                            } else {
-                                acc
-                            }
-                        })
-                })
-                .collect::<Vec<_>>();
-
             let zeros_count = current_layer_bits.par_iter().filter(|&&b| !b).count();
             let mut next_values = vec![NumberType::one(); len];
             let mut zero_index = 0usize;
             let mut one_index = zeros_count;
-            for (bit, value) in iter::zip(current_layer_bits, values) {
+            for (&bit, value) in iter::zip(&current_layer_bits, values) {
                 if bit {
                     next_values[one_index] = value;
                     one_index += 1;
@@ -76,6 +61,23 @@ where
                     zero_index += 1;
                 }
             }
+
+            let current_layer_blocks = current_layer_bits
+                .into_iter()
+                .chunks(BlockType::BITS as usize)
+                .into_iter()
+                .map(|chunk| {
+                    chunk
+                        .enumerate()
+                        .fold(BlockType::zero(), |acc, (j, b)| {
+                            if b {
+                                acc | (BlockType::one() << j)
+                            } else {
+                                acc
+                            }
+                        })
+                })
+                .collect::<Vec<_>>();
 
             zeros_count_per_layer.push(zeros_count);
             layer_blocks_vec.push(current_layer_blocks);
