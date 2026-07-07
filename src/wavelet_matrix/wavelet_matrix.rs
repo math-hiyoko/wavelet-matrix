@@ -48,7 +48,7 @@ where
                 .collect::<Vec<bool>>();
 
             let current_layer_blocks = current_layer_bits
-                .par_chunks(BlockType::BITS as usize)
+                .chunks(BlockType::BITS as usize)
                 .map(|chunk| {
                     chunk
                         .iter()
