@@ -7,7 +7,7 @@ use num_traits::Zero;
 use pyo3::{
     exceptions::{PyIndexError, PyRuntimeError, PyTypeError, PyValueError},
     prelude::*,
-    types::{PyDict, PyInt, PyList, PySequence, PySlice, PySliceIndices},
+    types::{PyAny, PyDict, PyInt, PyList, PySlice, PySliceIndices},
 };
 use tempfile::tempfile;
 
@@ -67,7 +67,7 @@ impl PyWaveletMatrix {
     /// Creates a new Wavelet Matrix from the given list or tuple of integers.
     #[new]
     #[pyo3(signature = (data, on_disk=false))]
-    fn new(data: &Bound<'_, PySequence>, on_disk: bool) -> PyResult<Self> {
+    fn new(data: &Bound<'_, PyAny>, on_disk: bool) -> PyResult<Self> {
         let (len, max_value) =
             data.try_iter()?
                 .try_fold((0usize, BigUint::zero()), |(len, max_value), item| {
@@ -129,15 +129,10 @@ impl PyWaveletMatrix {
                 let mut values =
                     unsafe { MmapMut::map_mut(&file).map_err(PyRuntimeError::new_err)? };
                 let values_data: &mut [u8] = cast_slice_mut(&mut values[..]);
-                data.try_iter()?
-                    .zip(values_data.iter_mut())
-                    .try_for_each(|(item, value)| {
-                        *value = item?.extract::<u8>().map_err(PyValueError::new_err)?;
-                        Ok::<_, PyErr>(())
-                    })?;
-                WaveletMatrixEnum::DiskU8(DiskWaveletMatrix::<u8>::new(
-                    values.make_read_only().unwrap(),
-                )?)
+                for (i, item) in data.try_iter()?.enumerate() {
+                    values_data[i] = item?.extract::<u8>().map_err(PyValueError::new_err)?;
+                }
+                WaveletMatrixEnum::DiskU8(DiskWaveletMatrix::<u8>::new(values, file)?)
             }
             (true, 9..=16) => {
                 let file = tempfile().map_err(PyRuntimeError::new_err)?;
@@ -147,15 +142,10 @@ impl PyWaveletMatrix {
                 let mut values =
                     unsafe { MmapMut::map_mut(&file).map_err(PyRuntimeError::new_err)? };
                 let values_data: &mut [u16] = cast_slice_mut(&mut values[..]);
-                data.try_iter()?
-                    .zip(values_data.iter_mut())
-                    .try_for_each(|(item, value)| {
-                        *value = item?.extract::<u16>().map_err(PyValueError::new_err)?;
-                        Ok::<_, PyErr>(())
-                    })?;
-                WaveletMatrixEnum::DiskU16(DiskWaveletMatrix::<u16>::new(
-                    values.make_read_only().unwrap(),
-                )?)
+                for (i, item) in data.try_iter()?.enumerate() {
+                    values_data[i] = item?.extract::<u16>().map_err(PyValueError::new_err)?;
+                }
+                WaveletMatrixEnum::DiskU16(DiskWaveletMatrix::<u16>::new(values, file)?)
             }
             (true, 17..=32) => {
                 let file = tempfile().map_err(PyRuntimeError::new_err)?;
@@ -165,15 +155,10 @@ impl PyWaveletMatrix {
                 let mut values =
                     unsafe { MmapMut::map_mut(&file).map_err(PyRuntimeError::new_err)? };
                 let values_data: &mut [u32] = cast_slice_mut(&mut values[..]);
-                data.try_iter()?
-                    .zip(values_data.iter_mut())
-                    .try_for_each(|(item, value)| {
-                        *value = item?.extract::<u32>().map_err(PyValueError::new_err)?;
-                        Ok::<_, PyErr>(())
-                    })?;
-                WaveletMatrixEnum::DiskU32(DiskWaveletMatrix::<u32>::new(
-                    values.make_read_only().unwrap(),
-                )?)
+                for (i, item) in data.try_iter()?.enumerate() {
+                    values_data[i] = item?.extract::<u32>().map_err(PyValueError::new_err)?;
+                }
+                WaveletMatrixEnum::DiskU32(DiskWaveletMatrix::<u32>::new(values, file)?)
             }
             (true, 33..=64) => {
                 let file = tempfile().map_err(PyRuntimeError::new_err)?;
@@ -183,15 +168,10 @@ impl PyWaveletMatrix {
                 let mut values =
                     unsafe { MmapMut::map_mut(&file).map_err(PyRuntimeError::new_err)? };
                 let values_data: &mut [u64] = cast_slice_mut(&mut values[..]);
-                data.try_iter()?
-                    .zip(values_data.iter_mut())
-                    .try_for_each(|(item, value)| {
-                        *value = item?.extract::<u64>().map_err(PyValueError::new_err)?;
-                        Ok::<_, PyErr>(())
-                    })?;
-                WaveletMatrixEnum::DiskU64(DiskWaveletMatrix::<u64>::new(
-                    values.make_read_only().unwrap(),
-                )?)
+                for (i, item) in data.try_iter()?.enumerate() {
+                    values_data[i] = item?.extract::<u64>().map_err(PyValueError::new_err)?;
+                }
+                WaveletMatrixEnum::DiskU64(DiskWaveletMatrix::<u64>::new(values, file)?)
             }
             (true, 65..=128) => {
                 let file = tempfile().map_err(PyRuntimeError::new_err)?;
@@ -201,15 +181,10 @@ impl PyWaveletMatrix {
                 let mut values =
                     unsafe { MmapMut::map_mut(&file).map_err(PyRuntimeError::new_err)? };
                 let values_data: &mut [u128] = cast_slice_mut(&mut values[..]);
-                data.try_iter()?
-                    .zip(values_data.iter_mut())
-                    .try_for_each(|(item, value)| {
-                        *value = item?.extract::<u128>().map_err(PyValueError::new_err)?;
-                        Ok::<_, PyErr>(())
-                    })?;
-                WaveletMatrixEnum::DiskU128(DiskWaveletMatrix::<u128>::new(
-                    values.make_read_only().unwrap(),
-                )?)
+                for (i, item) in data.try_iter()?.enumerate() {
+                    values_data[i] = item?.extract::<u128>().map_err(PyValueError::new_err)?;
+                }
+                WaveletMatrixEnum::DiskU128(DiskWaveletMatrix::<u128>::new(values, file)?)
             }
             (true, _) => {
                 return Err(PyValueError::new_err(
@@ -1171,9 +1146,9 @@ mod tests {
         Python::attach(|py| {
             let elements = vec![5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0];
             let pylist = PyList::new(py, &elements).unwrap();
-            let pysequence = pylist.cast::<PySequence>().unwrap();
-            let wm = PyWaveletMatrix::new(pysequence, false).unwrap();
-            let disk_wm = PyWaveletMatrix::new(pysequence, true).unwrap();
+            let pyany = pylist.cast::<PyAny>().unwrap();
+            let wm = PyWaveletMatrix::new(pyany, false).unwrap();
+            let disk_wm = PyWaveletMatrix::new(pyany, true).unwrap();
 
             assert_eq!(wm.__len__(py).unwrap(), elements.len());
             assert_eq!(disk_wm.__len__(py).unwrap(), elements.len());
@@ -1555,9 +1530,9 @@ mod tests {
                 0 << 8,
             ];
             let pylist = PyList::new(py, &elements).unwrap();
-            let pysequence = pylist.cast::<PySequence>().unwrap();
-            let wm = PyWaveletMatrix::new(pysequence, false).unwrap();
-            let disk_wm = PyWaveletMatrix::new(pysequence, true).unwrap();
+            let pyany = pylist.cast::<PyAny>().unwrap();
+            let wm = PyWaveletMatrix::new(pyany, false).unwrap();
+            let disk_wm = PyWaveletMatrix::new(pyany, true).unwrap();
 
             assert_eq!(wm.__len__(py).unwrap(), elements.len());
             assert_eq!(disk_wm.__len__(py).unwrap(), elements.len());
@@ -1939,9 +1914,9 @@ mod tests {
                 0 << 16,
             ];
             let pylist = PyList::new(py, &elements).unwrap();
-            let pysequence = pylist.cast::<PySequence>().unwrap();
-            let wm = PyWaveletMatrix::new(pysequence, false).unwrap();
-            let disk_wm = PyWaveletMatrix::new(pysequence, true).unwrap();
+            let pyany = pylist.cast::<PyAny>().unwrap();
+            let wm = PyWaveletMatrix::new(pyany, false).unwrap();
+            let disk_wm = PyWaveletMatrix::new(pyany, true).unwrap();
 
             assert_eq!(wm.__len__(py).unwrap(), elements.len());
             assert_eq!(disk_wm.__len__(py).unwrap(), elements.len());
@@ -2323,9 +2298,9 @@ mod tests {
                 0 << 32,
             ];
             let pylist = PyList::new(py, &elements).unwrap();
-            let pysequence = pylist.cast::<PySequence>().unwrap();
-            let wm = PyWaveletMatrix::new(pysequence, false).unwrap();
-            let disk_wm = PyWaveletMatrix::new(pysequence, true).unwrap();
+            let pyany = pylist.cast::<PyAny>().unwrap();
+            let wm = PyWaveletMatrix::new(pyany, false).unwrap();
+            let disk_wm = PyWaveletMatrix::new(pyany, true).unwrap();
 
             assert_eq!(wm.__len__(py).unwrap(), elements.len());
             assert_eq!(disk_wm.__len__(py).unwrap(), elements.len());
@@ -2707,9 +2682,9 @@ mod tests {
                 0 << 64,
             ];
             let pylist = PyList::new(py, &elements).unwrap();
-            let pysequence = pylist.cast::<PySequence>().unwrap();
-            let wm = PyWaveletMatrix::new(pysequence, false).unwrap();
-            let disk_wm = PyWaveletMatrix::new(pysequence, true).unwrap();
+            let pyany = pylist.cast::<PyAny>().unwrap();
+            let wm = PyWaveletMatrix::new(pyany, false).unwrap();
+            let disk_wm = PyWaveletMatrix::new(pyany, true).unwrap();
 
             assert_eq!(wm.__len__(py).unwrap(), elements.len());
             assert_eq!(disk_wm.__len__(py).unwrap(), elements.len());
@@ -3095,8 +3070,8 @@ mod tests {
                 BigUint::from(0u32) << 128,
             ];
             let pylist = elements.clone().into_pyobject(py).unwrap();
-            let pysequence = pylist.cast::<PySequence>().unwrap();
-            let wm = PyWaveletMatrix::new(pysequence, false).unwrap();
+            let pyany = pylist.cast::<PyAny>().unwrap();
+            let wm = PyWaveletMatrix::new(pyany, false).unwrap();
 
             assert_eq!(wm.__len__(py).unwrap(), elements.len());
             assert_eq!(

@@ -10,10 +10,11 @@ crate-type = ["cdylib"]
 
 [dependencies]
 bytemuck = "1.25.0"
+itertools = "0.15.0"
 memmap2 = "0.9.10"
 num-bigint = "0.4.6"
 num-integer = "0.1.46"
 num-traits = "0.2.19"
-pyo3 = { version = "0.28.3", features = ["num-bigint"] }
+pyo3 = { version = "0.29.0", features = ["num-bigint"] }
 rayon = "1.12.0"
 tempfile = "3.27.0"
