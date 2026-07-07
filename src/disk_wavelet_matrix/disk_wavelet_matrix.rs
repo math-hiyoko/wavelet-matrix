@@ -60,19 +60,18 @@ where
             );
             let current_layer_bits_data: &mut [BlockType] =
                 cast_slice_mut(&mut current_layer_bits[..]);
-
             let values_data: &[NumberType] = cast_slice(&values[..]);
-            values_data
-                .par_iter()
-                .map(|value| (value >> (height - i - 1) & NumberType::one()).is_one())
-                .chunks(BlockType::BITS as usize)
-                .zip(current_layer_bits_data.par_iter_mut())
-                .for_each(|(bits_chunk, block)| {
-                    bits_chunk.iter().enumerate().for_each(|(j, &bit)| {
-                        if bit {
+            current_layer_bits_data
+                .iter_mut()
+                .enumerate()
+                .for_each(|(block_index, block)| {
+                    let start = block_index * BlockType::BITS as usize;
+                    let end = (start + BlockType::BITS as usize).min(len);
+                    for (j, value) in values_data[start..end].iter().enumerate() {
+                        if ((value >> (height - i - 1)) & NumberType::one()).is_one() {
                             *block |= BlockType::one() << j;
                         }
-                    });
+                    }
                 });
 
             let zeros_count = len
