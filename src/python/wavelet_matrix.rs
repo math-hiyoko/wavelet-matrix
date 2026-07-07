@@ -132,7 +132,7 @@ impl PyWaveletMatrix {
                 for (i, item) in data.try_iter()?.enumerate() {
                     values_data[i] = item?.extract::<u8>().map_err(PyValueError::new_err)?;
                 }
-                WaveletMatrixEnum::DiskU8(DiskWaveletMatrix::<u8>::new(values)?)
+                WaveletMatrixEnum::DiskU8(DiskWaveletMatrix::<u8>::new(values, file)?)
             }
             (true, 9..=16) => {
                 let file = tempfile().map_err(PyRuntimeError::new_err)?;
@@ -145,7 +145,7 @@ impl PyWaveletMatrix {
                 for (i, item) in data.try_iter()?.enumerate() {
                     values_data[i] = item?.extract::<u16>().map_err(PyValueError::new_err)?;
                 }
-                WaveletMatrixEnum::DiskU16(DiskWaveletMatrix::<u16>::new(values)?)
+                WaveletMatrixEnum::DiskU16(DiskWaveletMatrix::<u16>::new(values, file)?)
             }
             (true, 17..=32) => {
                 let file = tempfile().map_err(PyRuntimeError::new_err)?;
@@ -158,7 +158,7 @@ impl PyWaveletMatrix {
                 for (i, item) in data.try_iter()?.enumerate() {
                     values_data[i] = item?.extract::<u32>().map_err(PyValueError::new_err)?;
                 }
-                WaveletMatrixEnum::DiskU32(DiskWaveletMatrix::<u32>::new(values)?)
+                WaveletMatrixEnum::DiskU32(DiskWaveletMatrix::<u32>::new(values, file)?)
             }
             (true, 33..=64) => {
                 let file = tempfile().map_err(PyRuntimeError::new_err)?;
@@ -171,7 +171,7 @@ impl PyWaveletMatrix {
                 for (i, item) in data.try_iter()?.enumerate() {
                     values_data[i] = item?.extract::<u64>().map_err(PyValueError::new_err)?;
                 }
-                WaveletMatrixEnum::DiskU64(DiskWaveletMatrix::<u64>::new(values)?)
+                WaveletMatrixEnum::DiskU64(DiskWaveletMatrix::<u64>::new(values, file)?)
             }
             (true, 65..=128) => {
                 let file = tempfile().map_err(PyRuntimeError::new_err)?;
@@ -184,7 +184,7 @@ impl PyWaveletMatrix {
                 for (i, item) in data.try_iter()?.enumerate() {
                     values_data[i] = item?.extract::<u128>().map_err(PyValueError::new_err)?;
                 }
-                WaveletMatrixEnum::DiskU128(DiskWaveletMatrix::<u128>::new(values)?)
+                WaveletMatrixEnum::DiskU128(DiskWaveletMatrix::<u128>::new(values, file)?)
             }
             (true, _) => {
                 return Err(PyValueError::new_err(
