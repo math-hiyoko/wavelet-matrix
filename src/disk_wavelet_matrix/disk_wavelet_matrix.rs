@@ -1,7 +1,7 @@
 use std::{iter, marker, mem, ops};
 
 use bytemuck::{Pod, cast_slice, cast_slice_mut};
-use memmap2::{Mmap, MmapMut};
+use memmap2::MmapMut;
 use num_bigint::ToBigUint;
 use num_traits::{One, PrimInt, Unsigned};
 use pyo3::{PyResult, exceptions::PyRuntimeError};
@@ -28,7 +28,7 @@ where
     NumberType: BitWidth + One + PrimInt + Unsigned + Pod + Send + Sync,
     for<'a> &'a NumberType: ops::Shr<usize, Output = NumberType>,
 {
-    pub(crate) fn new(data: Mmap) -> PyResult<Self> {
+    pub(crate) fn new(data: MmapMut) -> PyResult<Self> {
         assert!(data.len().is_multiple_of(mem::size_of::<NumberType>()));
         let len = data.len() / mem::size_of::<NumberType>();
 
@@ -114,9 +114,7 @@ where
                     .map_err(PyRuntimeError::new_err)?,
                 current_layer_bits_file,
             ));
-            values = next_values
-                .make_read_only()
-                .map_err(PyRuntimeError::new_err)?;
+            values = next_values;
         }
 
         let layers = layer_blocks_vec
@@ -182,7 +180,7 @@ mod tests {
         let mut mmap = MmapMut::map_anon(elements.len() * mem::size_of::<u8>()).unwrap();
         let mmap_data: &mut [u8] = cast_slice_mut(&mut mmap[..]);
         mmap_data.copy_from_slice(&elements);
-        DiskWaveletMatrix::new(mmap.make_read_only().unwrap()).unwrap()
+        DiskWaveletMatrix::new(mmap).unwrap()
     }
 
     fn create_u128() -> DiskWaveletMatrix<u128> {
@@ -190,7 +188,7 @@ mod tests {
         let mut mmap = MmapMut::map_anon(elements.len() * mem::size_of::<u128>()).unwrap();
         let mmap_data: &mut [u128] = cast_slice_mut(&mut mmap[..]);
         mmap_data.copy_from_slice(&elements);
-        DiskWaveletMatrix::new(mmap.make_read_only().unwrap()).unwrap()
+        DiskWaveletMatrix::new(mmap).unwrap()
     }
 
     #[test]
@@ -198,7 +196,7 @@ mod tests {
         Python::initialize();
 
         let mmap_empty = MmapMut::map_anon(0).unwrap();
-        let wv_u8 = DiskWaveletMatrix::<u8>::new(mmap_empty.make_read_only().unwrap()).unwrap();
+        let wv_u8 = DiskWaveletMatrix::<u8>::new(mmap_empty).unwrap();
         assert_eq!(wv_u8.len(), 0);
         assert_eq!(wv_u8.height(), 0);
         assert_eq!(wv_u8.values().unwrap(), Vec::<u8>::new());
@@ -256,7 +254,7 @@ mod tests {
         );
 
         let mmap_empty = MmapMut::map_anon(0).unwrap();
-        let wv_u128 = DiskWaveletMatrix::<u128>::new(mmap_empty.make_read_only().unwrap()).unwrap();
+        let wv_u128 = DiskWaveletMatrix::<u128>::new(mmap_empty).unwrap();
         assert_eq!(wv_u128.len(), 0);
         assert_eq!(wv_u128.height(), 0);
         assert_eq!(wv_u128.values().unwrap(), Vec::<u128>::new());
@@ -325,8 +323,7 @@ mod tests {
         Python::initialize();
 
         let mmap_u8_all_zero = MmapMut::map_anon(64 * mem::size_of::<u8>()).unwrap();
-        let wv_u8 =
-            DiskWaveletMatrix::<u8>::new(mmap_u8_all_zero.make_read_only().unwrap()).unwrap();
+        let wv_u8 = DiskWaveletMatrix::<u8>::new(mmap_u8_all_zero).unwrap();
         assert_eq!(wv_u8.len(), 64);
         assert_eq!(wv_u8.height(), 0);
         assert_eq!(wv_u8.values().unwrap(), vec![0u8; 64]);
@@ -344,8 +341,7 @@ mod tests {
         assert_eq!(wv_u8.next_value(0, 64, None).unwrap(), Some(0u8));
 
         let mmap_u128_all_zero = MmapMut::map_anon(64 * mem::size_of::<u128>()).unwrap();
-        let wv_u128 =
-            DiskWaveletMatrix::<u128>::new(mmap_u128_all_zero.make_read_only().unwrap()).unwrap();
+        let wv_u128 = DiskWaveletMatrix::<u128>::new(mmap_u128_all_zero).unwrap();
         assert_eq!(wv_u128.len(), 64);
         assert_eq!(wv_u128.height(), 0);
         assert_eq!(wv_u128.values().unwrap(), vec![0u128; 64]);
@@ -370,8 +366,7 @@ mod tests {
         let mut mmap_u8_max_value = MmapMut::map_anon(64 * mem::size_of::<u8>()).unwrap();
         let mmap_u8_data: &mut [u8] = cast_slice_mut(&mut mmap_u8_max_value[..]);
         mmap_u8_data.fill(u8::MAX);
-        let wv_u8 =
-            DiskWaveletMatrix::<u8>::new(mmap_u8_max_value.make_read_only().unwrap()).unwrap();
+        let wv_u8 = DiskWaveletMatrix::<u8>::new(mmap_u8_max_value).unwrap();
         assert_eq!(wv_u8.len(), 64);
         assert_eq!(wv_u8.height(), 8);
         assert_eq!(wv_u8.values().unwrap(), vec![u8::MAX; 64]);
@@ -394,8 +389,7 @@ mod tests {
         let mut mmap_u128_max_value = MmapMut::map_anon(64 * mem::size_of::<u128>()).unwrap();
         let mmap_u128_data: &mut [u128] = cast_slice_mut(&mut mmap_u128_max_value[..]);
         mmap_u128_data.fill(u128::MAX);
-        let wv_u128 =
-            DiskWaveletMatrix::<u128>::new(mmap_u128_max_value.make_read_only().unwrap()).unwrap();
+        let wv_u128 = DiskWaveletMatrix::<u128>::new(mmap_u128_max_value).unwrap();
         assert_eq!(wv_u128.len(), 64);
         assert_eq!(wv_u128.height(), 128);
         assert_eq!(wv_u128.values().unwrap(), vec![u128::MAX; 64]);
