@@ -206,7 +206,7 @@ jobs:
       - name: Install packages
         run: python -m pip install -e .[test,dev]
       - name: Run tests
-        run: pytest --benchmark-skip
+        run: python -m pytest --benchmark-skip
       - name: Docs check
         run: |
           pdoc wavelet_matrix \
@@ -245,7 +245,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e .[test]
       - name: Run benchmarks
-        run: pytest --benchmark-only --db .pymon
+        run: python -m pytest --benchmark-only --db .pymon
       - name: Display benchmark results
         run: |
           sqlite3 -header -column .pymon '

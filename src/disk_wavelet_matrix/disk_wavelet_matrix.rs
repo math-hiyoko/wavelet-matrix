@@ -6,6 +6,7 @@ use num_bigint::ToBigUint;
 use num_traits::{One, PrimInt, Unsigned};
 use pyo3::{PyResult, exceptions::PyRuntimeError};
 use rayon::prelude::*;
+use tempfile::tempfile;
 
 use super::disk_bit_vector::DiskBitVector;
 use crate::traits::{
@@ -41,10 +42,16 @@ where
         let mut zeros_count_per_layer = Vec::with_capacity(height);
         let mut layer_blocks_vec = Vec::with_capacity(height);
         for i in 0..height {
-            let mut current_layer_bits = MmapMut::map_anon(
-                len.div_ceil(BlockType::BITS as usize) * mem::size_of::<BlockType>(),
-            )
-            .map_err(PyRuntimeError::new_err)?;
+            let current_layer_bits_file = tempfile().map_err(PyRuntimeError::new_err)?;
+            current_layer_bits_file
+                .set_len(
+                    (len.div_ceil(BlockType::BITS as usize) * mem::size_of::<BlockType>()) as u64,
+                )
+                .map_err(PyRuntimeError::new_err)?;
+            #[allow(unsafe_code)]
+            let mut current_layer_bits = unsafe {
+                MmapMut::map_mut(&current_layer_bits_file).map_err(PyRuntimeError::new_err)?
+            };
             assert!(
                 current_layer_bits
                     .len()
@@ -101,11 +108,12 @@ where
             }
 
             zeros_count_per_layer.push(zeros_count);
-            layer_blocks_vec.push(
+            layer_blocks_vec.push((
                 current_layer_bits
                     .make_read_only()
                     .map_err(PyRuntimeError::new_err)?,
-            );
+                current_layer_bits_file,
+            ));
             values = next_values
                 .make_read_only()
                 .map_err(PyRuntimeError::new_err)?;
@@ -113,7 +121,7 @@ where
 
         let layers = layer_blocks_vec
             .into_par_iter()
-            .map(|blocks| DiskBitVector::new(blocks, len))
+            .map(|(blocks, blocks_file)| DiskBitVector::new(blocks, blocks_file, len))
             .collect::<PyResult<Vec<_>>>()?;
 
         Ok(Self {
@@ -164,6 +172,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    use num_bigint::BigUint;
     use pyo3::Python;
 
     use super::*;
@@ -381,6 +390,30 @@ mod tests {
         assert_eq!(wv_u8.range_mink(0, 64, None).unwrap().len(), 1);
         assert_eq!(wv_u8.prev_value(0, 64, None).unwrap(), Some(u8::MAX));
         assert_eq!(wv_u8.next_value(0, 64, None).unwrap(), Some(u8::MAX));
+
+        let mut mmap_u128_max_value = MmapMut::map_anon(64 * mem::size_of::<u128>()).unwrap();
+        let mmap_u128_data: &mut [u128] = cast_slice_mut(&mut mmap_u128_max_value[..]);
+        mmap_u128_data.fill(u128::MAX);
+        let wv_u128 =
+            DiskWaveletMatrix::<u128>::new(mmap_u128_max_value.make_read_only().unwrap()).unwrap();
+        assert_eq!(wv_u128.len(), 64);
+        assert_eq!(wv_u128.height(), 128);
+        assert_eq!(wv_u128.values().unwrap(), vec![u128::MAX; 64]);
+        assert_eq!(wv_u128.access(1).unwrap(), u128::MAX);
+        assert_eq!(wv_u128.rank(&u128::MAX, 1).unwrap(), 1);
+        assert_eq!(wv_u128.select(&u128::MAX, 1).unwrap(), Some(0));
+        assert_eq!(wv_u128.quantile(0, 64, 1).unwrap(), u128::MAX);
+        assert_eq!(wv_u128.topk(0, 64, None).unwrap().len(), 1);
+        assert_eq!(
+            wv_u128.range_sum(0, 64).unwrap(),
+            BigUint::from(u128::MAX) * 64u128,
+        );
+        assert_eq!(wv_u128.range_freq(0, 64, None, None).unwrap(), 64usize);
+        assert_eq!(wv_u128.range_list(0, 64, None, None).unwrap().len(), 1);
+        assert_eq!(wv_u128.range_maxk(0, 64, None).unwrap().len(), 1);
+        assert_eq!(wv_u128.range_mink(0, 64, None).unwrap().len(), 1);
+        assert_eq!(wv_u128.prev_value(0, 64, None).unwrap(), Some(u128::MAX));
+        assert_eq!(wv_u128.next_value(0, 64, None).unwrap(), Some(u128::MAX));
     }
 
     #[test]
