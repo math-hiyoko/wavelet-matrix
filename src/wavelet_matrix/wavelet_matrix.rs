@@ -46,24 +46,9 @@ where
                 .par_iter()
                 .map(|value| (value >> (height - i - 1) & NumberType::one()).is_one())
                 .collect::<Vec<bool>>();
-            let zeros_count = current_layer_bits.par_iter().filter(|&&b| !b).count();
-
-            let mut next_values = vec![NumberType::one(); len];
-            let mut zero_index = 0usize;
-            let mut one_index = zeros_count;
-            for (&bit, value) in iter::zip(&current_layer_bits, values) {
-                if bit {
-                    next_values[one_index] = value;
-                    one_index += 1;
-                } else {
-                    next_values[zero_index] = value;
-                    zero_index += 1;
-                }
-            }
 
             let current_layer_blocks = current_layer_bits
-                .into_par_iter()
-                .chunks(BlockType::BITS as usize)
+                .par_chunks(BlockType::BITS as usize)
                 .map(|chunk| {
                     chunk
                         .iter()
@@ -77,6 +62,20 @@ where
                         })
                 })
                 .collect::<Vec<_>>();
+
+            let zeros_count = current_layer_bits.par_iter().filter(|&&b| !b).count();
+            let mut next_values = vec![NumberType::one(); len];
+            let mut zero_index = 0usize;
+            let mut one_index = zeros_count;
+            for (bit, value) in iter::zip(current_layer_bits, values) {
+                if bit {
+                    next_values[one_index] = value;
+                    one_index += 1;
+                } else {
+                    next_values[zero_index] = value;
+                    zero_index += 1;
+                }
+            }
 
             zeros_count_per_layer.push(zeros_count);
             layer_blocks_vec.push(current_layer_blocks);
