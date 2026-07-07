@@ -1,4 +1,4 @@
-use std::{iter, mem};
+use std::{fs, iter, mem};
 
 use bytemuck::{cast_slice, cast_slice_mut};
 use memmap2::{Mmap, MmapMut};
@@ -8,6 +8,7 @@ use pyo3::{
     PyResult,
     exceptions::{PyIndexError, PyRuntimeError, PyValueError},
 };
+use tempfile::tempfile;
 
 use crate::traits::{
     bit_vector::bit_vector::{BitVectorTrait, BlockType},
@@ -19,19 +20,25 @@ const SELECT_INDEX_INTERVAL: usize = 512;
 pub(crate) struct DiskBitVector {
     len: usize,
     ranks: Mmap,
+    ranks_file: fs::File,
     blocks: Mmap,
+    blocks_file: fs::File,
     select_index: [Mmap; 2],
+    select_index_file: [fs::File; 2],
 }
 
 impl DiskBitVector {
-    pub(super) fn new(blocks: Mmap, len: usize) -> PyResult<Self> {
+    pub(super) fn new(blocks: Mmap, blocks_file: fs::File, len: usize) -> PyResult<Self> {
         assert!(blocks.len().is_multiple_of(mem::size_of::<BlockType>()));
         let blocks_data: &[BlockType] = cast_slice(&blocks[..]);
 
         // Build the rank index structure.
-        let mut ranks = MmapMut::map_anon((blocks_data.len() + 1) * mem::size_of::<usize>())
+        let ranks_file = tempfile().map_err(PyRuntimeError::new_err)?;
+        ranks_file
+            .set_len((blocks_data.len() + 1) as u64 * mem::size_of::<usize>() as u64)
             .map_err(PyRuntimeError::new_err)?;
-        assert!(ranks.len().is_multiple_of(mem::size_of::<usize>()));
+        #[allow(unsafe_code)]
+        let mut ranks = unsafe { MmapMut::map_mut(&ranks_file).map_err(PyRuntimeError::new_err)? };
         let ranks_data: &mut [usize] = cast_slice_mut(&mut ranks[..]);
         iter::once(0usize)
             .chain(blocks_data.iter().scan(0usize, |acc, block| {
@@ -41,16 +48,32 @@ impl DiskBitVector {
             .enumerate()
             .for_each(|(index, rank)| ranks_data[index] = rank);
 
-        let mut select_index_0 = MmapMut::map_anon(
-            ((len - ranks_data.last().unwrap()) / SELECT_INDEX_INTERVAL + 2)
-                * mem::size_of::<usize>(),
-        )
-        .map_err(PyRuntimeError::new_err)?;
-        let mut select_index_1 = MmapMut::map_anon(
-            (ranks_data.last().unwrap() / SELECT_INDEX_INTERVAL + 2) * mem::size_of::<usize>(),
-        )
-        .map_err(PyRuntimeError::new_err)?;
-
+        let select_index_file = [
+            {
+                let file = tempfile().map_err(PyRuntimeError::new_err)?;
+                file.set_len(
+                    (((len - ranks_data.last().unwrap()) / SELECT_INDEX_INTERVAL + 2)
+                        * mem::size_of::<usize>()) as u64,
+                )
+                .map_err(PyRuntimeError::new_err)?;
+                file
+            },
+            {
+                let file = tempfile().map_err(PyRuntimeError::new_err)?;
+                file.set_len(
+                    ((ranks_data.last().unwrap() / SELECT_INDEX_INTERVAL + 2)
+                        * mem::size_of::<usize>()) as u64,
+                )
+                .map_err(PyRuntimeError::new_err)?;
+                file
+            },
+        ];
+        #[allow(unsafe_code)]
+        let mut select_index_0 =
+            unsafe { MmapMut::map_mut(&select_index_file[0]).map_err(PyRuntimeError::new_err)? };
+        #[allow(unsafe_code)]
+        let mut select_index_1 =
+            unsafe { MmapMut::map_mut(&select_index_file[1]).map_err(PyRuntimeError::new_err)? };
         let select_index_data: [&mut [usize]; 2] = [
             cast_slice_mut(&mut select_index_0[..]),
             cast_slice_mut(&mut select_index_1[..]),
@@ -79,7 +102,9 @@ impl DiskBitVector {
         Ok(Self {
             len,
             ranks: ranks.make_read_only().map_err(PyRuntimeError::new_err)?,
+            ranks_file,
             blocks,
+            blocks_file,
             select_index: [
                 select_index_0
                     .make_read_only()
@@ -88,20 +113,47 @@ impl DiskBitVector {
                     .make_read_only()
                     .map_err(PyRuntimeError::new_err)?,
             ],
+            select_index_file,
         })
     }
 }
 
 impl Clone for DiskBitVector {
     fn clone(&self) -> Self {
-        let mut ranks = MmapMut::map_anon(self.ranks.len()).unwrap();
-        let mut blocks = MmapMut::map_anon(self.blocks.len()).unwrap();
-        let mut select_index = [
-            MmapMut::map_anon(self.select_index[0].len()).unwrap(),
-            MmapMut::map_anon(self.select_index[1].len()).unwrap(),
-        ];
+        let ranks_file = tempfile().unwrap();
+        ranks_file.set_len(self.ranks.len() as u64).unwrap();
+        #[allow(unsafe_code)]
+        let mut ranks = unsafe { MmapMut::map_mut(&ranks_file).unwrap() };
         ranks.copy_from_slice(&self.ranks[..]);
+
+        let blocks_file = tempfile().unwrap();
+        blocks_file.set_len(self.blocks.len() as u64).unwrap();
+        #[allow(unsafe_code)]
+        let mut blocks = unsafe { MmapMut::map_mut(&blocks_file).unwrap() };
         blocks.copy_from_slice(&self.blocks[..]);
+
+        let select_index_file = [
+            {
+                let file = tempfile().unwrap();
+                file.set_len(self.select_index[0].len() as u64).unwrap();
+                file
+            },
+            {
+                let file = tempfile().unwrap();
+                file.set_len(self.select_index[1].len() as u64).unwrap();
+                file
+            },
+        ];
+        let mut select_index = [
+            #[allow(unsafe_code)]
+            unsafe {
+                MmapMut::map_mut(&select_index_file[0]).unwrap()
+            },
+            #[allow(unsafe_code)]
+            unsafe {
+                MmapMut::map_mut(&select_index_file[1]).unwrap()
+            },
+        ];
         select_index[0].copy_from_slice(&self.select_index[0][..]);
         select_index[1].copy_from_slice(&self.select_index[1][..]);
 
@@ -110,11 +162,14 @@ impl Clone for DiskBitVector {
         Self {
             len: self.len,
             ranks: ranks.make_read_only().unwrap(),
+            ranks_file,
             blocks: blocks.make_read_only().unwrap(),
+            blocks_file,
             select_index: [
                 select_index_0.make_read_only().unwrap(),
                 select_index_1.make_read_only().unwrap(),
             ],
+            select_index_file,
         }
     }
 }
@@ -217,10 +272,12 @@ mod tests {
 
     fn create_disk_bit_vector(bits: Vec<bool>) -> DiskBitVector {
         let len = bits.len();
-        let mut blocks =
-            MmapMut::map_anon(len.div_ceil(BlockType::BITS as usize) * mem::size_of::<BlockType>())
-                .map_err(PyRuntimeError::new_err)
-                .unwrap();
+        let blocks_file = tempfile().unwrap();
+        blocks_file
+            .set_len((len.div_ceil(BlockType::BITS as usize) * mem::size_of::<BlockType>()) as u64)
+            .unwrap();
+        #[allow(unsafe_code)]
+        let mut blocks = unsafe { MmapMut::map_mut(&blocks_file).unwrap() };
         let blocks_data: &mut [BlockType] = cast_slice_mut(&mut blocks[..]);
         bits.chunks(BlockType::BITS as usize)
             .enumerate()
@@ -238,7 +295,7 @@ mod tests {
                         })
             });
 
-        DiskBitVector::new(blocks.make_read_only().unwrap(), len).unwrap()
+        DiskBitVector::new(blocks.make_read_only().unwrap(), blocks_file, len).unwrap()
     }
 
     fn create_dummy() -> DiskBitVector {

@@ -9,6 +9,7 @@ use pyo3::{
     prelude::*,
     types::{PyDict, PyInt, PyList, PySequence, PySlice, PySliceIndices},
 };
+use tempfile::tempfile;
 
 use crate::{
     disk_wavelet_matrix::disk_wavelet_matrix::DiskWaveletMatrix,
@@ -121,8 +122,12 @@ impl PyWaveletMatrix {
                 WaveletMatrixEnum::BigUint(WaveletMatrix::<BigUint>::new(values))
             }
             (true, 0..=8) => {
-                let mut values = MmapMut::map_anon(len * mem::size_of::<u8>())
+                let file = tempfile().map_err(PyRuntimeError::new_err)?;
+                file.set_len((len * mem::size_of::<u8>()) as u64)
                     .map_err(PyRuntimeError::new_err)?;
+                #[allow(unsafe_code)]
+                let mut values =
+                    unsafe { MmapMut::map_mut(&file).map_err(PyRuntimeError::new_err)? };
                 let values_data: &mut [u8] = cast_slice_mut(&mut values[..]);
                 data.try_iter()?
                     .zip(values_data.iter_mut())
@@ -135,8 +140,12 @@ impl PyWaveletMatrix {
                 )?)
             }
             (true, 9..=16) => {
-                let mut values = MmapMut::map_anon(len * mem::size_of::<u16>())
+                let file = tempfile().map_err(PyRuntimeError::new_err)?;
+                file.set_len((len * mem::size_of::<u16>()) as u64)
                     .map_err(PyRuntimeError::new_err)?;
+                #[allow(unsafe_code)]
+                let mut values =
+                    unsafe { MmapMut::map_mut(&file).map_err(PyRuntimeError::new_err)? };
                 let values_data: &mut [u16] = cast_slice_mut(&mut values[..]);
                 data.try_iter()?
                     .zip(values_data.iter_mut())
@@ -149,8 +158,12 @@ impl PyWaveletMatrix {
                 )?)
             }
             (true, 17..=32) => {
-                let mut values = MmapMut::map_anon(len * mem::size_of::<u32>())
+                let file = tempfile().map_err(PyRuntimeError::new_err)?;
+                file.set_len((len * mem::size_of::<u32>()) as u64)
                     .map_err(PyRuntimeError::new_err)?;
+                #[allow(unsafe_code)]
+                let mut values =
+                    unsafe { MmapMut::map_mut(&file).map_err(PyRuntimeError::new_err)? };
                 let values_data: &mut [u32] = cast_slice_mut(&mut values[..]);
                 data.try_iter()?
                     .zip(values_data.iter_mut())
@@ -163,8 +176,12 @@ impl PyWaveletMatrix {
                 )?)
             }
             (true, 33..=64) => {
-                let mut values = MmapMut::map_anon(len * mem::size_of::<u64>())
+                let file = tempfile().map_err(PyRuntimeError::new_err)?;
+                file.set_len((len * mem::size_of::<u64>()) as u64)
                     .map_err(PyRuntimeError::new_err)?;
+                #[allow(unsafe_code)]
+                let mut values =
+                    unsafe { MmapMut::map_mut(&file).map_err(PyRuntimeError::new_err)? };
                 let values_data: &mut [u64] = cast_slice_mut(&mut values[..]);
                 data.try_iter()?
                     .zip(values_data.iter_mut())
@@ -177,8 +194,12 @@ impl PyWaveletMatrix {
                 )?)
             }
             (true, 65..=128) => {
-                let mut values = MmapMut::map_anon(len * mem::size_of::<u128>())
+                let file = tempfile().map_err(PyRuntimeError::new_err)?;
+                file.set_len((len * mem::size_of::<u128>()) as u64)
                     .map_err(PyRuntimeError::new_err)?;
+                #[allow(unsafe_code)]
+                let mut values =
+                    unsafe { MmapMut::map_mut(&file).map_err(PyRuntimeError::new_err)? };
                 let values_data: &mut [u128] = cast_slice_mut(&mut values[..]);
                 data.try_iter()?
                     .zip(values_data.iter_mut())
