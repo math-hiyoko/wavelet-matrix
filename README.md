@@ -10,7 +10,6 @@
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/wavelet-matrix?period=total&units=INTERNATIONAL_SYSTEM&left_color=GRAY&right_color=GREEN&left_text=PyPI%20downloads)](https://pepy.tech/projects/wavelet-matrix)
 ![PyPI - Format](https://img.shields.io/pypi/format/wavelet-matrix)
 ![Rust](https://img.shields.io/badge/powered%20by-Rust-orange)
-![Unsafe](https://img.shields.io/badge/unsafe-0-success)
 ![GitHub Repo stars](https://img.shields.io/github/stars/math-hiyoko/wavelet-matrix)
 
 
@@ -26,7 +25,6 @@ supporting fast rank / select / range queries over indexed sequences
 - Rich range queries (freq / sum / top-k / min / max)
 - Optional disk-backed storage for static WaveletMatrix (`on_disk=True`)
 - Optional dynamic updates (insert / remove / update)
-- Safe Rust (no unsafe)
 
 ## Installation
 ```bash
@@ -139,10 +137,6 @@ dwm.remove(index=4)
 dwm.update(index=4, value=5)
 # or dwm[4] = 5
 ```
-
-## Safety
-- Powered by safe Rust
-- Memory-safe by design
 
 ## Development
 
