@@ -60,6 +60,7 @@ where
             );
             let current_layer_bits_data: &mut [BlockType] =
                 cast_slice_mut(&mut current_layer_bits[..]);
+
             let values_data: &[NumberType] = cast_slice(&values[..]);
             values_data
                 .par_iter()
@@ -73,6 +74,7 @@ where
                         }
                     });
                 });
+
             let zeros_count = len
                 - current_layer_bits_data
                     .par_iter()
@@ -92,6 +94,7 @@ where
                     .is_multiple_of(mem::size_of::<NumberType>())
             );
             let next_values_data: &mut [NumberType] = cast_slice_mut(&mut next_values[..]);
+
             let mut zero_index = 0usize;
             let mut one_index = zeros_count;
             for (bit, value) in iter::zip(
