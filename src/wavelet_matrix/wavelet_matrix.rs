@@ -67,15 +67,13 @@ where
                 .chunks(BlockType::BITS as usize)
                 .into_iter()
                 .map(|chunk| {
-                    chunk
-                        .enumerate()
-                        .fold(BlockType::zero(), |acc, (j, b)| {
-                            if b {
-                                acc | (BlockType::one() << j)
-                            } else {
-                                acc
-                            }
-                        })
+                    chunk.enumerate().fold(BlockType::zero(), |acc, (j, b)| {
+                        if b {
+                            acc | (BlockType::one() << j)
+                        } else {
+                            acc
+                        }
+                    })
                 })
                 .collect::<Vec<_>>();
 
