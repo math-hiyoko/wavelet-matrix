@@ -1,6 +1,5 @@
 use std::{collections, hash, iter, ops};
 
-use itertools::Itertools;
 use num_bigint::ToBigUint;
 use num_traits::{One, Zero};
 use rayon::prelude::*;
@@ -47,8 +46,8 @@ where
                 .par_iter()
                 .map(|value| (value >> (height - i - 1) & NumberType::one()).is_one())
                 .collect::<Vec<bool>>();
-
             let zeros_count = current_layer_bits.par_iter().filter(|&&b| !b).count();
+
             let mut next_values = vec![NumberType::one(); len];
             let mut zero_index = 0usize;
             let mut one_index = zeros_count;
@@ -63,17 +62,19 @@ where
             }
 
             let current_layer_blocks = current_layer_bits
-                .into_iter()
+                .into_par_iter()
                 .chunks(BlockType::BITS as usize)
-                .into_iter()
                 .map(|chunk| {
-                    chunk.enumerate().fold(BlockType::zero(), |acc, (j, b)| {
-                        if b {
-                            acc | (BlockType::one() << j)
-                        } else {
-                            acc
-                        }
-                    })
+                    chunk
+                        .iter()
+                        .enumerate()
+                        .fold(BlockType::zero(), |acc, (j, &b)| {
+                            if b {
+                                acc | (BlockType::one() << j)
+                            } else {
+                                acc
+                            }
+                        })
                 })
                 .collect::<Vec<_>>();
 

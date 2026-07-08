@@ -1,6 +1,6 @@
 [package]
 name = "wavelet-matrix"
-version = "2.2.2"
+version = "2.2.3"
 edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -10,7 +10,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 bytemuck = "1.25.0"
-itertools = "0.15.0"
 memmap2 = "0.9.10"
 num-bigint = "0.4.6"
 num-integer = "0.1.46"
