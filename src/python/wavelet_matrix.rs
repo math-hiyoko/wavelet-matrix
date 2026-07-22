@@ -17,7 +17,6 @@ use crate::{
     wavelet_matrix::wavelet_matrix::WaveletMatrix,
 };
 
-#[derive(Clone)]
 enum WaveletMatrixEnum {
     U8(WaveletMatrix<u8>),
     U16(WaveletMatrix<u16>),
@@ -56,7 +55,6 @@ enum WaveletMatrixEnum {
 /// from wavelet_matrix import WaveletMatrix
 /// wm = WaveletMatrix([5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0], on_disk=False)  # in-memory
 /// ```
-#[derive(Clone)]
 #[pyclass(name = "WaveletMatrix", skip_from_py_object)]
 pub(crate) struct PyWaveletMatrix {
     inner: WaveletMatrixEnum,
@@ -289,11 +287,45 @@ impl PyWaveletMatrix {
     }
 
     fn __copy__(&self, py: Python<'_>) -> PyResult<Self> {
-        py.detach(move || Ok(self.clone()))
+        py.detach(move || match &self.inner {
+            WaveletMatrixEnum::U8(wm) => Ok(PyWaveletMatrix {
+                inner: WaveletMatrixEnum::U8(wm.clone()),
+            }),
+            WaveletMatrixEnum::U16(wm) => Ok(PyWaveletMatrix {
+                inner: WaveletMatrixEnum::U16(wm.clone()),
+            }),
+            WaveletMatrixEnum::U32(wm) => Ok(PyWaveletMatrix {
+                inner: WaveletMatrixEnum::U32(wm.clone()),
+            }),
+            WaveletMatrixEnum::U64(wm) => Ok(PyWaveletMatrix {
+                inner: WaveletMatrixEnum::U64(wm.clone()),
+            }),
+            WaveletMatrixEnum::U128(wm) => Ok(PyWaveletMatrix {
+                inner: WaveletMatrixEnum::U128(wm.clone()),
+            }),
+            WaveletMatrixEnum::BigUint(wm) => Ok(PyWaveletMatrix {
+                inner: WaveletMatrixEnum::BigUint(wm.clone()),
+            }),
+            WaveletMatrixEnum::DiskU8(wm) => Ok(PyWaveletMatrix {
+                inner: WaveletMatrixEnum::DiskU8(wm.try_clone()?),
+            }),
+            WaveletMatrixEnum::DiskU16(wm) => Ok(PyWaveletMatrix {
+                inner: WaveletMatrixEnum::DiskU16(wm.try_clone()?),
+            }),
+            WaveletMatrixEnum::DiskU32(wm) => Ok(PyWaveletMatrix {
+                inner: WaveletMatrixEnum::DiskU32(wm.try_clone()?),
+            }),
+            WaveletMatrixEnum::DiskU64(wm) => Ok(PyWaveletMatrix {
+                inner: WaveletMatrixEnum::DiskU64(wm.try_clone()?),
+            }),
+            WaveletMatrixEnum::DiskU128(wm) => Ok(PyWaveletMatrix {
+                inner: WaveletMatrixEnum::DiskU128(wm.try_clone()?),
+            }),
+        })
     }
 
     fn __deepcopy__(&self, py: Python<'_>, _memo: &Bound<'_, PyAny>) -> PyResult<Self> {
-        py.detach(move || Ok(self.clone()))
+        self.__copy__(py)
     }
 
     /// Return the entire sequence as a Python list.

@@ -30,29 +30,29 @@ pub(crate) struct DiskBitVector {
 impl DiskBitVector {
     pub(super) fn new(blocks: Mmap, blocks_file: fs::File, len: usize) -> PyResult<Self> {
         assert!(blocks.len().is_multiple_of(mem::size_of::<BlockType>()));
-        let blocks_data: &[BlockType] = cast_slice(&blocks[..]);
+        let blocks_slice: &[BlockType] = cast_slice(&blocks[..]);
 
         // Build the rank index structure.
         let ranks_file = tempfile().map_err(PyRuntimeError::new_err)?;
         ranks_file
-            .set_len((blocks_data.len() + 1) as u64 * mem::size_of::<usize>() as u64)
+            .set_len((blocks_slice.len() + 1) as u64 * mem::size_of::<usize>() as u64)
             .map_err(PyRuntimeError::new_err)?;
         #[allow(unsafe_code)]
         let mut ranks = unsafe { MmapMut::map_mut(&ranks_file).map_err(PyRuntimeError::new_err)? };
-        let ranks_data: &mut [usize] = cast_slice_mut(&mut ranks[..]);
+        let ranks_slice: &mut [usize] = cast_slice_mut(&mut ranks[..]);
         iter::once(0usize)
-            .chain(blocks_data.iter().scan(0usize, |acc, block| {
+            .chain(blocks_slice.iter().scan(0usize, |acc, block| {
                 *acc += block.count_ones() as usize;
                 Some(*acc)
             }))
             .enumerate()
-            .for_each(|(index, rank)| ranks_data[index] = rank);
+            .for_each(|(index, rank)| ranks_slice[index] = rank);
 
         let select_index_file = [
             {
                 let file = tempfile().map_err(PyRuntimeError::new_err)?;
                 file.set_len(
-                    (((len - ranks_data.last().unwrap()) / SELECT_INDEX_INTERVAL + 2)
+                    (((len - ranks_slice.last().unwrap()) / SELECT_INDEX_INTERVAL + 2)
                         * mem::size_of::<usize>()) as u64,
                 )
                 .map_err(PyRuntimeError::new_err)?;
@@ -61,7 +61,7 @@ impl DiskBitVector {
             {
                 let file = tempfile().map_err(PyRuntimeError::new_err)?;
                 file.set_len(
-                    ((ranks_data.last().unwrap() / SELECT_INDEX_INTERVAL + 2)
+                    ((ranks_slice.last().unwrap() / SELECT_INDEX_INTERVAL + 2)
                         * mem::size_of::<usize>()) as u64,
                 )
                 .map_err(PyRuntimeError::new_err)?;
@@ -74,14 +74,14 @@ impl DiskBitVector {
         #[allow(unsafe_code)]
         let mut select_index_1 =
             unsafe { MmapMut::map_mut(&select_index_file[1]).map_err(PyRuntimeError::new_err)? };
-        let select_index_data: [&mut [usize]; 2] = [
+        let select_index_slice: [&mut [usize]; 2] = [
             cast_slice_mut(&mut select_index_0[..]),
             cast_slice_mut(&mut select_index_1[..]),
         ];
-        select_index_data[0][0] = 0;
-        select_index_data[1][0] = 0;
+        select_index_slice[0][0] = 0;
+        select_index_slice[1][0] = 0;
         let mut count = [0usize, 0usize];
-        for (index, bit) in blocks_data
+        for (index, bit) in blocks_slice
             .iter()
             .flat_map(|block| {
                 (0..BlockType::BITS as usize)
@@ -93,11 +93,11 @@ impl DiskBitVector {
             count[bit] += 1;
             let (count_div, count_rem) = count[bit].div_rem(&SELECT_INDEX_INTERVAL);
             if count_rem.is_zero() {
-                select_index_data[bit][count_div] = index;
+                select_index_slice[bit][count_div] = index;
             }
         }
-        select_index_data[0][count[0] / SELECT_INDEX_INTERVAL + 1] = len;
-        select_index_data[1][count[1] / SELECT_INDEX_INTERVAL + 1] = len;
+        select_index_slice[0][count[0] / SELECT_INDEX_INTERVAL + 1] = len;
+        select_index_slice[1][count[1] / SELECT_INDEX_INTERVAL + 1] = len;
 
         Ok(Self {
             len,
@@ -116,42 +116,47 @@ impl DiskBitVector {
             select_index_file,
         })
     }
-}
 
-impl Clone for DiskBitVector {
-    fn clone(&self) -> Self {
-        let ranks_file = tempfile().unwrap();
-        ranks_file.set_len(self.ranks.len() as u64).unwrap();
+    pub(super) fn try_clone(&self) -> PyResult<Self> {
+        let ranks_file = tempfile().map_err(PyRuntimeError::new_err)?;
+        ranks_file
+            .set_len(self.ranks.len() as u64)
+            .map_err(PyRuntimeError::new_err)?;
         #[allow(unsafe_code)]
-        let mut ranks = unsafe { MmapMut::map_mut(&ranks_file).unwrap() };
+        let mut ranks = unsafe { MmapMut::map_mut(&ranks_file).map_err(PyRuntimeError::new_err)? };
         ranks.copy_from_slice(&self.ranks[..]);
 
-        let blocks_file = tempfile().unwrap();
-        blocks_file.set_len(self.blocks.len() as u64).unwrap();
+        let blocks_file = tempfile().map_err(PyRuntimeError::new_err)?;
+        blocks_file
+            .set_len(self.blocks.len() as u64)
+            .map_err(PyRuntimeError::new_err)?;
         #[allow(unsafe_code)]
-        let mut blocks = unsafe { MmapMut::map_mut(&blocks_file).unwrap() };
+        let mut blocks =
+            unsafe { MmapMut::map_mut(&blocks_file).map_err(PyRuntimeError::new_err)? };
         blocks.copy_from_slice(&self.blocks[..]);
 
         let select_index_file = [
             {
-                let file = tempfile().unwrap();
-                file.set_len(self.select_index[0].len() as u64).unwrap();
+                let file = tempfile().map_err(PyRuntimeError::new_err)?;
+                file.set_len(self.select_index[0].len() as u64)
+                    .map_err(PyRuntimeError::new_err)?;
                 file
             },
             {
-                let file = tempfile().unwrap();
-                file.set_len(self.select_index[1].len() as u64).unwrap();
+                let file = tempfile().map_err(PyRuntimeError::new_err)?;
+                file.set_len(self.select_index[1].len() as u64)
+                    .map_err(PyRuntimeError::new_err)?;
                 file
             },
         ];
         let mut select_index = [
             #[allow(unsafe_code)]
             unsafe {
-                MmapMut::map_mut(&select_index_file[0]).unwrap()
+                MmapMut::map_mut(&select_index_file[0]).map_err(PyRuntimeError::new_err)?
             },
             #[allow(unsafe_code)]
             unsafe {
-                MmapMut::map_mut(&select_index_file[1]).unwrap()
+                MmapMut::map_mut(&select_index_file[1]).map_err(PyRuntimeError::new_err)?
             },
         ];
         select_index[0].copy_from_slice(&self.select_index[0][..]);
@@ -159,18 +164,22 @@ impl Clone for DiskBitVector {
 
         let [select_index_0, select_index_1] = select_index;
 
-        Self {
+        Ok(Self {
             len: self.len,
-            ranks: ranks.make_read_only().unwrap(),
+            ranks: ranks.make_read_only().map_err(PyRuntimeError::new_err)?,
             ranks_file,
-            blocks: blocks.make_read_only().unwrap(),
+            blocks: blocks.make_read_only().map_err(PyRuntimeError::new_err)?,
             blocks_file,
             select_index: [
-                select_index_0.make_read_only().unwrap(),
-                select_index_1.make_read_only().unwrap(),
+                select_index_0
+                    .make_read_only()
+                    .map_err(PyRuntimeError::new_err)?,
+                select_index_1
+                    .make_read_only()
+                    .map_err(PyRuntimeError::new_err)?,
             ],
             select_index_file,
-        }
+        })
     }
 }
 
@@ -186,8 +195,8 @@ impl BitVectorTrait for DiskBitVector {
             return Err(PyIndexError::new_err("index out of bounds"));
         }
         let (block_index, bit_index) = index.div_rem(&(BlockType::BITS as usize));
-        let blocks_data: &[BlockType] = cast_slice(&self.blocks[..]);
-        Ok(((blocks_data[block_index] >> bit_index) & BlockType::one()).is_one())
+        let blocks_slice: &[BlockType] = cast_slice(&self.blocks[..]);
+        Ok(((blocks_slice[block_index] >> bit_index) & BlockType::one()).is_one())
     }
 
     #[inline]
@@ -203,11 +212,11 @@ impl BitVectorTrait for DiskBitVector {
         }
 
         let (block_index, bit_index) = end.div_rem(&(BlockType::BITS as usize));
-        let ranks_data: &[usize] = cast_slice(&self.ranks[..]);
-        let blocks_data: &[BlockType] = cast_slice(&self.blocks[..]);
-        let mut rank = ranks_data[block_index];
-        if block_index < blocks_data.len() {
-            rank += (blocks_data[block_index]
+        let ranks_slice: &[usize] = cast_slice(&self.ranks[..]);
+        let blocks_slice: &[BlockType] = cast_slice(&self.blocks[..]);
+        let mut rank = ranks_slice[block_index];
+        if block_index < blocks_slice.len() {
+            rank += (blocks_slice[block_index]
                 & ((BlockType::one() << bit_index) - BlockType::one()))
             .count_ones() as usize;
         }
@@ -223,25 +232,25 @@ impl BitVectorTrait for DiskBitVector {
             return Ok(None);
         }
 
-        let select_index_data: [&[usize]; 2] = [
+        let select_index_slice: [&[usize]; 2] = [
             cast_slice(&self.select_index[0][..]),
             cast_slice(&self.select_index[1][..]),
         ];
-        let ranks_data: &[usize] = cast_slice(&self.ranks[..]);
-        let blocks_data: &[BlockType] = cast_slice(&self.blocks[..]);
+        let ranks_slice: &[usize] = cast_slice(&self.ranks[..]);
+        let blocks_slice: &[BlockType] = cast_slice(&self.blocks[..]);
 
         let block_index = {
-            let mut left = select_index_data[bit as usize][(kth - 1) / SELECT_INDEX_INTERVAL]
+            let mut left = select_index_slice[bit as usize][(kth - 1) / SELECT_INDEX_INTERVAL]
                 / (BlockType::BITS as usize);
-            let mut right = select_index_data[bit as usize][kth / SELECT_INDEX_INTERVAL + 1]
+            let mut right = select_index_slice[bit as usize][kth / SELECT_INDEX_INTERVAL + 1]
                 .div_ceil(BlockType::BITS as usize);
             debug_assert!(right <= self.blocks.len());
             while left + 1 < right {
                 let mid = (left + right) / 2;
                 let rank_at_mid = if bit {
-                    ranks_data[mid]
+                    ranks_slice[mid]
                 } else {
-                    mid * (BlockType::BITS as usize) - ranks_data[mid]
+                    mid * (BlockType::BITS as usize) - ranks_slice[mid]
                 };
                 if rank_at_mid < kth {
                     left = mid;
@@ -253,11 +262,11 @@ impl BitVectorTrait for DiskBitVector {
         };
 
         kth -= if bit {
-            ranks_data[block_index]
+            ranks_slice[block_index]
         } else {
-            block_index * (BlockType::BITS as usize) - ranks_data[block_index]
+            block_index * (BlockType::BITS as usize) - ranks_slice[block_index]
         };
-        let index = blocks_data[block_index].bit_select(bit, kth).unwrap()
+        let index = blocks_slice[block_index].bit_select(bit, kth).unwrap()
             + block_index * (BlockType::BITS as usize);
 
         Ok(Some(index))
@@ -278,11 +287,11 @@ mod tests {
             .unwrap();
         #[allow(unsafe_code)]
         let mut blocks = unsafe { MmapMut::map_mut(&blocks_file).unwrap() };
-        let blocks_data: &mut [BlockType] = cast_slice_mut(&mut blocks[..]);
+        let blocks_slice: &mut [BlockType] = cast_slice_mut(&mut blocks[..]);
         bits.chunks(BlockType::BITS as usize)
             .enumerate()
             .for_each(|(index, chunk)| {
-                blocks_data[index] =
+                blocks_slice[index] =
                     chunk
                         .iter()
                         .enumerate()

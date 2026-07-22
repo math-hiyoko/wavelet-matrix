@@ -14,7 +14,6 @@ use crate::traits::{
     wavelet_matrix::wavelet_matrix::WaveletMatrixTrait,
 };
 
-#[derive(Clone)]
 pub(crate) struct DiskWaveletMatrix<NumberType> {
     layers: Vec<DiskBitVector>,
     zeros_count_per_layer: Vec<usize>,
@@ -34,8 +33,8 @@ where
 
         let mut values = data;
         let mut _values_file = data_file;
-        let values_data: &[NumberType] = cast_slice(&values[..]);
-        let height = values_data
+        let values_slice: &[NumberType] = cast_slice(&values[..]);
+        let height = values_slice
             .par_iter()
             .max()
             .map_or(0usize, |max| max.bit_width());
@@ -60,14 +59,14 @@ where
             );
             let current_layer_bits_data: &mut [BlockType] =
                 cast_slice_mut(&mut current_layer_bits[..]);
-            let values_data: &[NumberType] = cast_slice(&values[..]);
+            let values_slice: &[NumberType] = cast_slice(&values[..]);
             current_layer_bits_data
                 .iter_mut()
                 .enumerate()
                 .for_each(|(block_index, block)| {
                     let start = block_index * BlockType::BITS as usize;
                     let end = (start + BlockType::BITS as usize).min(len);
-                    for (j, value) in values_data[start..end].iter().enumerate() {
+                    for (j, value) in values_slice[start..end].iter().enumerate() {
                         if ((value >> (height - i - 1)) & NumberType::one()).is_one() {
                             *block |= BlockType::one() << j;
                         }
@@ -104,7 +103,7 @@ where
                             .map(move |i| ((block >> i) & BlockType::one()).is_one())
                     })
                     .take(len),
-                values_data.iter(),
+                values_slice.iter(),
             ) {
                 if bit {
                     next_values_data[one_index] = *value;
@@ -136,6 +135,21 @@ where
             zeros_count_per_layer,
             height,
             len,
+            phantom: marker::PhantomData,
+        })
+    }
+
+    pub(crate) fn try_clone(&self) -> PyResult<Self> {
+        let layers = self
+            .layers
+            .par_iter()
+            .map(|layer| layer.try_clone())
+            .collect::<PyResult<Vec<_>>>()?;
+        Ok(Self {
+            layers,
+            zeros_count_per_layer: self.zeros_count_per_layer.clone(),
+            height: self.height,
+            len: self.len,
             phantom: marker::PhantomData,
         })
     }
@@ -195,8 +209,8 @@ mod tests {
                 .map_err(PyRuntimeError::new_err)
                 .unwrap()
         };
-        let mmap_data: &mut [u8] = cast_slice_mut(&mut mmap[..]);
-        mmap_data.copy_from_slice(&elements);
+        let mmap_slice: &mut [u8] = cast_slice_mut(&mut mmap[..]);
+        mmap_slice.copy_from_slice(&elements);
         DiskWaveletMatrix::new(mmap, file).unwrap()
     }
 
@@ -211,8 +225,8 @@ mod tests {
                 .map_err(PyRuntimeError::new_err)
                 .unwrap()
         };
-        let mmap_data: &mut [u128] = cast_slice_mut(&mut mmap[..]);
-        mmap_data.copy_from_slice(&elements);
+        let mmap_slice: &mut [u128] = cast_slice_mut(&mut mmap[..]);
+        mmap_slice.copy_from_slice(&elements);
         DiskWaveletMatrix::new(mmap, file).unwrap()
     }
 
@@ -422,8 +436,8 @@ mod tests {
                 .map_err(PyRuntimeError::new_err)
                 .unwrap()
         };
-        let mmap_u8_data: &mut [u8] = cast_slice_mut(&mut mmap_u8_max_value[..]);
-        mmap_u8_data.fill(u8::MAX);
+        let mmap_u8_slice: &mut [u8] = cast_slice_mut(&mut mmap_u8_max_value[..]);
+        mmap_u8_slice.fill(u8::MAX);
         let wv_u8 = DiskWaveletMatrix::<u8>::new(mmap_u8_max_value, file).unwrap();
         assert_eq!(wv_u8.len(), 64);
         assert_eq!(wv_u8.height(), 8);
@@ -452,8 +466,8 @@ mod tests {
                 .map_err(PyRuntimeError::new_err)
                 .unwrap()
         };
-        let mmap_u128_data: &mut [u128] = cast_slice_mut(&mut mmap_u128_max_value[..]);
-        mmap_u128_data.fill(u128::MAX);
+        let mmap_u128_slice: &mut [u128] = cast_slice_mut(&mut mmap_u128_max_value[..]);
+        mmap_u128_slice.fill(u128::MAX);
         let wv_u128 = DiskWaveletMatrix::<u128>::new(mmap_u128_max_value, file).unwrap();
         assert_eq!(wv_u128.len(), 64);
         assert_eq!(wv_u128.height(), 128);
