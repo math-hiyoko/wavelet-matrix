@@ -40,13 +40,15 @@ impl DiskBitVector {
         #[allow(unsafe_code)]
         let mut ranks = unsafe { MmapMut::map_mut(&ranks_file).map_err(PyOSError::new_err)? };
         let ranks_slice: &mut [usize] = cast_slice_mut(&mut ranks[..]);
-        iter::once(0usize)
-            .chain(blocks_slice.iter().scan(0usize, |acc, block| {
-                *acc += block.count_ones() as usize;
-                Some(*acc)
-            }))
-            .enumerate()
-            .for_each(|(index, rank)| ranks_slice[index] = rank);
+        ranks_slice.copy_from_slice(
+            iter::once(0)
+                .chain(blocks_slice.iter().scan(0usize, |acc, block| {
+                    *acc += block.count_ones() as usize;
+                    Some(*acc)
+                }))
+                .collect::<Vec<_>>()
+                .as_slice(),
+        );
 
         let select_index_file = [
             {
@@ -287,10 +289,9 @@ mod tests {
         #[allow(unsafe_code)]
         let mut blocks = unsafe { MmapMut::map_mut(&blocks_file).unwrap() };
         let blocks_slice: &mut [BlockType] = cast_slice_mut(&mut blocks[..]);
-        bits.chunks(BlockType::BITS as usize)
-            .enumerate()
-            .for_each(|(index, chunk)| {
-                blocks_slice[index] =
+        blocks_slice.copy_from_slice(
+            bits.chunks(BlockType::BITS as usize)
+                .map(|chunk| {
                     chunk
                         .iter()
                         .enumerate()
@@ -301,7 +302,10 @@ mod tests {
                                 acc
                             }
                         })
-            });
+                })
+                .collect::<Vec<_>>()
+                .as_slice(),
+        );
 
         DiskBitVector::new(blocks.make_read_only().unwrap(), blocks_file, len).unwrap()
     }
