@@ -58,7 +58,7 @@ impl PyDynamicWaveletMatrix {
                 })
             })
             .collect::<PyResult<_>>()?;
-        py.detach(move || {
+        py.detach(|| {
             let bit_width = (values.iter().map(|v| v.bits()).max().unwrap_or(0) as usize)
                 .max(max_bit.unwrap_or(0));
             let wv: DynamicWaveletMatrixEnum = match bit_width {
@@ -120,7 +120,7 @@ impl PyDynamicWaveletMatrix {
 
     /// Returns the length of the Wavelet Matrix.
     fn __len__(&self, py: Python<'_>) -> PyResult<usize> {
-        py.detach(move || match &self.inner {
+        py.detach(|| match &self.inner {
             DynamicWaveletMatrixEnum::U8(wm) => Ok(wm.len()),
             DynamicWaveletMatrixEnum::U16(wm) => Ok(wm.len()),
             DynamicWaveletMatrixEnum::U32(wm) => Ok(wm.len()),
@@ -135,7 +135,7 @@ impl PyDynamicWaveletMatrix {
         macro_rules! getitem_impl {
             ($wm:expr) => {
                 if let Ok(index) = index.extract::<usize>() {
-                    let value = py.detach(move || $wm.access(index))?;
+                    let value = py.detach(|| $wm.access(index))?;
                     return Ok(value.into_pyobject(py)?.unbind().into());
                 } else if let Ok(slice) = index.clone().cast_into::<PySlice>() {
                     let PySliceIndices {
@@ -144,7 +144,7 @@ impl PyDynamicWaveletMatrix {
                         slicelength,
                         ..
                     } = slice.indices($wm.len() as isize)?;
-                    let values = py.detach(move || -> PyResult<Vec<_>> {
+                    let values = py.detach(|| -> PyResult<Vec<_>> {
                         let mut index = start;
                         let mut values = Vec::with_capacity(slicelength as usize);
                         for _ in 0..slicelength {
@@ -184,7 +184,7 @@ impl PyDynamicWaveletMatrix {
     }
 
     fn __str__(&self, py: Python<'_>) -> PyResult<String> {
-        let (len, uint_type, max_bit) = py.detach(move || match &self.inner {
+        let (len, uint_type, max_bit) = py.detach(|| match &self.inner {
             DynamicWaveletMatrixEnum::U8(wm) => (wm.len(), "u8", wm.height()),
             DynamicWaveletMatrixEnum::U16(wm) => (wm.len(), "u16", wm.height()),
             DynamicWaveletMatrixEnum::U32(wm) => (wm.len(), "u32", wm.height()),
@@ -204,11 +204,11 @@ impl PyDynamicWaveletMatrix {
     }
 
     fn __copy__(&self, py: Python<'_>) -> PyResult<Self> {
-        py.detach(move || Ok(self.clone()))
+        py.detach(|| Ok(self.clone()))
     }
 
     fn __deepcopy__(&self, py: Python<'_>, _memo: &Bound<'_, PyAny>) -> PyResult<Self> {
-        py.detach(move || Ok(self.clone()))
+        py.detach(|| Ok(self.clone()))
     }
 
     /// Return the entire sequence as a Python list.
@@ -226,22 +226,22 @@ impl PyDynamicWaveletMatrix {
     fn values(&self, py: Python<'_>) -> PyResult<Py<PyList>> {
         match &self.inner {
             DynamicWaveletMatrixEnum::U8(wm) => {
-                Ok(PyList::new(py, &py.detach(move || wm.values())?)?.unbind())
+                Ok(PyList::new(py, &py.detach(|| wm.values())?)?.unbind())
             }
             DynamicWaveletMatrixEnum::U16(wm) => {
-                Ok(PyList::new(py, &py.detach(move || wm.values())?)?.unbind())
+                Ok(PyList::new(py, &py.detach(|| wm.values())?)?.unbind())
             }
             DynamicWaveletMatrixEnum::U32(wm) => {
-                Ok(PyList::new(py, &py.detach(move || wm.values())?)?.unbind())
+                Ok(PyList::new(py, &py.detach(|| wm.values())?)?.unbind())
             }
             DynamicWaveletMatrixEnum::U64(wm) => {
-                Ok(PyList::new(py, &py.detach(move || wm.values())?)?.unbind())
+                Ok(PyList::new(py, &py.detach(|| wm.values())?)?.unbind())
             }
             DynamicWaveletMatrixEnum::U128(wm) => {
-                Ok(PyList::new(py, &py.detach(move || wm.values())?)?.unbind())
+                Ok(PyList::new(py, &py.detach(|| wm.values())?)?.unbind())
             }
             DynamicWaveletMatrixEnum::BigUint(wm) => {
-                Ok(PyList::new(py, &py.detach(move || wm.values())?)?.unbind())
+                Ok(PyList::new(py, &py.detach(|| wm.values())?)?.unbind())
             }
         }
     }
@@ -265,22 +265,22 @@ impl PyDynamicWaveletMatrix {
 
         match &self.inner {
             DynamicWaveletMatrixEnum::U8(wm) => py
-                .detach(move || wm.access(index))
+                .detach(|| wm.access(index))
                 .map(|value| PyInt::new(py, value).into()),
             DynamicWaveletMatrixEnum::U16(wm) => py
-                .detach(move || wm.access(index))
+                .detach(|| wm.access(index))
                 .map(|value| PyInt::new(py, value).into()),
             DynamicWaveletMatrixEnum::U32(wm) => py
-                .detach(move || wm.access(index))
+                .detach(|| wm.access(index))
                 .map(|value| PyInt::new(py, value).into()),
             DynamicWaveletMatrixEnum::U64(wm) => py
-                .detach(move || wm.access(index))
+                .detach(|| wm.access(index))
                 .map(|value| PyInt::new(py, value).into()),
             DynamicWaveletMatrixEnum::U128(wm) => py
-                .detach(move || wm.access(index))
+                .detach(|| wm.access(index))
                 .map(|value| PyInt::new(py, value).into()),
             DynamicWaveletMatrixEnum::BigUint(wm) => py
-                .detach(move || wm.access(index))
+                .detach(|| wm.access(index))
                 .map(|value| value.into_pyobject(py).unwrap().unbind()),
         }
     }
@@ -313,7 +313,7 @@ impl PyDynamicWaveletMatrix {
                     Ok(value) => value,
                     Err(_) => return Ok(0usize),
                 };
-                return py.detach(move || $wm.rank(&value, end));
+                return py.detach(|| $wm.rank(&value, end));
             }};
         }
 
@@ -356,7 +356,7 @@ impl PyDynamicWaveletMatrix {
                     Ok(value) => value,
                     Err(_) => return Ok(None),
                 };
-                return py.detach(move || $wm.select(&value, kth));
+                return py.detach(|| $wm.select(&value, kth));
             }};
         }
 
@@ -401,22 +401,22 @@ impl PyDynamicWaveletMatrix {
 
         match &self.inner {
             DynamicWaveletMatrixEnum::U8(wm) => py
-                .detach(move || wm.quantile(start, end, kth))
+                .detach(|| wm.quantile(start, end, kth))
                 .map(|value| PyInt::new(py, value).into()),
             DynamicWaveletMatrixEnum::U16(wm) => py
-                .detach(move || wm.quantile(start, end, kth))
+                .detach(|| wm.quantile(start, end, kth))
                 .map(|value| PyInt::new(py, value).into()),
             DynamicWaveletMatrixEnum::U32(wm) => py
-                .detach(move || wm.quantile(start, end, kth))
+                .detach(|| wm.quantile(start, end, kth))
                 .map(|value| PyInt::new(py, value).into()),
             DynamicWaveletMatrixEnum::U64(wm) => py
-                .detach(move || wm.quantile(start, end, kth))
+                .detach(|| wm.quantile(start, end, kth))
                 .map(|value| PyInt::new(py, value).into()),
             DynamicWaveletMatrixEnum::U128(wm) => py
-                .detach(move || wm.quantile(start, end, kth))
+                .detach(|| wm.quantile(start, end, kth))
                 .map(|value| PyInt::new(py, value).into()),
             DynamicWaveletMatrixEnum::BigUint(wm) => py
-                .detach(move || wm.quantile(start, end, kth))
+                .detach(|| wm.quantile(start, end, kth))
                 .map(|value| value.into_pyobject(py).unwrap().unbind()),
         }
     }
@@ -460,7 +460,7 @@ impl PyDynamicWaveletMatrix {
         macro_rules! topk_impl {
             ($wm:expr) => {{
                 let result = py
-                    .detach(move || $wm.topk(start, end, k))?
+                    .detach(|| $wm.topk(start, end, k))?
                     .iter()
                     .map(|(value, count)| {
                         let dict = PyDict::new(py);
@@ -508,7 +508,7 @@ impl PyDynamicWaveletMatrix {
             .extract::<usize>()
             .map_err(|_| PyIndexError::new_err("end must be a non-negative integer"))?;
 
-        let result = py.detach(move || match &self.inner {
+        let result = py.detach(|| match &self.inner {
             DynamicWaveletMatrixEnum::U8(wm) => wm.range_sum(start, end),
             DynamicWaveletMatrixEnum::U16(wm) => wm.range_sum(start, end),
             DynamicWaveletMatrixEnum::U32(wm) => wm.range_sum(start, end),
@@ -556,7 +556,7 @@ impl PyDynamicWaveletMatrix {
         macro_rules! range_intersection_impl {
             ($wm:expr) => {{
                 let result = py
-                    .detach(move || $wm.range_intersection(start1, end1, start2, end2))?
+                    .detach(|| $wm.range_intersection(start1, end1, start2, end2))?
                     .iter()
                     .map(|(value, count1, count2)| {
                         let dict = PyDict::new(py);
@@ -615,7 +615,7 @@ impl PyDynamicWaveletMatrix {
                 if lower.as_ref().is_some_and(|lower| lower.is_none()) {
                     return Ok(0);
                 } else {
-                    return py.detach(move || {
+                    return py.detach(|| {
                         $wm.range_freq(
                             start,
                             end,
@@ -673,7 +673,7 @@ impl PyDynamicWaveletMatrix {
                     return Ok(PyList::empty(py).into());
                 } else {
                     let result = py
-                        .detach(move || {
+                        .detach(|| {
                             $wm.range_list(
                                 start,
                                 end,
@@ -741,7 +741,7 @@ impl PyDynamicWaveletMatrix {
         macro_rules! range_maxk_impl {
             ($wm:expr) => {{
                 let result = py
-                    .detach(move || $wm.range_maxk(start, end, k))?
+                    .detach(|| $wm.range_maxk(start, end, k))?
                     .iter()
                     .map(|(value, count)| {
                         let dict = PyDict::new(py);
@@ -801,7 +801,7 @@ impl PyDynamicWaveletMatrix {
         macro_rules! range_mink_impl {
             ($wm:expr) => {{
                 let result = py
-                    .detach(move || $wm.range_mink(start, end, k))?
+                    .detach(|| $wm.range_mink(start, end, k))?
                     .iter()
                     .map(|(value, count)| {
                         let dict = PyDict::new(py);
@@ -856,7 +856,7 @@ impl PyDynamicWaveletMatrix {
             ($wm:expr, $number_type:ty) => {{
                 let upper = upper.map(|value| value.extract::<$number_type>().ok());
                 return Ok(py
-                    .detach(move || $wm.prev_value(start, end, upper.flatten().as_ref()))?
+                    .detach(|| $wm.prev_value(start, end, upper.flatten().as_ref()))?
                     .map(|value| value.into_pyobject(py).unwrap().unbind()));
             }};
         }
@@ -906,7 +906,7 @@ impl PyDynamicWaveletMatrix {
                     return Ok(None);
                 } else {
                     return Ok(py
-                        .detach(move || $wm.next_value(start, end, lower.flatten().as_ref()))?
+                        .detach(|| $wm.next_value(start, end, lower.flatten().as_ref()))?
                         .map(|value| value.into_pyobject(py).unwrap().unbind()));
                 }
             }};
@@ -935,7 +935,7 @@ impl PyDynamicWaveletMatrix {
     /// # 4
     /// ```
     fn max_bit(&self, py: Python<'_>) -> PyResult<usize> {
-        py.detach(move || match &self.inner {
+        py.detach(|| match &self.inner {
             DynamicWaveletMatrixEnum::U8(wm) => Ok(wm.height()),
             DynamicWaveletMatrixEnum::U16(wm) => Ok(wm.height()),
             DynamicWaveletMatrixEnum::U32(wm) => Ok(wm.height()),
@@ -972,7 +972,7 @@ impl PyDynamicWaveletMatrix {
                 let value = value
                     .extract::<$number_type>()
                     .map_err(|_| PyValueError::new_err("value exceeds the maximum value"))?;
-                return py.detach(move || $wm.insert(index, &value));
+                return py.detach(|| $wm.insert(index, &value));
             }};
         }
 
@@ -1004,22 +1004,22 @@ impl PyDynamicWaveletMatrix {
 
         match &mut self.inner {
             DynamicWaveletMatrixEnum::U8(wm) => py
-                .detach(move || wm.remove(index))
+                .detach(|| wm.remove(index))
                 .map(|value| PyInt::new(py, value).into()),
             DynamicWaveletMatrixEnum::U16(wm) => py
-                .detach(move || wm.remove(index))
+                .detach(|| wm.remove(index))
                 .map(|value| PyInt::new(py, value).into()),
             DynamicWaveletMatrixEnum::U32(wm) => py
-                .detach(move || wm.remove(index))
+                .detach(|| wm.remove(index))
                 .map(|value| PyInt::new(py, value).into()),
             DynamicWaveletMatrixEnum::U64(wm) => py
-                .detach(move || wm.remove(index))
+                .detach(|| wm.remove(index))
                 .map(|value| PyInt::new(py, value).into()),
             DynamicWaveletMatrixEnum::U128(wm) => py
-                .detach(move || wm.remove(index))
+                .detach(|| wm.remove(index))
                 .map(|value| PyInt::new(py, value).into()),
             DynamicWaveletMatrixEnum::BigUint(wm) => py
-                .detach(move || wm.remove(index))
+                .detach(|| wm.remove(index))
                 .map(|value| value.into_pyobject(py).unwrap().unbind()),
         }
     }
@@ -1053,7 +1053,7 @@ impl PyDynamicWaveletMatrix {
                     .extract::<$number_type>()
                     .map_err(|_| PyOverflowError::new_err("value exceeds the maximum value"))?;
                 return py
-                    .detach(move || $wm.update(index, &value))
+                    .detach(|| $wm.update(index, &value))
                     .map(|old_value| old_value.into_pyobject(py).unwrap().unbind());
             }};
         }
