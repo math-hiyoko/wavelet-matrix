@@ -131,8 +131,7 @@ impl DiskBitVector {
             .set_len(self.blocks.len() as u64)
             .map_err(PyOSError::new_err)?;
         #[allow(unsafe_code)]
-        let mut blocks =
-            unsafe { MmapMut::map_mut(&blocks_file).map_err(PyOSError::new_err)? };
+        let mut blocks = unsafe { MmapMut::map_mut(&blocks_file).map_err(PyOSError::new_err)? };
         blocks.copy_from_slice(&self.blocks[..]);
 
         let select_index_file = [

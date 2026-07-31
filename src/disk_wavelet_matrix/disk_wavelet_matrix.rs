@@ -49,9 +49,8 @@ where
                 )
                 .map_err(PyOSError::new_err)?;
             #[allow(unsafe_code)]
-            let mut current_layer_bits = unsafe {
-                MmapMut::map_mut(&current_layer_bits_file).map_err(PyOSError::new_err)?
-            };
+            let mut current_layer_bits =
+                unsafe { MmapMut::map_mut(&current_layer_bits_file).map_err(PyOSError::new_err)? };
             assert!(
                 current_layer_bits
                     .len()
@@ -204,11 +203,7 @@ mod tests {
         file.set_len((elements.len() * mem::size_of::<u8>()) as u64)
             .unwrap();
         #[allow(unsafe_code)]
-        let mut mmap = unsafe {
-            MmapMut::map_mut(&file)
-                .map_err(PyOSError::new_err)
-                .unwrap()
-        };
+        let mut mmap = unsafe { MmapMut::map_mut(&file).map_err(PyOSError::new_err).unwrap() };
         let mmap_slice: &mut [u8] = cast_slice_mut(&mut mmap[..]);
         mmap_slice.copy_from_slice(&elements);
         DiskWaveletMatrix::new(mmap, file).unwrap()
@@ -220,11 +215,7 @@ mod tests {
         file.set_len((elements.len() * mem::size_of::<u128>()) as u64)
             .unwrap();
         #[allow(unsafe_code)]
-        let mut mmap = unsafe {
-            MmapMut::map_mut(&file)
-                .map_err(PyOSError::new_err)
-                .unwrap()
-        };
+        let mut mmap = unsafe { MmapMut::map_mut(&file).map_err(PyOSError::new_err).unwrap() };
         let mmap_slice: &mut [u128] = cast_slice_mut(&mut mmap[..]);
         mmap_slice.copy_from_slice(&elements);
         DiskWaveletMatrix::new(mmap, file).unwrap()
@@ -236,11 +227,7 @@ mod tests {
 
         let file = tempfile().map_err(PyOSError::new_err).unwrap();
         #[allow(unsafe_code)]
-        let mmap_empty = unsafe {
-            MmapMut::map_mut(&file)
-                .map_err(PyOSError::new_err)
-                .unwrap()
-        };
+        let mmap_empty = unsafe { MmapMut::map_mut(&file).map_err(PyOSError::new_err).unwrap() };
         let wv_u8 = DiskWaveletMatrix::<u8>::new(mmap_empty, file).unwrap();
         assert_eq!(wv_u8.len(), 0);
         assert_eq!(wv_u8.height(), 0);
@@ -301,11 +288,7 @@ mod tests {
         let file = tempfile().map_err(PyOSError::new_err).unwrap();
         file.set_len(0).unwrap();
         #[allow(unsafe_code)]
-        let mmap_empty = unsafe {
-            MmapMut::map_mut(&file)
-                .map_err(PyOSError::new_err)
-                .unwrap()
-        };
+        let mmap_empty = unsafe { MmapMut::map_mut(&file).map_err(PyOSError::new_err).unwrap() };
         let wv_u128 = DiskWaveletMatrix::<u128>::new(mmap_empty, file).unwrap();
         assert_eq!(wv_u128.height(), 0);
         assert_eq!(wv_u128.values().unwrap(), Vec::<u128>::new());
@@ -376,11 +359,8 @@ mod tests {
         let file = tempfile().map_err(PyOSError::new_err).unwrap();
         file.set_len((64 * mem::size_of::<u8>()) as u64).unwrap();
         #[allow(unsafe_code)]
-        let mmap_u8_all_zero = unsafe {
-            MmapMut::map_mut(&file)
-                .map_err(PyOSError::new_err)
-                .unwrap()
-        };
+        let mmap_u8_all_zero =
+            unsafe { MmapMut::map_mut(&file).map_err(PyOSError::new_err).unwrap() };
         let wv_u8 = DiskWaveletMatrix::<u8>::new(mmap_u8_all_zero, file).unwrap();
         assert_eq!(wv_u8.len(), 64);
         assert_eq!(wv_u8.height(), 0);
@@ -401,11 +381,8 @@ mod tests {
         let file = tempfile().map_err(PyOSError::new_err).unwrap();
         file.set_len((64 * mem::size_of::<u128>()) as u64).unwrap();
         #[allow(unsafe_code)]
-        let mmap_u128_all_zero = unsafe {
-            MmapMut::map_mut(&file)
-                .map_err(PyOSError::new_err)
-                .unwrap()
-        };
+        let mmap_u128_all_zero =
+            unsafe { MmapMut::map_mut(&file).map_err(PyOSError::new_err).unwrap() };
         let wv_u128 = DiskWaveletMatrix::<u128>::new(mmap_u128_all_zero, file).unwrap();
         assert_eq!(wv_u128.len(), 64);
         assert_eq!(wv_u128.height(), 0);
@@ -431,11 +408,8 @@ mod tests {
         let file = tempfile().map_err(PyOSError::new_err).unwrap();
         file.set_len((64 * mem::size_of::<u8>()) as u64).unwrap();
         #[allow(unsafe_code)]
-        let mut mmap_u8_max_value = unsafe {
-            MmapMut::map_mut(&file)
-                .map_err(PyOSError::new_err)
-                .unwrap()
-        };
+        let mut mmap_u8_max_value =
+            unsafe { MmapMut::map_mut(&file).map_err(PyOSError::new_err).unwrap() };
         let mmap_u8_slice: &mut [u8] = cast_slice_mut(&mut mmap_u8_max_value[..]);
         mmap_u8_slice.fill(u8::MAX);
         let wv_u8 = DiskWaveletMatrix::<u8>::new(mmap_u8_max_value, file).unwrap();
@@ -461,11 +435,8 @@ mod tests {
         let file = tempfile().map_err(PyOSError::new_err).unwrap();
         file.set_len((64 * mem::size_of::<u128>()) as u64).unwrap();
         #[allow(unsafe_code)]
-        let mut mmap_u128_max_value = unsafe {
-            MmapMut::map_mut(&file)
-                .map_err(PyOSError::new_err)
-                .unwrap()
-        };
+        let mut mmap_u128_max_value =
+            unsafe { MmapMut::map_mut(&file).map_err(PyOSError::new_err).unwrap() };
         let mmap_u128_slice: &mut [u128] = cast_slice_mut(&mut mmap_u128_max_value[..]);
         mmap_u128_slice.fill(u128::MAX);
         let wv_u128 = DiskWaveletMatrix::<u128>::new(mmap_u128_max_value, file).unwrap();

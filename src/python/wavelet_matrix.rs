@@ -124,8 +124,7 @@ impl PyWaveletMatrix {
                 file.set_len((len * mem::size_of::<u8>()) as u64)
                     .map_err(PyOSError::new_err)?;
                 #[allow(unsafe_code)]
-                let mut values =
-                    unsafe { MmapMut::map_mut(&file).map_err(PyOSError::new_err)? };
+                let mut values = unsafe { MmapMut::map_mut(&file).map_err(PyOSError::new_err)? };
                 let values_data: &mut [u8] = cast_slice_mut(&mut values[..]);
                 for (i, item) in data.try_iter()?.enumerate() {
                     values_data[i] = item?.extract::<u8>().map_err(PyOverflowError::new_err)?;
@@ -137,8 +136,7 @@ impl PyWaveletMatrix {
                 file.set_len((len * mem::size_of::<u16>()) as u64)
                     .map_err(PyOSError::new_err)?;
                 #[allow(unsafe_code)]
-                let mut values =
-                    unsafe { MmapMut::map_mut(&file).map_err(PyOSError::new_err)? };
+                let mut values = unsafe { MmapMut::map_mut(&file).map_err(PyOSError::new_err)? };
                 let values_data: &mut [u16] = cast_slice_mut(&mut values[..]);
                 for (i, item) in data.try_iter()?.enumerate() {
                     values_data[i] = item?.extract::<u16>().map_err(PyOverflowError::new_err)?;
@@ -150,11 +148,10 @@ impl PyWaveletMatrix {
                 file.set_len((len * mem::size_of::<u32>()) as u64)
                     .map_err(PyOSError::new_err)?;
                 #[allow(unsafe_code)]
-                let mut values =
-                    unsafe { MmapMut::map_mut(&file).map_err(PyOSError::new_err)? };
+                let mut values = unsafe { MmapMut::map_mut(&file).map_err(PyOSError::new_err)? };
                 let values_data: &mut [u32] = cast_slice_mut(&mut values[..]);
                 for (i, item) in data.try_iter()?.enumerate() {
-                    values_data[i] = item?.extract::<u32>().map_err(PyOverflowError ::new_err)?;
+                    values_data[i] = item?.extract::<u32>().map_err(PyOverflowError::new_err)?;
                 }
                 WaveletMatrixEnum::DiskU32(DiskWaveletMatrix::<u32>::new(values, file)?)
             }
@@ -163,8 +160,7 @@ impl PyWaveletMatrix {
                 file.set_len((len * mem::size_of::<u64>()) as u64)
                     .map_err(PyOSError::new_err)?;
                 #[allow(unsafe_code)]
-                let mut values =
-                    unsafe { MmapMut::map_mut(&file).map_err(PyOSError::new_err)? };
+                let mut values = unsafe { MmapMut::map_mut(&file).map_err(PyOSError::new_err)? };
                 let values_data: &mut [u64] = cast_slice_mut(&mut values[..]);
                 for (i, item) in data.try_iter()?.enumerate() {
                     values_data[i] = item?.extract::<u64>().map_err(PyOverflowError::new_err)?;
@@ -176,8 +172,7 @@ impl PyWaveletMatrix {
                 file.set_len((len * mem::size_of::<u128>()) as u64)
                     .map_err(PyOSError::new_err)?;
                 #[allow(unsafe_code)]
-                let mut values =
-                    unsafe { MmapMut::map_mut(&file).map_err(PyOSError::new_err)? };
+                let mut values = unsafe { MmapMut::map_mut(&file).map_err(PyOSError::new_err)? };
                 let values_data: &mut [u128] = cast_slice_mut(&mut values[..]);
                 for (i, item) in data.try_iter()?.enumerate() {
                     values_data[i] = item?.extract::<u128>().map_err(PyOverflowError::new_err)?;

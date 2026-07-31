@@ -117,10 +117,7 @@ mod tests {
     use std::marker;
 
     use num_bigint::BigUint;
-    use pyo3::{
-        Python,
-        exceptions::PyOverflowError,
-    };
+    use pyo3::{Python, exceptions::PyOverflowError};
 
     use super::*;
     use crate::traits::{
