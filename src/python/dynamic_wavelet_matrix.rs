@@ -1,9 +1,9 @@
 use num_bigint::BigUint;
 use num_traits::ToPrimitive;
 use pyo3::{
-    exceptions::{PyIndexError, PyRuntimeError, PyTypeError, PyValueError},
+    exceptions::{PyIndexError, PyOverflowError, PyTypeError, PyValueError},
     prelude::*,
-    types::{PyDict, PyInt, PyList, PySequence, PySlice, PySliceIndices},
+    types::{PyDict, PyInt, PyList, PySlice, PySliceIndices},
 };
 
 use crate::{
@@ -49,12 +49,12 @@ impl PyDynamicWaveletMatrix {
     /// Creates a new Wavelet Matrix from the given list or tuple of integers.
     #[new]
     #[pyo3(signature = (data, max_bit=None))]
-    fn new(py: Python<'_>, data: &Bound<'_, PySequence>, max_bit: Option<usize>) -> PyResult<Self> {
+    fn new(py: Python<'_>, data: &Bound<'_, PyAny>, max_bit: Option<usize>) -> PyResult<Self> {
         let values: Vec<BigUint> = data
             .try_iter()?
             .map(|item| {
                 item?.extract::<BigUint>().map_err(|_| {
-                    PyValueError::new_err("Input elements must be non-negative integers")
+                    PyTypeError::new_err("Input elements must be non-negative integers")
                 })
             })
             .collect::<PyResult<_>>()?;
@@ -67,7 +67,7 @@ impl PyDynamicWaveletMatrix {
                         .into_iter()
                         .map(|v| v.to_u8())
                         .collect::<Option<Vec<_>>>()
-                        .ok_or(PyRuntimeError::new_err("Value out of range for u8"))?;
+                        .ok_or(PyOverflowError::new_err("Value out of range for u8"))?;
                     DynamicWaveletMatrixEnum::U8(DynamicWaveletMatrix::<u8>::new(values, max_bit)?)
                 }
                 9..=16 => {
@@ -75,7 +75,7 @@ impl PyDynamicWaveletMatrix {
                         .into_iter()
                         .map(|v| v.to_u16())
                         .collect::<Option<Vec<_>>>()
-                        .ok_or(PyRuntimeError::new_err("Value out of range for u16"))?;
+                        .ok_or(PyOverflowError::new_err("Value out of range for u16"))?;
                     DynamicWaveletMatrixEnum::U16(DynamicWaveletMatrix::<u16>::new(
                         values, max_bit,
                     )?)
@@ -85,7 +85,7 @@ impl PyDynamicWaveletMatrix {
                         .into_iter()
                         .map(|v| v.to_u32())
                         .collect::<Option<Vec<_>>>()
-                        .ok_or(PyRuntimeError::new_err("Value out of range for u32"))?;
+                        .ok_or(PyOverflowError::new_err("Value out of range for u32"))?;
                     DynamicWaveletMatrixEnum::U32(DynamicWaveletMatrix::<u32>::new(
                         values, max_bit,
                     )?)
@@ -95,7 +95,7 @@ impl PyDynamicWaveletMatrix {
                         .into_iter()
                         .map(|v| v.to_u64())
                         .collect::<Option<Vec<_>>>()
-                        .ok_or(PyRuntimeError::new_err("Value out of range for u64"))?;
+                        .ok_or(PyOverflowError::new_err("Value out of range for u64"))?;
                     DynamicWaveletMatrixEnum::U64(DynamicWaveletMatrix::<u64>::new(
                         values, max_bit,
                     )?)
@@ -105,7 +105,7 @@ impl PyDynamicWaveletMatrix {
                         .into_iter()
                         .map(|v| v.to_u128())
                         .collect::<Option<Vec<_>>>()
-                        .ok_or(PyRuntimeError::new_err("Value out of range for u128"))?;
+                        .ok_or(PyOverflowError::new_err("Value out of range for u128"))?;
                     DynamicWaveletMatrixEnum::U128(DynamicWaveletMatrix::<u128>::new(
                         values, max_bit,
                     )?)
@@ -1051,7 +1051,7 @@ impl PyDynamicWaveletMatrix {
             ($wm:expr, $number_type:ty) => {{
                 let value = value
                     .extract::<$number_type>()
-                    .map_err(|_| PyValueError::new_err("value exceeds the maximum value"))?;
+                    .map_err(|_| PyOverflowError::new_err("value exceeds the maximum value"))?;
                 return py
                     .detach(move || $wm.update(index, &value))
                     .map(|old_value| old_value.into_pyobject(py).unwrap().unbind());
@@ -1079,8 +1079,7 @@ mod tests {
         Python::attach(|py| {
             let elements = vec![5, 4, 5, 5, 2, 1, 5, 6, 1, 3, 5, 0];
             let pylist = PyList::new(py, &elements).unwrap();
-            let pysequence = pylist.cast::<PySequence>().unwrap();
-            let mut wm = PyDynamicWaveletMatrix::new(py, pysequence, None).unwrap();
+            let mut wm = PyDynamicWaveletMatrix::new(py, &pylist, None).unwrap();
 
             assert_eq!(wm.__len__(py).unwrap(), elements.len());
             assert_eq!(
@@ -1292,8 +1291,7 @@ mod tests {
                 0 << 8,
             ];
             let pylist = PyList::new(py, &elements).unwrap();
-            let pysequence = pylist.cast::<PySequence>().unwrap();
-            let mut wm = PyDynamicWaveletMatrix::new(py, pysequence, None).unwrap();
+            let mut wm = PyDynamicWaveletMatrix::new(py, &pylist, None).unwrap();
 
             assert_eq!(wm.__len__(py).unwrap(), elements.len());
             assert_eq!(
@@ -1505,8 +1503,7 @@ mod tests {
                 0 << 16,
             ];
             let pylist = PyList::new(py, &elements).unwrap();
-            let pysequence = pylist.cast::<PySequence>().unwrap();
-            let mut wm = PyDynamicWaveletMatrix::new(py, pysequence, None).unwrap();
+            let mut wm = PyDynamicWaveletMatrix::new(py, &pylist, None).unwrap();
 
             assert_eq!(wm.__len__(py).unwrap(), elements.len());
             assert_eq!(
@@ -1718,8 +1715,7 @@ mod tests {
                 0 << 32,
             ];
             let pylist = PyList::new(py, &elements).unwrap();
-            let pysequence = pylist.cast::<PySequence>().unwrap();
-            let mut wm = PyDynamicWaveletMatrix::new(py, pysequence, None).unwrap();
+            let mut wm = PyDynamicWaveletMatrix::new(py, &pylist, None).unwrap();
 
             assert_eq!(wm.__len__(py).unwrap(), elements.len());
             assert_eq!(
@@ -1931,8 +1927,7 @@ mod tests {
                 0 << 64,
             ];
             let pylist = PyList::new(py, &elements).unwrap();
-            let pysequence = pylist.cast::<PySequence>().unwrap();
-            let mut wm = PyDynamicWaveletMatrix::new(py, pysequence, None).unwrap();
+            let mut wm = PyDynamicWaveletMatrix::new(py, &pylist, None).unwrap();
 
             assert_eq!(wm.__len__(py).unwrap(), elements.len());
             assert_eq!(
@@ -2144,8 +2139,7 @@ mod tests {
                 BigUint::from(0u32) << 128,
             ];
             let pylist = elements.clone().into_pyobject(py).unwrap();
-            let pysequence = pylist.cast::<PySequence>().unwrap();
-            let mut wm = PyDynamicWaveletMatrix::new(py, pysequence, None).unwrap();
+            let mut wm = PyDynamicWaveletMatrix::new(py, &pylist, None).unwrap();
 
             assert_eq!(wm.__len__(py).unwrap(), elements.len());
             assert_eq!(

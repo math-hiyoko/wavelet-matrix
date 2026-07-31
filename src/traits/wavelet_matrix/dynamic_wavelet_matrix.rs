@@ -117,7 +117,10 @@ mod tests {
     use std::marker;
 
     use num_bigint::BigUint;
-    use pyo3::Python;
+    use pyo3::{
+        Python,
+        exceptions::PyOverflowError,
+    };
 
     use super::*;
     use crate::traits::{
@@ -141,7 +144,7 @@ mod tests {
             let mut values = data.to_owned();
             let max_width = values.iter().max().map_or(0usize, |max| max.bit_width());
             if max_bit.is_some_and(|max_bit| max_bit < max_width) {
-                return Err(PyValueError::new_err(format!(
+                return Err(PyOverflowError::new_err(format!(
                     "max_bit = {} is less than the maximum bit width of the data = {}",
                     max_bit.unwrap(),
                     max_width

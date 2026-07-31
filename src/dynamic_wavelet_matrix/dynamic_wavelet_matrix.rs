@@ -2,7 +2,7 @@ use std::{fmt, iter, marker, ops};
 
 use num_bigint::ToBigUint;
 use num_traits::{One, Zero};
-use pyo3::{PyResult, exceptions::PyValueError};
+use pyo3::{PyResult, exceptions::PyOverflowError};
 use rayon::prelude::*;
 
 use super::dynamic_bit_vector::DynamicBitVector;
@@ -37,7 +37,7 @@ where
             .max()
             .map_or(0usize, |max| max.bit_width());
         if max_bit.is_some_and(|max_bit| max_bit < max_width) {
-            return Err(PyValueError::new_err(format!(
+            return Err(PyOverflowError::new_err(format!(
                 "max_bit = {} is less than the maximum bit width of the data = {}",
                 max_bit.unwrap(),
                 max_width
