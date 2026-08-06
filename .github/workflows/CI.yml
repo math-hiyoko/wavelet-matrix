@@ -245,7 +245,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e .[test]
       - name: Run benchmarks
-        run: python -m pytest --benchmark-only --db .pymon
+        run: python -m pytest --benchmark-only --benchmark-warmup=off --db .pymon
       - name: Display benchmark results
         run: |
           sqlite3 -header -column .pymon '
