@@ -206,50 +206,26 @@ mod tests {
             "IndexError: index out of bounds"
         );
         assert_eq!(wv_u8.rank(&0u8, 0).unwrap(), 0);
-        assert_eq!(wv_u8.select(&0u8, 1).unwrap(), None);
         assert_eq!(
-            wv_u8.quantile(0, 0, 1).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
+            wv_u8.select(&0u8, 0).unwrap_err().to_string(),
+            "ValueError: kth must be greater than 0"
         );
         assert_eq!(
             wv_u8.topk(0, 0, Some(1)).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
+            "ValueError: k is larger than the range size"
         );
+        assert_eq!(wv_u8.range_sum(0, 0).unwrap(), BigUint::zero(),);
         assert_eq!(
-            wv_u8.range_sum(0, 0).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
+            wv_u8.range_intersection(0, 0, 0, 0).unwrap(),
+            Vec::<(u8, usize, usize)>::new()
         );
+        assert_eq!(wv_u8.range_freq(0, 0, None, None).unwrap(), 0,);
         assert_eq!(
-            wv_u8
-                .range_intersection(0, 0, 0, 0)
-                .unwrap_err()
-                .to_string(),
-            "ValueError: start1 must be less than end1"
+            wv_u8.range_list(0, 0, None, None).unwrap(),
+            Vec::<(u8, usize)>::new(),
         );
-        assert_eq!(
-            wv_u8.range_freq(0, 0, None, None).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
-        );
-        assert_eq!(
-            wv_u8.range_list(0, 0, None, None).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
-        );
-        assert_eq!(
-            wv_u8.range_maxk(0, 0, Some(1)).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
-        );
-        assert_eq!(
-            wv_u8.range_mink(0, 0, Some(1)).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
-        );
-        assert_eq!(
-            wv_u8.prev_value(0, 0, None).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
-        );
-        assert_eq!(
-            wv_u8.next_value(0, 0, None).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
-        );
+        assert_eq!(wv_u8.prev_value(0, 0, None).unwrap(), None,);
+        assert_eq!(wv_u8.next_value(0, 0, None).unwrap(), None,);
 
         let wv_biguint = DynamicWaveletMatrix::<BigUint>::new(vec![], None).unwrap();
         assert_eq!(wv_biguint.len(), 0);
@@ -260,62 +236,26 @@ mod tests {
             "IndexError: index out of bounds"
         );
         assert_eq!(wv_biguint.rank(&0u32.into(), 0).unwrap(), 0);
-        assert_eq!(wv_biguint.select(&0u32.into(), 1).unwrap(), None);
         assert_eq!(
-            wv_biguint.quantile(0, 0, 1).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
+            wv_biguint.select(&0u32.into(), 0).unwrap_err().to_string(),
+            "ValueError: kth must be greater than 0"
         );
         assert_eq!(
             wv_biguint.topk(0, 0, Some(1)).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
+            "ValueError: k is larger than the range size"
         );
+        assert_eq!(wv_biguint.range_sum(0, 0).unwrap(), BigUint::zero(),);
         assert_eq!(
-            wv_biguint.range_sum(0, 0).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
+            wv_biguint.range_intersection(0, 0, 0, 0).unwrap(),
+            Vec::<(BigUint, usize, usize)>::new()
         );
+        assert_eq!(wv_biguint.range_freq(0, 0, None, None).unwrap(), 0,);
         assert_eq!(
-            wv_biguint
-                .range_intersection(0, 0, 0, 0)
-                .unwrap_err()
-                .to_string(),
-            "ValueError: start1 must be less than end1"
+            wv_biguint.range_list(0, 0, None, None).unwrap(),
+            Vec::<(BigUint, usize)>::new(),
         );
-        assert_eq!(
-            wv_biguint
-                .range_freq(0, 0, None, None)
-                .unwrap_err()
-                .to_string(),
-            "ValueError: start must be less than end"
-        );
-        assert_eq!(
-            wv_biguint
-                .range_list(0, 0, None, None)
-                .unwrap_err()
-                .to_string(),
-            "ValueError: start must be less than end"
-        );
-        assert_eq!(
-            wv_biguint
-                .range_maxk(0, 0, Some(1))
-                .unwrap_err()
-                .to_string(),
-            "ValueError: start must be less than end"
-        );
-        assert_eq!(
-            wv_biguint
-                .range_mink(0, 0, Some(1))
-                .unwrap_err()
-                .to_string(),
-            "ValueError: start must be less than end"
-        );
-        assert_eq!(
-            wv_biguint.prev_value(0, 0, None).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
-        );
-        assert_eq!(
-            wv_biguint.next_value(0, 0, None).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
-        );
+        assert_eq!(wv_biguint.prev_value(0, 0, None).unwrap(), None,);
+        assert_eq!(wv_biguint.next_value(0, 0, None).unwrap(), None);
     }
 
     #[test]

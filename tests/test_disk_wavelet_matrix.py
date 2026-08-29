@@ -31,7 +31,10 @@ def wm_large():
 
 def test_large_construction():
     data = [1 << 500, 2 << 500, 3 << 500, 4 << 500, 5 << 500]
-    with pytest.raises(OverflowError):
+    with pytest.raises(
+        OverflowError,
+        match="Values must be u128 or smaller for on-disk WaveletMatrix",
+    ):
         WaveletMatrix(data, on_disk=True)
 
 
@@ -41,31 +44,23 @@ def test_empty():
 
     assert len(wv_empty) == 0
     assert wv_empty.values() == []
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="index out of bounds"):
         wv_empty.access(0)
     assert wv_empty.rank(1, 0) == 0
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="kth must be greater than 0"):
         wv_empty.select(1, 0)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="kth must be greater than 0"):
         wv_empty.quantile(0, 0, 0)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="k is larger than the range size"):
         wv_empty.topk(0, 0, 1)
-    with pytest.raises(ValueError):
-        wv_empty.range_sum(0, 0)
-    with pytest.raises(ValueError):
-        wv_empty.range_intersection(0, 0, 0, 0)
-    with pytest.raises(ValueError):
-        wv_empty.range_freq(0, 0)
-    with pytest.raises(ValueError):
-        wv_empty.range_list(0, 0)
-    with pytest.raises(ValueError):
-        wv_empty.range_maxk(0, 0)
-    with pytest.raises(ValueError):
-        wv_empty.range_mink(0, 0)
-    with pytest.raises(ValueError):
-        wv_empty.prev_value(0, 0)
-    with pytest.raises(ValueError):
-        wv_empty.next_value(0, 0)
+    assert wv_empty.range_sum(0, 0) == 0
+    assert wv_empty.range_intersection(0, 0, 0, 0) == []
+    assert wv_empty.range_freq(0, 0) == 0
+    assert wv_empty.range_list(0, 0) == []
+    assert wv_empty.range_maxk(0, 0) == []
+    assert wv_empty.range_mink(0, 0) == []
+    assert wv_empty.prev_value(0, 0) is None
+    assert wv_empty.next_value(0, 0) is None
 
 
 def test_all_zero():
@@ -112,11 +107,11 @@ def test_values(wm_small, wm_large):
 def test_access(wm_small, wm_large):
     """Test access method"""
     assert wm_small.access(6) == 5
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="index out of bounds"):
         wm_small.access(12)
 
     assert wm_large.access(6) == 5 << 100
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="index out of bounds"):
         wm_large.access(12)
 
 
@@ -124,12 +119,12 @@ def test_rank(wm_small, wm_large):
     """Test rank method"""
     assert wm_small.rank(5, 8) == 4
     assert wm_small.rank(10, 8) == 0
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="index out of bounds"):
         wm_small.rank(5, 13)
 
     assert wm_large.rank(5 << 100, 8) == 4
     assert wm_large.rank(10 << 100, 8) == 0
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="index out of bounds"):
         wm_large.rank(5 << 100, 13)
 
 
@@ -145,36 +140,36 @@ def test_select(wm_small, wm_large):
 def test_quantile(wm_small, wm_large):
     """Test quantile method"""
     assert wm_small.quantile(2, 12, 8) == 5
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="kth is larger than the range size"):
         wm_small.quantile(2, 12, 13)
 
     assert wm_large.quantile(2, 12, 8) == 5 << 100
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="kth is larger than the range size"):
         wm_large.quantile(2, 12, 13)
 
 
 def test_topk(wm_small, wm_large):
     """Test topk method"""
     assert wm_small.topk(1, 10, 2) == [{"value": 5, "count": 3}, {"value": 1, "count": 2}]
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="index out of bounds"):
         wm_small.topk(1, 13, 20)
 
     assert wm_large.topk(1, 10, 2) == [
         {"value": 5 << 100, "count": 3},
         {"value": 1 << 100, "count": 2},
     ]
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="index out of bounds"):
         wm_large.topk(1, 13, 20)
 
 
 def test_range_sum(wm_small, wm_large):
     """Test range_sum method"""
     assert wm_small.range_sum(2, 8) == 24
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="index out of bounds"):
         wm_small.range_sum(1, 13)
 
     assert wm_large.range_sum(2, 8) == 24 << 100
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="index out of bounds"):
         wm_large.range_sum(1, 13)
 
 
@@ -184,25 +179,25 @@ def test_range_intersection(wm_small, wm_large):
         {"value": 1, "count1": 1, "count2": 1},
         {"value": 5, "count1": 3, "count2": 2},
     ]
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="end2 index out of bounds"):
         wm_small.range_intersection(0, 6, 4, 13)
 
     assert wm_large.range_intersection(0, 6, 6, 11) == [
         {"value": 1 << 100, "count1": 1, "count2": 1},
         {"value": 5 << 100, "count1": 3, "count2": 2},
     ]
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="end2 index out of bounds"):
         wm_large.range_intersection(0, 6, 4, 13)
 
 
 def test_range_freq(wm_small, wm_large):
     """Test range_freq method"""
     assert wm_small.range_freq(1, 9, 4, 6) == 4
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="index out of bounds"):
         wm_small.range_freq(0, 13, 2, 5)
 
     assert wm_large.range_freq(1, 9, 4 << 100, 6 << 100) == 4
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="index out of bounds"):
         wm_large.range_freq(0, 13, 2 << 100, 5 << 100)
 
 
@@ -212,14 +207,14 @@ def test_range_list(wm_small, wm_large):
         {"value": 4, "count": 1},
         {"value": 5, "count": 3},
     ]
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="index out of bounds"):
         wm_small.range_list(0, 13, 0, 5)
 
     assert wm_large.range_list(1, 9, 4 << 100, 6 << 100) == [
         {"value": 4 << 100, "count": 1},
         {"value": 5 << 100, "count": 3},
     ]
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="index out of bounds"):
         wm_large.range_list(0, 13, 0 << 100, 5 << 100)
 
 
@@ -229,14 +224,14 @@ def test_range_maxk(wm_small, wm_large):
         {"value": 6, "count": 1},
         {"value": 5, "count": 3},
     ]
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="index out of bounds"):
         wm_small.range_maxk(0, 13, 20)
 
     assert wm_large.range_maxk(1, 9, 2) == [
         {"value": 6 << 100, "count": 1},
         {"value": 5 << 100, "count": 3},
     ]
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="index out of bounds"):
         wm_large.range_maxk(0, 13, 20)
 
 
@@ -246,14 +241,14 @@ def test_range_mink(wm_small, wm_large):
         {"value": 1, "count": 2},
         {"value": 2, "count": 1},
     ]
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="index out of bounds"):
         wm_small.range_mink(0, 13, 20)
 
     assert wm_large.range_mink(1, 9, 2) == [
         {"value": 1 << 100, "count": 2},
         {"value": 2 << 100, "count": 1},
     ]
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="index out of bounds"):
         wm_large.range_mink(0, 13, 20)
 
 
@@ -261,21 +256,21 @@ def test_prev_value(wm_small, wm_large):
     """Test prev_value method"""
     assert wm_small.prev_value(1, 9, 7) == 6
     assert wm_small.prev_value(1, 10, 1) is None
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="index out of bounds"):
         wm_small.prev_value(0, 13)
 
     assert wm_large.prev_value(1, 9, 7 << 100) == 6 << 100
     assert wm_large.prev_value(1, 10, 1 << 100) is None
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="index out of bounds"):
         wm_large.prev_value(0, 13)
 
 
 def test_next_value(wm_small, wm_large):
     """Test next_value method"""
     assert wm_small.next_value(1, 9, 3) == 4
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="index out of bounds"):
         wm_small.next_value(0, 13)
 
     assert wm_large.next_value(1, 9, 3 << 100) == 4 << 100
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="index out of bounds"):
         wm_large.next_value(0, 13)
