@@ -206,8 +206,10 @@ where
 
     /// Find the k-th smallest value in the range [start, end) (1-indexed).
     fn quantile(&self, mut start: usize, mut end: usize, mut kth: usize) -> PyResult<NumberType> {
-        if start >= end {
-            return Err(PyValueError::new_err("start must be less than end"));
+        if start > end {
+            return Err(PyValueError::new_err(
+                "start must be less than or equal to end",
+            ));
         }
         if end > self.len() {
             return Err(PyIndexError::new_err("index out of bounds"));
@@ -224,26 +226,19 @@ where
             iter::zip(self.get_layers(), self.get_zeros_count_per_layer()).enumerate()
         {
             let count_zeros = layer.rank(false, end)? - layer.rank(false, start)?;
-            let bit = if kth <= count_zeros {
-                false
-            } else {
-                kth -= count_zeros;
-                true
-            };
+            let bit = count_zeros < kth;
 
             if bit {
                 result |= NumberType::one() << (self.height() - depth - 1);
                 start = zeros_count + layer.rank(bit, start)?;
                 end = zeros_count + layer.rank(bit, end)?;
+                kth -= count_zeros;
             } else {
                 start = layer.rank(bit, start)?;
                 end = layer.rank(bit, end)?;
             }
 
             debug_assert!(start < end && end <= self.len());
-            if start == end {
-                break;
-            }
         }
 
         Ok(result)
@@ -256,14 +251,19 @@ where
         end: usize,
         k: Option<usize>,
     ) -> PyResult<Vec<(NumberType, usize)>> {
-        if start >= end {
-            return Err(PyValueError::new_err("start must be less than end"));
+        if start > end {
+            return Err(PyValueError::new_err(
+                "start must be less than or equal to end",
+            ));
         }
         if end > self.len() {
             return Err(PyIndexError::new_err("index out of bounds"));
         }
         if k.is_some_and(|k| k.is_zero()) {
             return Err(PyValueError::new_err("k must be greater than 0"));
+        }
+        if k.is_some_and(|k| k > end - start) {
+            return Err(PyValueError::new_err("k is larger than the range size"));
         }
         let k = k.unwrap_or(end - start);
 
@@ -304,32 +304,24 @@ where
             let layer = &self.get_layers()[depth];
             let zeros_count = self.get_zeros_count_per_layer()[depth];
 
-            let start_zero = layer.rank(false, start)?;
-            let end_zero = layer.rank(false, end)?;
-            debug_assert!(start_zero <= end_zero);
+            for (bit, offset) in [(false, 0), (true, zeros_count)] {
+                let next_start = layer.rank(bit, start)? + offset;
+                let next_end = layer.rank(bit, end)? + offset;
+                debug_assert!(next_start <= next_end);
 
-            let start_one = zeros_count + layer.rank(true, start)?;
-            let end_one = zeros_count + layer.rank(true, end)?;
-            debug_assert!(start_one <= end_one);
-
-            if start_zero != end_zero {
-                heap.push(QueueItem {
-                    len: end_zero - start_zero,
-                    depth: depth + 1,
-                    start: start_zero,
-                    end: end_zero,
-                    value: &value << 1usize,
-                });
-            }
-
-            if end_one != start_one {
-                heap.push(QueueItem {
-                    len: end_one - start_one,
-                    depth: depth + 1,
-                    start: start_one,
-                    end: end_one,
-                    value: (&value << 1usize) | NumberType::one(),
-                });
+                if next_start != next_end {
+                    heap.push(QueueItem {
+                        len: next_end - next_start,
+                        depth: depth + 1,
+                        start: next_start,
+                        end: next_end,
+                        value: if bit {
+                            (&value << 1usize) | NumberType::one()
+                        } else {
+                            &value << 1usize
+                        },
+                    });
+                }
             }
         }
 
@@ -363,17 +355,24 @@ where
         start2: usize,
         end2: usize,
     ) -> PyResult<Vec<(NumberType, usize, usize)>> {
-        if start1 >= end1 {
-            return Err(PyValueError::new_err("start1 must be less than end1"));
+        if start1 > end1 {
+            return Err(PyValueError::new_err(
+                "start1 must be less than or equal to end1",
+            ));
         }
         if end1 > self.len() {
             return Err(PyIndexError::new_err("end1 index out of bounds"));
         }
-        if start2 >= end2 {
-            return Err(PyValueError::new_err("start2 must be less than end2"));
+        if start2 > end2 {
+            return Err(PyValueError::new_err(
+                "start2 must be less than or equal to end2",
+            ));
         }
         if end2 > self.len() {
             return Err(PyIndexError::new_err("end2 index out of bounds"));
+        }
+        if start1 == end1 || start2 == end2 {
+            return Ok(Vec::new());
         }
 
         struct StackItem<T> {
@@ -391,7 +390,8 @@ where
             value: NumberType::zero(),
         }];
 
-        for (layer, zeros_count) in iter::zip(self.get_layers(), self.get_zeros_count_per_layer()) {
+        for (layer, &zeros_count) in iter::zip(self.get_layers(), self.get_zeros_count_per_layer())
+        {
             stack = stack.into_iter().try_fold(
                 Vec::new(),
                 |mut acc, item| -> PyResult<Vec<StackItem<NumberType>>> {
@@ -402,40 +402,28 @@ where
                         end2,
                         value,
                     } = item;
-                    let start1_zero = layer.rank(false, start1)?;
-                    let end1_zero = layer.rank(false, end1)?;
-                    debug_assert!(start1_zero <= end1_zero);
+                    for (bit, offset) in [(false, 0), (true, zeros_count)] {
+                        let next_start1 = layer.rank(bit, start1)? + offset;
+                        let next_end1 = layer.rank(bit, end1)? + offset;
+                        debug_assert!(next_start1 <= next_end1);
 
-                    let start2_zero = layer.rank(false, start2)?;
-                    let end2_zero = layer.rank(false, end2)?;
-                    debug_assert!(start2_zero <= end2_zero);
+                        let next_start2 = layer.rank(bit, start2)? + offset;
+                        let next_end2 = layer.rank(bit, end2)? + offset;
+                        debug_assert!(next_start2 <= next_end2);
 
-                    let start1_one = zeros_count + layer.rank(true, start1)?;
-                    let end1_one = zeros_count + layer.rank(true, end1)?;
-                    debug_assert!(start1_one <= end1_one);
-
-                    let start2_one = zeros_count + layer.rank(true, start2)?;
-                    let end2_one = zeros_count + layer.rank(true, end2)?;
-                    debug_assert!(start2_one <= end2_one);
-
-                    if start1_zero != end1_zero && start2_zero != end2_zero {
-                        acc.push(StackItem {
-                            start1: start1_zero,
-                            end1: end1_zero,
-                            start2: start2_zero,
-                            end2: end2_zero,
-                            value: &value << 1usize,
-                        });
-                    }
-
-                    if start1_one != end1_one && start2_one != end2_one {
-                        acc.push(StackItem {
-                            start1: start1_one,
-                            end1: end1_one,
-                            start2: start2_one,
-                            end2: end2_one,
-                            value: (&value << 1usize) | NumberType::one(),
-                        });
+                        if next_start1 != next_end1 && next_start2 != next_end2 {
+                            acc.push(StackItem {
+                                start1: next_start1,
+                                end1: next_end1,
+                                start2: next_start2,
+                                end2: next_end2,
+                                value: if bit {
+                                    (&value << 1usize) | NumberType::one()
+                                } else {
+                                    &value << 1usize
+                                },
+                            });
+                        }
                     }
 
                     Ok(acc)
@@ -466,8 +454,10 @@ where
         mut end: usize,
         upper: &NumberType,
     ) -> PyResult<usize> {
-        if start >= end {
-            return Err(PyValueError::new_err("start must be less than end"));
+        if start > end {
+            return Err(PyValueError::new_err(
+                "start must be less than or equal to end",
+            ));
         }
         if end > self.len() {
             return Err(PyIndexError::new_err("index out of bounds"));
@@ -507,8 +497,10 @@ where
         lower: Option<&NumberType>,
         upper: Option<&NumberType>,
     ) -> PyResult<usize> {
-        if start >= end {
-            return Err(PyValueError::new_err("start must be less than end"));
+        if start > end {
+            return Err(PyValueError::new_err(
+                "start must be less than or equal to end",
+            ));
         }
         if end > self.len() {
             return Err(PyIndexError::new_err("index out of bounds"));
@@ -539,8 +531,10 @@ where
         lower: Option<&NumberType>,
         upper: Option<&NumberType>,
     ) -> PyResult<Vec<(NumberType, usize)>> {
-        if start >= end {
-            return Err(PyValueError::new_err("start must be less than end"));
+        if start > end {
+            return Err(PyValueError::new_err(
+                "start must be less than or equal to end",
+            ));
         }
         if end > self.len() {
             return Err(PyIndexError::new_err("index out of bounds"));
@@ -550,6 +544,9 @@ where
             .is_some_and(|(lower, upper)| lower >= upper)
         {
             return Err(PyValueError::new_err("lower must be less than upper"));
+        }
+        if start == end {
+            return Ok(Vec::new());
         }
 
         struct StackItem<T> {
@@ -563,7 +560,7 @@ where
             value: NumberType::zero(),
         }];
 
-        for (depth, (layer, zeros_count)) in
+        for (depth, (layer, &zeros_count)) in
             iter::zip(self.get_layers(), self.get_zeros_count_per_layer()).enumerate()
         {
             let shift = self.height() - depth - 1;
@@ -573,36 +570,27 @@ where
                 |mut acc, item| -> PyResult<Vec<StackItem<NumberType>>> {
                     let StackItem { start, end, value } = item;
 
-                    let start_zero = layer.rank(false, start)?;
-                    let end_zero = layer.rank(false, end)?;
-                    debug_assert!(start_zero <= end_zero);
+                    for (bit, offset) in [(false, 0), (true, zeros_count)] {
+                        let next_start = layer.rank(bit, start)? + offset;
+                        let next_end = layer.rank(bit, end)? + offset;
+                        debug_assert!(next_start <= next_end);
 
-                    let start_one = zeros_count + layer.rank(true, start)?;
-                    let end_one = zeros_count + layer.rank(true, end)?;
-                    debug_assert!(start_one <= end_one);
-
-                    let next_value_zero = &value << 1;
-                    if start_zero != end_zero
-                        && lower.is_none_or(|lower| (lower >> shift) <= next_value_zero)
-                        && upper.is_none_or(|upper| next_value_zero <= (upper >> shift))
-                    {
-                        acc.push(StackItem {
-                            start: start_zero,
-                            end: end_zero,
-                            value: next_value_zero,
-                        });
-                    }
-
-                    let next_value_one = (&value << 1) | NumberType::one();
-                    if start_one != end_one
-                        && lower.is_none_or(|lower| (lower >> shift) <= next_value_one)
-                        && upper.is_none_or(|upper| next_value_one <= (upper >> shift))
-                    {
-                        acc.push(StackItem {
-                            start: start_one,
-                            end: end_one,
-                            value: next_value_one,
-                        });
+                        if next_start != next_end {
+                            let next_value = if bit {
+                                (&value << 1usize) | NumberType::one()
+                            } else {
+                                &value << 1usize
+                            };
+                            if lower.is_none_or(|lower| (lower >> shift) <= next_value)
+                                && upper.is_none_or(|upper| next_value <= (upper >> shift))
+                            {
+                                acc.push(StackItem {
+                                    start: next_start,
+                                    end: next_end,
+                                    value: next_value,
+                                });
+                            }
+                        }
                     }
 
                     Ok(acc)
@@ -628,14 +616,22 @@ where
         end: usize,
         k: Option<usize>,
     ) -> PyResult<Vec<(NumberType, usize)>> {
-        if start >= end {
-            return Err(PyValueError::new_err("start must be less than end"));
+        if start > end {
+            return Err(PyValueError::new_err(
+                "start must be less than or equal to end",
+            ));
         }
         if end > self.len() {
             return Err(PyIndexError::new_err("index out of bounds"));
         }
         if k.is_some_and(|k| k.is_zero()) {
             return Err(PyValueError::new_err("k must be greater than 0"));
+        }
+        if k.is_some_and(|k| k > end - start) {
+            return Err(PyValueError::new_err("k is larger than the range size"));
+        }
+        if start == end {
+            return Ok(Vec::new());
         }
         let k = k.unwrap_or(end - start);
 
@@ -650,42 +646,32 @@ where
             value: NumberType::zero(),
         }];
 
-        for (layer, zeros_count) in iter::zip(self.get_layers(), self.get_zeros_count_per_layer()) {
+        for (layer, &zeros_count) in iter::zip(self.get_layers(), self.get_zeros_count_per_layer())
+        {
             let mut next_stack = Vec::with_capacity(k);
 
-            for StackItem { start, end, value } in stack {
-                let start_one = zeros_count + layer.rank(true, start)?;
-                let end_one = zeros_count + layer.rank(true, end)?;
-                debug_assert!(start_one <= end_one);
+            'prepare_next_layer: for StackItem { start, end, value } in stack {
+                for (bit, offset) in [(true, zeros_count), (false, 0)] {
+                    let next_start = layer.rank(bit, start)? + offset;
+                    let next_end = layer.rank(bit, end)? + offset;
+                    debug_assert!(next_start <= next_end);
 
-                let next_value_one = (&value << 1) | NumberType::one();
-                if start_one != end_one {
-                    next_stack.push(StackItem {
-                        start: start_one,
-                        end: end_one,
-                        value: next_value_one,
-                    });
-                }
+                    if next_start != next_end {
+                        let next_value = if bit {
+                            (&value << 1usize) | NumberType::one()
+                        } else {
+                            &value << 1usize
+                        };
+                        next_stack.push(StackItem {
+                            start: next_start,
+                            end: next_end,
+                            value: next_value,
+                        });
+                    }
 
-                if next_stack.len() >= k {
-                    break;
-                }
-
-                let start_zero = layer.rank(false, start)?;
-                let end_zero = layer.rank(false, end)?;
-                debug_assert!(start_zero <= end_zero);
-
-                let next_value_zero = &value << 1;
-                if start_zero != end_zero {
-                    next_stack.push(StackItem {
-                        start: start_zero,
-                        end: end_zero,
-                        value: next_value_zero,
-                    });
-                }
-
-                if next_stack.len() >= k {
-                    break;
+                    if next_stack.len() >= k {
+                        break 'prepare_next_layer;
+                    }
                 }
             }
 
@@ -708,14 +694,22 @@ where
         end: usize,
         k: Option<usize>,
     ) -> PyResult<Vec<(NumberType, usize)>> {
-        if start >= end {
-            return Err(PyValueError::new_err("start must be less than end"));
+        if start > end {
+            return Err(PyValueError::new_err(
+                "start must be less than or equal to end",
+            ));
         }
         if end > self.len() {
             return Err(PyIndexError::new_err("index out of bounds"));
         }
         if k.is_some_and(|k| k.is_zero()) {
             return Err(PyValueError::new_err("k must be greater than 0"));
+        }
+        if k.is_some_and(|k| k > end - start) {
+            return Err(PyValueError::new_err("k is larger than the range size"));
+        }
+        if start == end {
+            return Ok(Vec::new());
         }
         let k = k.unwrap_or(end - start);
 
@@ -730,42 +724,32 @@ where
             value: NumberType::zero(),
         }];
 
-        for (layer, zeros_count) in iter::zip(self.get_layers(), self.get_zeros_count_per_layer()) {
+        for (layer, &zeros_count) in iter::zip(self.get_layers(), self.get_zeros_count_per_layer())
+        {
             let mut next_stack = Vec::with_capacity(k);
 
-            for StackItem { start, end, value } in stack {
-                let start_zero = layer.rank(false, start)?;
-                let end_zero = layer.rank(false, end)?;
-                debug_assert!(start_zero <= end_zero);
+            'prepare_next_layer: for StackItem { start, end, value } in stack {
+                for (bit, offset) in [(false, 0), (true, zeros_count)] {
+                    let next_start = layer.rank(bit, start)? + offset;
+                    let next_end = layer.rank(bit, end)? + offset;
+                    debug_assert!(next_start <= next_end);
 
-                let next_value_zero = &value << 1;
-                if start_zero != end_zero {
-                    next_stack.push(StackItem {
-                        start: start_zero,
-                        end: end_zero,
-                        value: next_value_zero,
-                    });
-                }
+                    if next_start != next_end {
+                        let next_value = if bit {
+                            (&value << 1usize) | NumberType::one()
+                        } else {
+                            &value << 1usize
+                        };
+                        next_stack.push(StackItem {
+                            start: next_start,
+                            end: next_end,
+                            value: next_value,
+                        });
+                    }
 
-                if next_stack.len() >= k {
-                    break;
-                }
-
-                let start_one = zeros_count + layer.rank(true, start)?;
-                let end_one = zeros_count + layer.rank(true, end)?;
-                debug_assert!(start_one <= end_one);
-
-                let next_value_one = (&value << 1) | NumberType::one();
-                if start_one != end_one {
-                    next_stack.push(StackItem {
-                        start: start_one,
-                        end: end_one,
-                        value: next_value_one,
-                    });
-                }
-
-                if next_stack.len() >= k {
-                    break;
+                    if next_stack.len() >= k {
+                        break 'prepare_next_layer;
+                    }
                 }
             }
 
@@ -934,50 +918,26 @@ mod tests {
             "IndexError: index out of bounds"
         );
         assert_eq!(wv_u8.rank(&0u8, 0).unwrap(), 0);
-        assert_eq!(wv_u8.select(&0u8, 1).unwrap(), None);
         assert_eq!(
-            wv_u8.quantile(0, 0, 1).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
+            wv_u8.select(&0u8, 0).unwrap_err().to_string(),
+            "ValueError: kth must be greater than 0"
         );
         assert_eq!(
             wv_u8.topk(0, 0, Some(1)).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
+            "ValueError: k is larger than the range size"
         );
+        assert_eq!(wv_u8.range_sum(0, 0).unwrap(), BigUint::zero(),);
         assert_eq!(
-            wv_u8.range_sum(0, 0).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
+            wv_u8.range_intersection(0, 0, 0, 0).unwrap(),
+            Vec::<(u8, usize, usize)>::new()
         );
+        assert_eq!(wv_u8.range_freq(0, 0, None, None).unwrap(), 0,);
         assert_eq!(
-            wv_u8
-                .range_intersection(0, 0, 0, 0)
-                .unwrap_err()
-                .to_string(),
-            "ValueError: start1 must be less than end1"
+            wv_u8.range_list(0, 0, None, None).unwrap(),
+            Vec::<(u8, usize)>::new(),
         );
-        assert_eq!(
-            wv_u8.range_freq(0, 0, None, None).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
-        );
-        assert_eq!(
-            wv_u8.range_list(0, 0, None, None).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
-        );
-        assert_eq!(
-            wv_u8.range_maxk(0, 0, Some(1)).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
-        );
-        assert_eq!(
-            wv_u8.range_mink(0, 0, Some(1)).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
-        );
-        assert_eq!(
-            wv_u8.prev_value(0, 0, None).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
-        );
-        assert_eq!(
-            wv_u8.next_value(0, 0, None).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
-        );
+        assert_eq!(wv_u8.prev_value(0, 0, None).unwrap(), None,);
+        assert_eq!(wv_u8.next_value(0, 0, None).unwrap(), None,);
 
         let wv_biguint = SampleWaveletMatrix::<BigUint>::new(&Vec::new());
         assert_eq!(wv_biguint.len(), 0);
@@ -988,62 +948,26 @@ mod tests {
             "IndexError: index out of bounds"
         );
         assert_eq!(wv_biguint.rank(&0u32.into(), 0).unwrap(), 0);
-        assert_eq!(wv_biguint.select(&0u32.into(), 1).unwrap(), None);
         assert_eq!(
-            wv_biguint.quantile(0, 0, 1).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
+            wv_biguint.select(&0u32.into(), 0).unwrap_err().to_string(),
+            "ValueError: kth must be greater than 0"
         );
         assert_eq!(
             wv_biguint.topk(0, 0, Some(1)).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
+            "ValueError: k is larger than the range size"
         );
+        assert_eq!(wv_biguint.range_sum(0, 0).unwrap(), BigUint::zero(),);
         assert_eq!(
-            wv_biguint.range_sum(0, 0).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
+            wv_biguint.range_intersection(0, 0, 0, 0).unwrap(),
+            Vec::<(BigUint, usize, usize)>::new()
         );
+        assert_eq!(wv_biguint.range_freq(0, 0, None, None).unwrap(), 0,);
         assert_eq!(
-            wv_biguint
-                .range_intersection(0, 0, 0, 0)
-                .unwrap_err()
-                .to_string(),
-            "ValueError: start1 must be less than end1"
+            wv_biguint.range_list(0, 0, None, None).unwrap(),
+            Vec::<(BigUint, usize)>::new(),
         );
-        assert_eq!(
-            wv_biguint
-                .range_freq(0, 0, None, None)
-                .unwrap_err()
-                .to_string(),
-            "ValueError: start must be less than end"
-        );
-        assert_eq!(
-            wv_biguint
-                .range_list(0, 0, None, None)
-                .unwrap_err()
-                .to_string(),
-            "ValueError: start must be less than end"
-        );
-        assert_eq!(
-            wv_biguint
-                .range_maxk(0, 0, Some(1))
-                .unwrap_err()
-                .to_string(),
-            "ValueError: start must be less than end"
-        );
-        assert_eq!(
-            wv_biguint
-                .range_mink(0, 0, Some(1))
-                .unwrap_err()
-                .to_string(),
-            "ValueError: start must be less than end"
-        );
-        assert_eq!(
-            wv_biguint.prev_value(0, 0, None).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
-        );
-        assert_eq!(
-            wv_biguint.next_value(0, 0, None).unwrap_err().to_string(),
-            "ValueError: start must be less than end"
-        );
+        assert_eq!(wv_biguint.prev_value(0, 0, None).unwrap(), None,);
+        assert_eq!(wv_biguint.next_value(0, 0, None).unwrap(), None);
     }
 
     #[test]

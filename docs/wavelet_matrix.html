@@ -416,7 +416,7 @@ Result items look like {"value": x, "count": c}.</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="n">wm</span><span class="o">.</span><span class="n">topk</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-<span class="c1"># [{&#39;value&#39;: 5, &#39;count&#39;: 3}, {&#39;value&#39;: 1, &#39;count&#39;: 2}]</span>
+<span class="c1"># [{'value': 5, 'count': 3}, {'value': 1, 'count': 2}]</span>
 </code></pre>
 </div>
 </div>
@@ -477,7 +477,7 @@ Each item: {"value": x, "count1": a, "count2": b}.</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="n">wm</span><span class="o">.</span><span class="n">range_intersection</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span>
-<span class="c1"># [{&#39;value&#39;: 1, &#39;count1&#39;: 1, &#39;count2&#39;: 1}, {&#39;value&#39;: 5, &#39;count1&#39;: 3, &#39;count2&#39;: 2}]</span>
+<span class="c1"># [{'value': 1, 'count1': 1, 'count2': 1}, {'value': 5, 'count1': 3, 'count2': 2}]</span>
 </code></pre>
 </div>
 </div>
@@ -537,7 +537,7 @@ Each item: {"value": x, "count1": a, "count2": b}.</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="n">wm</span><span class="o">.</span><span class="n">range_list</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
-<span class="c1"># [{&#39;value&#39;: 4, &#39;count&#39;: 1}, {&#39;value&#39;: 5, &#39;count&#39;: 3}]</span>
+<span class="c1"># [{'value': 4, 'count': 1}, {'value': 5, 'count': 3}]</span>
 </code></pre>
 </div>
 </div>
@@ -567,7 +567,7 @@ Each item: {"value": x, "count1": a, "count2": b}.</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="n">wm</span><span class="o">.</span><span class="n">range_maxk</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-<span class="c1"># [{&#39;value&#39;: 6, &#39;count&#39;: 1}, {&#39;value&#39;: 5, &#39;count&#39;: 3}]</span>
+<span class="c1"># [{'value': 6, 'count': 1}, {'value': 5, 'count': 3}]</span>
 </code></pre>
 </div>
 </div>
@@ -597,7 +597,7 @@ Each item: {"value": x, "count1": a, "count2": b}.</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="n">wm</span><span class="o">.</span><span class="n">range_mink</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-<span class="c1"># [{&#39;value&#39;: 1, &#39;count&#39;: 2}, {&#39;value&#39;: 2, &#39;count&#39;: 1}]</span>
+<span class="c1"># [{'value': 1, 'count': 2}, {'value': 2, 'count': 1}]</span>
 </code></pre>
 </div>
 </div>
@@ -917,7 +917,7 @@ Result items look like {"value": x, "count": c}.</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="n">dwm</span><span class="o">.</span><span class="n">topk</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-<span class="c1"># [{&#39;value&#39;: 5, &#39;count&#39;: 3}, {&#39;value&#39;: 1, &#39;count&#39;: 2}]</span>
+<span class="c1"># [{'value': 5, 'count': 3}, {'value': 1, 'count': 2}]</span>
 </code></pre>
 </div>
 </div>
@@ -978,7 +978,7 @@ Each item: {"value": x, "count1": a, "count2": b}.</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="n">dwm</span><span class="o">.</span><span class="n">range_intersection</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span>
-<span class="c1"># [{&#39;value&#39;: 1, &#39;count1&#39;: 1, &#39;count2&#39;: 1}, {&#39;value&#39;: 5, &#39;count1&#39;: 3, &#39;count2&#39;: 2}]</span>
+<span class="c1"># [{'value': 1, 'count1': 1, 'count2': 1}, {'value': 5, 'count1': 3, 'count2': 2}]</span>
 </code></pre>
 </div>
 </div>
@@ -1038,7 +1038,7 @@ Each item: {"value": x, "count1": a, "count2": b}.</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="n">dwm</span><span class="o">.</span><span class="n">range_list</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
-<span class="c1"># [{&#39;value&#39;: 4, &#39;count&#39;: 1}, {&#39;value&#39;: 5, &#39;count&#39;: 3}]</span>
+<span class="c1"># [{'value': 4, 'count': 1}, {'value': 5, 'count': 3}]</span>
 </code></pre>
 </div>
 </div>
@@ -1068,7 +1068,7 @@ Each item: {"value": x, "count1": a, "count2": b}.</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="n">dwm</span><span class="o">.</span><span class="n">range_maxk</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-<span class="c1"># [{&#39;value&#39;: 6, &#39;count&#39;: 1}, {&#39;value&#39;: 5, &#39;count&#39;: 3}]</span>
+<span class="c1"># [{'value': 6, 'count': 1}, {'value': 5, 'count': 3}]</span>
 </code></pre>
 </div>
 </div>
@@ -1098,7 +1098,7 @@ Each item: {"value": x, "count1": a, "count2": b}.</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="n">dwm</span><span class="o">.</span><span class="n">range_mink</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-<span class="c1"># [{&#39;value&#39;: 1, &#39;count&#39;: 2}, {&#39;value&#39;: 2, &#39;count&#39;: 1}]</span>
+<span class="c1"># [{'value': 1, 'count': 2}, {'value': 2, 'count': 1}]</span>
 </code></pre>
 </div>
 </div>
