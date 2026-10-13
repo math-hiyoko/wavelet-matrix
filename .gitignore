@@ -76,3 +76,4 @@ Cargo.lock
 .ruff_cache/
 .benchmarks/
 .pymon
+.mypy_cache/

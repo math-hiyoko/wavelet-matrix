@@ -1,4 +1,5 @@
-from typing import Iterable, Self
+from collections.abc import Iterable
+from typing import Self
 
 class WaveletMatrix:
     def __init__(self, data: Iterable[int], on_disk: bool = False) -> None: ...

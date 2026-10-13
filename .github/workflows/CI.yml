@@ -204,6 +204,8 @@ jobs:
           fi
       - name: Format check
         run: ruff check
+      - name: Mypy check
+        run: mypy .
 
   python-benchmark:
     runs-on: ubuntu-latest
@@ -211,8 +213,6 @@ jobs:
       fail-fast: false
       matrix:
         python:
-          - "3.9"
-          - "3.10"
           - "3.11"
           - "3.12"
           - "3.13"
@@ -258,7 +258,7 @@ jobs:
       # Used to generate artifact attestation
       attestations: write
     steps:
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: wheels-*
           path: dist
