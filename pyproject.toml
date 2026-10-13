@@ -50,9 +50,9 @@ test = [
     "pytest==9.1.*",
     "pytest-benchmark==5.3.*",
     "pytest-monitor==1.6.*",
-    "mypy==2.4.*",
 ]
 dev = [
+    "mypy==2.4.*",
     "pdoc==16.0.*",
     "ruff==0.17.*",
 ]
